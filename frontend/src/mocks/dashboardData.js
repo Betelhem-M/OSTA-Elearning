@@ -45,8 +45,8 @@ export const achievements = [
 
 export const quickActions = [
     { label: 'My Courses', href: '/courses', icon: 'BookOpen' },
-    { label: 'Assignments', href: '/assignments', icon: 'FileText' },
-    { label: 'Certificates', href: '/certificates', icon: 'Award' },
+    { label: 'Assignments', href: '/assignments/data-structures-assignment', icon: 'FileText' },
+    { label: 'Certificates', href: '/certificates/python-basics-cert', icon: 'Award' },
     { label: 'Community', href: '/discussion', icon: 'MessageCircle' },
 ]
 

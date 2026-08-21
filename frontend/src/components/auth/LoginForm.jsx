@@ -4,6 +4,7 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import Button from '@components/ui/Button';
 import { useAuth } from '@context/AuthContext';
 import { validateEmail, validateRequired } from '@utils/validators';
+import { getDashboardPath } from '@constants/roles';
 
 export default function LoginForm() {
   const { login } = useAuth();
@@ -24,11 +25,11 @@ export default function LoginForm() {
 
     if (emailError || passwordError) return;
 
-    // No real backend in this project yet — simulate a successful sign-in,
-    // matching the vanilla login.js behavior (any correctly-formatted
-    // credentials pass; there's no real credential check to perform).
-    login(email);
-    navigate('/dashboard');
+    // Capture the state payload returned from our contextual framework
+    const loggedInUser = login(email);
+    
+    // Automatically forwards users to their respective role-based dashboard workspace
+    navigate(getDashboardPath(loggedInUser.role));
   }
 
   function handleSocialClick(provider) {
