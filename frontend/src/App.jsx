@@ -33,6 +33,7 @@ import Notifications from "@pages/student/Notifications";
 
 // Instructor pages
 import InstructorDashboard from "@pages/instructor/Dashboard";
+import CreateCourse from "@pages/instructor/CreateCourse";
 
 // Admin pages
 import AdminDashboard from "@pages/admin/Dashboard";
@@ -81,15 +82,23 @@ export default function App() {
       </Route>
 
       {/* Instructor shell */}
-      <Route
-        element={
-          <RoleRoute role="instructor">
-            <InstructorLayout />
-          </RoleRoute>
-        }
-      >
-        <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
-      </Route>
+<Route
+  element={
+    <RoleRoute role="instructor">
+      <InstructorLayout />
+    </RoleRoute>
+  }
+>
+  <Route
+    path="/instructor/dashboard"
+    element={<InstructorDashboard />}
+  />
+
+  <Route
+    path="/instructor/courses/create"
+    element={<CreateCourse />}
+  />
+</Route>
 
       {/* Admin shell */}
       <Route
