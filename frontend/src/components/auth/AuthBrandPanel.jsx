@@ -1,18 +1,13 @@
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from "lucide-react";
 
-export default function AuthBrandPanel({
-  eyebrow,
-  title,
-  description,
-  widthClass = 'lg:w-[55%]',
-}) {
+export default function AuthBrandPanel({ eyebrow, title, description }) {
   return (
     <section
-      className={`relative flex min-h-[560px] flex-col justify-between overflow-hidden px-7 py-8 text-white sm:px-12 lg:min-h-screen lg:px-[clamp(48px,8vw,128px)] lg:py-12 ${widthClass}`}
+      className="relative flex min-h-[560px] w-full flex-col justify-between overflow-hidden px-7 py-8 text-white sm:px-12 lg:min-h-screen lg:px-[clamp(48px,8vw,128px)] lg:py-12"
       style={{
-        backgroundColor: 'rgb(26, 60, 43)',
+        backgroundColor: "rgb(26, 60, 43)",
         backgroundImage:
-          'linear-gradient(135deg, #142e23 0%, #1A3C2B 48%, #2E7D32 100%)',
+          "linear-gradient(135deg, #142e23 0%, #1A3C2B 48%, #2E7D32 100%)",
       }}
     >
       <div>
@@ -34,12 +29,15 @@ export default function AuthBrandPanel({
         <h1 className="mt-4 max-w-md text-[28px] font-extrabold leading-tight sm:text-[34px]">
           {title}
         </h1>
-        <p className="mt-4 max-w-sm text-sm leading-6 text-white/75">{description}</p>
+        <p className="mt-4 max-w-sm text-sm leading-6 text-white/75">
+          {description}
+        </p>
       </div>
 
       <p className="mt-10 text-xs text-white/50">
-        © {new Date().getFullYear()} OSTA · Oromia Science and Technology Authority
+        © {new Date().getFullYear()} OSTA · Oromia Science and Technology
+        Authority
       </p>
     </section>
-  )
+  );
 }

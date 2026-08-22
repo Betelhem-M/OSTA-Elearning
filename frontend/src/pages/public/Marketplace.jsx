@@ -1,11 +1,16 @@
 import { useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { courses } from '@mocks/courses'
 import CourseFilters from '@components/course/CourseFilters'
 import CourseGrid from '@components/course/CourseGrid'
 
 export default function Marketplace() {
   const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('All')
+  
+  // Clean parameter initialization on separate lines
+  const [searchParams] = useSearchParams()
+  const [category, setCategory] = useState(searchParams.get('category') || 'All')
+  
   const [level, setLevel] = useState('All Levels')
   const [sort, setSort] = useState('')
   const [tab, setTab] = useState('All')

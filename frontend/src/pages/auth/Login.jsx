@@ -1,10 +1,11 @@
-import AuthBrandPanel from '@components/auth/AuthBrandPanel'
-import LoginForm from '@components/auth/LoginForm'
+import AuthBrandPanel from "@components/auth/AuthBrandPanel";
+import LoginForm from "@components/auth/LoginForm";
 
 export default function Login() {
   return (
     <main className="min-h-screen bg-surface font-sans text-ink">
-      <div className="grid min-h-screen lg:grid-cols-[55%_45%]">
+      <div className="grid min-h-screen lg:grid-cols-[60%_40%]">
+        {" "}
         <AuthBrandPanel
           eyebrow="Welcome back"
           title="Continue your learning journey with OSTA"
@@ -15,5 +16,5 @@ export default function Login() {
         </section>
       </div>
     </main>
-  )
+  );
 }

@@ -1,17 +1,21 @@
-import { Link } from 'react-router-dom'
-import { Play, Download } from 'lucide-react'
+import { Link } from "react-router-dom";
+import { Play, Download } from "lucide-react";
 
 export default function ContinueLearningCard({ course }) {
   function handleDownload() {
-    alert('Offline downloads are not available in this build yet.')
+    alert("Offline downloads are not available in this build yet.");
   }
 
   return (
     <div className="rounded-2xl bg-gradient-to-br from-primary to-primary-hover p-5 text-white shadow-[0_8px_20px_rgba(46,125,50,0.18)]">
       <div className="flex items-start justify-between gap-3">
         <div className="max-w-[220px]">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-white/70">Continue Learning</p>
-          <h3 className="mt-1 text-lg font-extrabold leading-snug">{course.title}</h3>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-white/70">
+            Continue Learning
+          </p>
+          <h3 className="mt-1 text-lg font-extrabold leading-snug">
+            {course.title}
+          </h3>
           <p className="mt-1 text-xs text-white/80">{course.lesson}</p>
         </div>
         <button
@@ -29,7 +33,10 @@ export default function ContinueLearningCard({ course }) {
           <span>{course.timeLeft}</span>
         </div>
         <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/20">
-          <div className="h-full rounded-full bg-gold" style={{ width: `${course.progress}%` }} />
+          <div
+            className="h-full rounded-full bg-gold"
+            style={{ width: `${course.progress}%` }}
+          />
         </div>
       </div>
 
@@ -40,5 +47,5 @@ export default function ContinueLearningCard({ course }) {
         <Play size={16} fill="currentColor" /> Resume Course
       </Link>
     </div>
-  )
+  );
 }

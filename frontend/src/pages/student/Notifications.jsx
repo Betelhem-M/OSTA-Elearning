@@ -1,4 +1,5 @@
-import PageStub from '@components/ui/PageStub'
+import NotificationCenter from '@components/notification/NotificationCenter'
+
 export default function Notifications() {
-  return <PageStub name="Notifications" />
+  return <NotificationCenter />
 }

@@ -1,0 +1,65 @@
+.paper {
+  position: relative;
+  background: #fffdf7;
+  border: 2px solid #f9a825;
+  border-radius: 12px;
+  padding: clamp(24px, 5vw, 56px);
+  font-family: Georgia, 'Times New Roman', serif;
+  text-align: center;
+}
+
+.seal {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  border: 2px solid #f9a825;
+  background: #2e7d32;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, sans-serif;
+}
+
+.sealStar {
+  color: #f9a825;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.goldDivider {
+  width: 90px;
+  height: 3px;
+  background: #f9a825;
+  margin: 16px auto;
+  border-radius: 2px;
+}
+
+.recipientName {
+  font-size: clamp(24px, 4vw, 34px);
+  font-weight: 700;
+  color: #2e7d32;
+  margin: 12px 0;
+}
+
+.certificateFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px dashed #e5c98a;
+  font-family: -apple-system, sans-serif;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+@media print {
+  .paper {
+    border-width: 3px;
+    box-shadow: none;
+  }
+}

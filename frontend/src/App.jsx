@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import PublicLayout from "@layouts/PublicLayout";
 import StudentLayout from "@layouts/StudentLayout";
@@ -16,7 +16,6 @@ import ResearchPortal from "@pages/public/ResearchPortal";
 import Competitions from "@pages/public/Competitions";
 import EventsCalendar from "@pages/public/EventsCalendar";
 import Discussion from "@pages/public/Discussion";
-import Explore from "@pages/public/Explore";
 
 // Auth pages
 import Login from "@pages/auth/Login";
@@ -44,7 +43,6 @@ export default function App() {
       {/* Public, unauthenticated shell */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Landing />} />
-        <Route path="/explore" element={<Explore />} />
         <Route path="/courses" element={<Marketplace />} />
         <Route path="/courses/:courseId" element={<CourseDetails />} />
         <Route path="/innovation-hub" element={<InnovationHub />} />
@@ -67,10 +65,17 @@ export default function App() {
         }
       >
         <Route path="/dashboard" element={<StudentDashboard />} />
+        
+        {/* Safety Net Fallback Redirects */}
+        <Route path="/assignments" element={<Navigate to="/assignments/data-structures-assignment" replace />} />
+        <Route path="/certificates" element={<Navigate to="/certificates/python-basics-cert" replace />} />
+        
+        {/* High-Fidelity Parameterized Core Views */}
         <Route path="/learn/:lessonId" element={<LessonPlayer />} />
         <Route path="/quiz/:quizId" element={<Quiz />} />
         <Route path="/assignments/:assignmentId" element={<Assignment />} />
         <Route path="/certificates/:certificateId" element={<Certificate />} />
+        
         <Route path="/profile" element={<Profile />} />
         <Route path="/notifications" element={<Notifications />} />
       </Route>
