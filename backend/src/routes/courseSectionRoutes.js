@@ -1,33 +1,36 @@
 const express = require("express");
 
-const lessonController = require("../controllers/lessonController");
+const courseSectionController = require("../controllers/courseSectionController");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.get("/:id", lessonController.getById);
+router.get(
+  "/course/:courseId",
+  courseSectionController.getByCourse
+);
 
 router.get(
-  "/section/:sectionId",
-  lessonController.getBySection
+  "/:id",
+  courseSectionController.getById
 );
 
 router.post(
   "/",
   authMiddleware,
-  lessonController.create
+  courseSectionController.create
 );
 
 router.put(
   "/:id",
   authMiddleware,
-  lessonController.update
+  courseSectionController.update
 );
 
 router.delete(
   "/:id",
   authMiddleware,
-  lessonController.delete
+  courseSectionController.delete
 );
 
 module.exports = router;

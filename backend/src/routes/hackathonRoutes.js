@@ -1,29 +1,30 @@
 const express = require("express");
 
-const eventController = require("../controllers/eventController");
+const hackathonController = require("../controllers/hackathonController");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.get("/", eventController.getAll);
-router.get("/:id", eventController.getById);
+router.get("/", hackathonController.getAll);
+
+router.get("/:id", hackathonController.getById);
 
 router.post(
   "/",
   authMiddleware,
-  eventController.create
+  hackathonController.create
 );
 
 router.put(
   "/:id",
   authMiddleware,
-  eventController.update
+  hackathonController.update
 );
 
 router.delete(
   "/:id",
   authMiddleware,
-  eventController.delete
+  hackathonController.delete
 );
 
 module.exports = router;

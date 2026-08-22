@@ -1,36 +1,101 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext(null);
 
+const API_URL = "http://localhost:5000/api";
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // null = logged out
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("osta_user");
 
-  const login = (email) => {
-    // No real backend yet — simulate a successful sign-in. Role is inferred
-    // from the email prefix purely so instructor/admin routes are reachable
-    // for testing; a real backend would return the actual role.
-    let role = "student";
-    if (email.startsWith("instructor@")) role = "instructor";
-    if (email.startsWith("admin@")) role = "admin";
+    try {
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      localStorage.removeItem("osta_user");
+      return null;
+    }
+  });
 
-    const nextUser = { email, name: email.split("@")[0], role };
-    setUser(nextUser);
-    return nextUser;
+  const [token, setToken] = useState(() => {
+    return localStorage.getItem("osta_token");
+  });
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("osta_user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("osta_user");
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem("osta_token", token);
+    } else {
+      localStorage.removeItem("osta_token");
+    }
+  }, [token]);
+
+  const login = async (email, password) => {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Login failed");
+    }
+
+    setUser(data.user);
+    setToken(data.token);
+
+    return data.user;
   };
 
-  const register = (formData) => {
-    // Dynamically processes accountType while formatting text keys matching app roles
-    const role = formData.accountType?.toLowerCase() || "student";
-    const nextUser = { email: formData.email, name: formData.firstName, role };
-    setUser(nextUser);
-    return nextUser;
+  const register = async (formData) => {
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Registration failed");
+    }
+
+    setUser(data.user);
+    setToken(data.token);
+
+    return data.user;
   };
 
-  const logout = () => setUser(null);
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+  };
 
   return (
     <AuthContext.Provider
-      value={{ user, login, register, logout, isAuthenticated: !!user }}
+      value={{
+        user,
+        token,
+        login,
+        register,
+        logout,
+        isAuthenticated: !!user,
+      }}
     >
       {children}
     </AuthContext.Provider>
@@ -39,6 +104,10 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+
+  if (!ctx) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+
   return ctx;
 }

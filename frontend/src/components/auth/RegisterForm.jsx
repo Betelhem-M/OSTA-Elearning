@@ -54,7 +54,7 @@ export default function RegisterForm() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     const nextErrors = {
@@ -71,15 +71,32 @@ export default function RegisterForm() {
       terms: agreedToTerms
         ? ""
         : "You must agree to the Terms of Service and Privacy Policy.",
+      form: "",
     };
+
     setErrors(nextErrors);
 
     const hasErrors = Object.values(nextErrors).some(Boolean);
     if (hasErrors) return;
 
-    // No real backend yet — simulate a successful registration.
-    const registeredUser = register({ ...form, accountType });
-    navigate(getDashboardPath(registeredUser.role));
+    try {
+      const registeredUser = await register({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        region: form.region,
+        password: form.password,
+        accountType: accountType,
+      });
+
+      navigate(getDashboardPath(registeredUser.role));
+    } catch (error) {
+      setErrors((prev) => ({
+        ...prev,
+        form: error.message || "Registration failed. Please try again.",
+      }));
+    }
   }
 
   function handleSocialClick(provider) {
@@ -90,7 +107,10 @@ export default function RegisterForm() {
 
   return (
     <div className="mx-auto w-full max-w-[520px]">
-      <h2 className="text-2xl font-extrabold text-ink">Create Your Account</h2>
+      <h2 className="text-2xl font-extrabold text-ink">
+        Create Your Account
+      </h2>
+
       <p className="mt-2 text-sm text-slate-500">
         Already have an account?{" "}
         <Link
@@ -133,11 +153,13 @@ export default function RegisterForm() {
             >
               First Name <em className="not-italic text-primary">*</em>
             </label>
+
             <div className="relative">
               <User
                 size={16}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               />
+
               <input
                 id="firstName"
                 type="text"
@@ -149,6 +171,7 @@ export default function RegisterForm() {
                 }`}
               />
             </div>
+
             {errors.firstName && (
               <span className="mt-1.5 block text-xs font-semibold text-red-600">
                 {errors.firstName}
@@ -163,6 +186,7 @@ export default function RegisterForm() {
             >
               Last Name <em className="not-italic text-primary">*</em>
             </label>
+
             <input
               id="lastName"
               type="text"
@@ -173,6 +197,7 @@ export default function RegisterForm() {
                 errors.lastName ? "border-red-500" : "border-slate-300"
               }`}
             />
+
             {errors.lastName && (
               <span className="mt-1.5 block text-xs font-semibold text-red-600">
                 {errors.lastName}
@@ -188,11 +213,13 @@ export default function RegisterForm() {
           >
             Email <em className="not-italic text-primary">*</em>
           </label>
+
           <div className="relative">
             <Mail
               size={16}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
+
             <input
               id="email"
               type="email"
@@ -204,6 +231,7 @@ export default function RegisterForm() {
               }`}
             />
           </div>
+
           {errors.email && (
             <span className="mt-1.5 block text-xs font-semibold text-red-600">
               {errors.email}
@@ -218,11 +246,13 @@ export default function RegisterForm() {
           >
             Phone <em className="not-italic text-primary">*</em>
           </label>
+
           <div className="relative">
             <Phone
               size={16}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
+
             <input
               id="phone"
               type="tel"
@@ -234,6 +264,7 @@ export default function RegisterForm() {
               }`}
             />
           </div>
+
           {errors.phone && (
             <span className="mt-1.5 block text-xs font-semibold text-red-600">
               {errors.phone}
@@ -248,11 +279,13 @@ export default function RegisterForm() {
           >
             Region <em className="not-italic text-primary">*</em>
           </label>
+
           <div className="relative">
             <MapPin
               size={16}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
+
             <select
               id="region"
               value={form.region}
@@ -262,6 +295,7 @@ export default function RegisterForm() {
               }`}
             >
               <option value="">Select your region</option>
+
               {REGIONS.map((r) => (
                 <option key={r} value={r}>
                   {r}
@@ -269,6 +303,7 @@ export default function RegisterForm() {
               ))}
             </select>
           </div>
+
           {errors.region && (
             <span className="mt-1.5 block text-xs font-semibold text-red-600">
               {errors.region}
@@ -283,11 +318,13 @@ export default function RegisterForm() {
           >
             Password <em className="not-italic text-primary">*</em>
           </label>
+
           <div className="relative">
             <Lock
               size={16}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
+
             <input
               id="password"
               type={showPassword ? "text" : "password"}
@@ -298,6 +335,7 @@ export default function RegisterForm() {
                 errors.password ? "border-red-500" : "border-slate-300"
               }`}
             />
+
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
@@ -307,6 +345,7 @@ export default function RegisterForm() {
               {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
             </button>
           </div>
+
           {errors.password && (
             <span className="mt-1.5 block text-xs font-semibold text-red-600">
               {errors.password}
@@ -324,6 +363,7 @@ export default function RegisterForm() {
                   style={{ width: strength.width }}
                 />
               </div>
+
               <div className="flex justify-between text-[11px] font-bold text-slate-500">
                 <span>Weak</span>
                 <span>Good</span>
@@ -340,21 +380,28 @@ export default function RegisterForm() {
           >
             Confirm Password <em className="not-italic text-primary">*</em>
           </label>
+
           <div className="relative">
             <Lock
               size={16}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
+
             <input
               id="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
               placeholder="Re-enter your password"
               value={form.confirmPassword}
-              onChange={(e) => updateField("confirmPassword", e.target.value)}
+              onChange={(e) =>
+                updateField("confirmPassword", e.target.value)
+              }
               className={`h-11 w-full rounded-md border bg-white pl-10 pr-11 text-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${
-                errors.confirmPassword ? "border-red-500" : "border-slate-300"
+                errors.confirmPassword
+                  ? "border-red-500"
+                  : "border-slate-300"
               }`}
             />
+
             <button
               type="button"
               onClick={() => setShowConfirmPassword((v) => !v)}
@@ -365,9 +412,14 @@ export default function RegisterForm() {
               }
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary"
             >
-              {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+              {showConfirmPassword ? (
+                <EyeOff size={17} />
+              ) : (
+                <Eye size={17} />
+              )}
             </button>
           </div>
+
           {errors.confirmPassword && (
             <span className="mt-1.5 block text-xs font-semibold text-red-600">
               {errors.confirmPassword}
@@ -383,6 +435,7 @@ export default function RegisterForm() {
               onChange={(e) => setAgreedToTerms(e.target.checked)}
               className="mt-0.5 h-4 w-4 accent-primary"
             />
+
             <span>
               I agree to the{" "}
               <a
@@ -400,6 +453,7 @@ export default function RegisterForm() {
               </a>
             </span>
           </label>
+
           {errors.terms && (
             <span className="block text-xs font-semibold text-red-600">
               {errors.terms}
@@ -413,12 +467,19 @@ export default function RegisterForm() {
               onChange={(e) => setSubscribeNewsletter(e.target.checked)}
               className="mt-0.5 h-4 w-4 accent-primary"
             />
+
             <span>
               Subscribe me to OSTA learning news and opportunities{" "}
               <span className="text-slate-400">(optional)</span>
             </span>
           </label>
         </div>
+
+        {errors.form && (
+          <p className="text-sm font-semibold text-red-600">
+            {errors.form}
+          </p>
+        )}
 
         <Button type="submit" variant="primary" className="h-12 w-full">
           Create Account
@@ -427,9 +488,11 @@ export default function RegisterForm() {
 
       <div className="mt-6 flex items-center gap-3">
         <div className="h-px flex-1 bg-slate-200" />
+
         <span className="text-xs font-semibold text-slate-400">
           Or register with
         </span>
+
         <div className="h-px flex-1 bg-slate-200" />
       </div>
 
@@ -441,6 +504,7 @@ export default function RegisterForm() {
         >
           <span className="font-extrabold text-blue-500">G</span> Google
         </button>
+
         <button
           type="button"
           onClick={() => handleSocialClick("GitHub")}
