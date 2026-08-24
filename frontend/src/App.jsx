@@ -58,6 +58,11 @@ import InstructorSettings from "@pages/instructor/Settings";
 // =========================
 
 import AdminDashboard from "@pages/admin/Dashboard";
+import AdminUsers from "@pages/admin/Users";
+import AdminCourses from "@pages/admin/Courses";
+import AdminReports from "@pages/admin/Reports";
+import SystemHealth from "@pages/admin/SystemHealth";
+import AdminSettings from "@pages/admin/Settings";
 
 export default function App() {
   return (
@@ -108,8 +113,6 @@ export default function App() {
           path="/discussion"
           element={<Discussion />}
         />
-
-        {/* AUTH */}
 
         <Route
           path="/login"
@@ -209,35 +212,25 @@ export default function App() {
         }
       >
 
-        {/* OVERVIEW */}
-
         <Route
           path="/instructor/dashboard"
           element={<InstructorDashboard />}
         />
-
-        {/* MY COURSES */}
 
         <Route
           path="/instructor/courses"
           element={<MyCourses />}
         />
 
-        {/* CREATE COURSE */}
-
         <Route
           path="/instructor/courses/create"
           element={<CreateCourse />}
         />
 
-        {/* STUDENTS */}
-
         <Route
           path="/instructor/students"
           element={<InstructorStudents />}
         />
-
-        {/* ANALYTICS */}
 
         <Route
           path="/instructor/analytics"
@@ -245,15 +238,13 @@ export default function App() {
         />
 
         <Route
-          path="/instructor/settings"
-          element={<InstructorSettings />}
-       />
-
-        {/* ASSIGNMENTS */}
-
-        <Route
           path="/instructor/assignments"
           element={<InstructorAssignments />}
+        />
+
+        <Route
+          path="/instructor/settings"
+          element={<InstructorSettings />}
         />
 
       </Route>
@@ -273,6 +264,30 @@ export default function App() {
         <Route
           path="/admin/dashboard"
           element={<AdminDashboard />}
+        />
+
+        <Route
+          path="/admin/settings"
+          element={<AdminSettings />}
+        />
+
+        <Route
+          path="/admin/users"
+          element={<AdminUsers />}
+        />
+        <Route
+          path="/admin/system"
+          element={<SystemHealth />}
+        />
+
+        <Route
+          path="/admin/courses"
+          element={<AdminCourses />}
+        />
+
+        <Route
+          path="/admin/reports"
+          element={<AdminReports />}
         />
 
       </Route>
