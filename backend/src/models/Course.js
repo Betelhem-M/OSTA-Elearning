@@ -1,6 +1,9 @@
 const pool = require("../config/database");
 
 const Course = {
+  // =====================================================
+  // GET ALL COURSES
+  // =====================================================
   async findAll() {
     const [rows] = await pool.execute(`
       SELECT
@@ -9,24 +12,46 @@ const Course = {
         c.description,
         c.long_description,
         c.instructor_id,
-        CONCAT(u.first_name, ' ', u.last_name) AS instructor_name,
+
+        CONCAT(
+          u.first_name,
+          ' ',
+          u.last_name
+        ) AS instructor_name,
+
         c.category_id,
         cat.name AS category_name,
+
         c.level,
         c.price,
         c.thumbnail_color,
         c.status,
         c.created_at,
-        c.updated_at
+        c.updated_at,
+
+        (
+          SELECT COUNT(*)
+          FROM enrollments e
+          WHERE e.course_id = c.id
+        ) AS students
+
       FROM courses c
-      JOIN users u ON c.instructor_id = u.id
-      JOIN categories cat ON c.category_id = cat.id
+
+      JOIN users u
+        ON c.instructor_id = u.id
+
+      JOIN categories cat
+        ON c.category_id = cat.id
+
       ORDER BY c.created_at DESC
     `);
 
     return rows;
   },
 
+  // =====================================================
+  // GET COURSE BY ID
+  // =====================================================
   async findById(id) {
     const [rows] = await pool.execute(
       `
@@ -36,19 +61,39 @@ const Course = {
         c.description,
         c.long_description,
         c.instructor_id,
-        CONCAT(u.first_name, ' ', u.last_name) AS instructor_name,
+
+        CONCAT(
+          u.first_name,
+          ' ',
+          u.last_name
+        ) AS instructor_name,
+
         c.category_id,
         cat.name AS category_name,
+
         c.level,
         c.price,
         c.thumbnail_color,
         c.status,
         c.created_at,
-        c.updated_at
+        c.updated_at,
+
+        (
+          SELECT COUNT(*)
+          FROM enrollments e
+          WHERE e.course_id = c.id
+        ) AS students
+
       FROM courses c
-      JOIN users u ON c.instructor_id = u.id
-      JOIN categories cat ON c.category_id = cat.id
+
+      JOIN users u
+        ON c.instructor_id = u.id
+
+      JOIN categories cat
+        ON c.category_id = cat.id
+
       WHERE c.id = ?
+
       LIMIT 1
       `,
       [id]
@@ -57,6 +102,9 @@ const Course = {
     return rows[0] || null;
   },
 
+  // =====================================================
+  // CREATE COURSE
+  // =====================================================
   async create({
     title,
     description,
@@ -100,6 +148,9 @@ const Course = {
     return result.insertId;
   },
 
+  // =====================================================
+  // UPDATE COURSE
+  // =====================================================
   async update(
     id,
     {
@@ -132,10 +183,10 @@ const Course = {
         description,
         longDescription || null,
         categoryId,
-        level,
-        price,
+        level || "Beginner",
+        price || 0,
         thumbnailColor || null,
-        status,
+        status || "draft",
         id,
       ]
     );
@@ -143,13 +194,72 @@ const Course = {
     return result.affectedRows > 0;
   },
 
+  // =====================================================
+  // DELETE COURSE
+  // =====================================================
   async delete(id) {
     const [result] = await pool.execute(
-      "DELETE FROM courses WHERE id = ?",
+      `
+      DELETE FROM courses
+      WHERE id = ?
+      `,
       [id]
     );
 
     return result.affectedRows > 0;
+  },
+
+  // =====================================================
+  // GET COURSES BELONGING TO INSTRUCTOR
+  // =====================================================
+  async findByInstructorId(instructorId) {
+    const [rows] = await pool.execute(
+      `
+      SELECT
+        c.id,
+        c.title,
+        c.description,
+        c.long_description,
+        c.instructor_id,
+
+        CONCAT(
+          u.first_name,
+          ' ',
+          u.last_name
+        ) AS instructor_name,
+
+        c.category_id,
+        cat.name AS category_name,
+
+        c.level,
+        c.price,
+        c.thumbnail_color,
+        c.status,
+        c.created_at,
+        c.updated_at,
+
+        (
+          SELECT COUNT(*)
+          FROM enrollments e
+          WHERE e.course_id = c.id
+        ) AS students
+
+      FROM courses c
+
+      JOIN users u
+        ON c.instructor_id = u.id
+
+      JOIN categories cat
+        ON c.category_id = cat.id
+
+      WHERE c.instructor_id = ?
+
+      ORDER BY c.created_at DESC
+      `,
+      [instructorId]
+    );
+
+    return rows;
   },
 };
 

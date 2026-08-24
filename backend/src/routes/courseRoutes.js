@@ -7,6 +7,17 @@ const router = express.Router();
 
 router.get("/", courseController.getAll);
 
+router.get(
+  "/my-courses",
+  authMiddleware,
+  courseController.getMyCourses
+);
+router.get(
+  "/my-courses",
+  authMiddleware,
+  courseController.getMyCourses
+);
+
 router.get("/:id", courseController.getById);
 
 router.post(

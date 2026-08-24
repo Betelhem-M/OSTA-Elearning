@@ -28,7 +28,7 @@ export default function Assignment() {
   }
 
   // =========================
-  // USER ID
+  // USER ID FROM JWT
   // =========================
 
   function getUserIdFromToken() {
@@ -77,8 +77,7 @@ export default function Assignment() {
 
       if (!response.ok) {
         throw new Error(
-          data.message ||
-            "Failed to load assignment"
+          data.message || "Failed to load assignment"
         );
       }
 
@@ -90,8 +89,7 @@ export default function Assignment() {
       );
 
       setError(
-        err.message ||
-          "Failed to load assignment"
+        err.message || "Failed to load assignment"
       );
     }
   }
@@ -108,16 +106,36 @@ export default function Assignment() {
         return;
       }
 
-      /*
-       * The backend endpoint is instructor/admin
-       * protected, so students should not use the
-       * all-submissions endpoint.
-       *
-       * We can instead use the student's own
-       * submission endpoint once available.
-       */
+      const response = await fetch(
+        `${API_URL}/assignments/${assignmentId}/submissions`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      return;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to load submission"
+        );
+      }
+
+      const userId = getUserIdFromToken();
+
+      const mySubmission = Array.isArray(data)
+        ? data.find(
+            (item) =>
+              Number(item.user_id) ===
+              Number(userId)
+          )
+        : null;
+
+      setSubmission(
+        mySubmission || null
+      );
     } catch (err) {
       console.error(
         "Load submission error:",
@@ -127,28 +145,25 @@ export default function Assignment() {
   }
 
   // =========================
-  // INITIAL LOAD
+  // LOAD DATA
   // =========================
 
   useEffect(() => {
     if (!assignmentId) {
-      setError(
-        "Assignment ID is missing."
-      );
-
+      setError("Assignment ID is missing.");
       setLoading(false);
-
       return;
     }
 
     async function loadData() {
-      setLoading(true);
-      setError("");
+      try {
+        setLoading(true);
 
-      await loadAssignment();
-      await loadSubmission();
-
-      setLoading(false);
+        await loadAssignment();
+        await loadSubmission();
+      } finally {
+        setLoading(false);
+      }
     }
 
     loadData();
@@ -165,6 +180,8 @@ export default function Assignment() {
     try {
       setSubmitting(true);
 
+      setError("");
+
       const token = getToken();
 
       if (!token) {
@@ -175,65 +192,126 @@ export default function Assignment() {
 
       if (!files || files.length === 0) {
         throw new Error(
-          "Attach at least one file before submitting."
+          "Please attach at least one file."
         );
       }
 
-      // =========================
-      // FORM DATA
-      // =========================
+      // =====================================
+      // STEP 1:
+      // CREATE THE SUBMISSION
+      // =====================================
 
-      const formData = new FormData();
-
-      formData.append(
-        "comment",
-        comment || ""
-      );
-
-      files.forEach((file) => {
-        formData.append("files", file);
-      });
-
-      // =========================
-      // SEND
-      // =========================
-
-      const response = await fetch(
+      const submitResponse = await fetch(
         `${API_URL}/assignments/${assignmentId}/submit`,
         {
           method: "POST",
-
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-
-          body: formData,
+          body: JSON.stringify({
+            comment,
+          }),
         }
       );
 
-      const data = await response.json();
+      const submitData =
+        await submitResponse.json();
 
-      if (!response.ok) {
+      if (!submitResponse.ok) {
         throw new Error(
-          data.message ||
+          submitData.message ||
             "Failed to submit assignment"
         );
       }
 
-      // =========================
-      // SAVE RESPONSE
-      // =========================
+      const createdSubmission =
+        submitData.submission;
 
-      setSubmission(
-        data.submission
-      );
+      // =====================================
+      // STEP 2:
+      // UPLOAD EACH FILE
+      // =====================================
+
+      for (const file of files) {
+        const formData = new FormData();
+
+        formData.append(
+          "file",
+          file
+        );
+
+        const uploadResponse =
+          await fetch(
+            `${API_URL}/assignments/submissions/${createdSubmission.id}/files`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              body: formData,
+            }
+          );
+
+        const uploadData =
+          await uploadResponse.json();
+
+        if (!uploadResponse.ok) {
+          throw new Error(
+            uploadData.message ||
+              `Failed to upload ${file.name}`
+          );
+        }
+      }
+
+      // =====================================
+      // STEP 3:
+      // RELOAD SUBMISSION
+      // =====================================
+
+      const submissionsResponse =
+        await fetch(
+          `${API_URL}/assignments/${assignmentId}/submissions`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+      const submissionsData =
+        await submissionsResponse.json();
+
+      if (
+        submissionsResponse.ok &&
+        Array.isArray(submissionsData)
+      ) {
+        const userId =
+          getUserIdFromToken();
+
+        const mySubmission =
+          submissionsData.find(
+            (item) =>
+              Number(item.user_id) ===
+              Number(userId)
+          );
+
+        setSubmission(
+          mySubmission ||
+            createdSubmission
+        );
+      } else {
+        setSubmission(
+          createdSubmission
+        );
+      }
     } catch (err) {
       console.error(
         "Submit assignment error:",
         err
       );
 
-      alert(
+      setError(
         err.message ||
           "Failed to submit assignment."
       );
@@ -308,28 +386,25 @@ export default function Assignment() {
       assignment.course_title ||
       "Course",
 
-    title:
-      assignment.title,
+    title: assignment.title,
 
-    dueDate:
-      assignment.due_date
-        ? new Date(
-            assignment.due_date
-          ).toLocaleDateString()
-        : "No due date",
+    dueDate: assignment.due_date
+      ? new Date(
+          assignment.due_date
+        ).toLocaleDateString()
+      : "No due date",
 
-    dueTime:
-      assignment.due_date
-        ? new Date(
-            assignment.due_date
-          ).toLocaleTimeString(
-            [],
-            {
-              hour: "2-digit",
-              minute: "2-digit",
-            }
-          )
-        : "",
+    dueTime: assignment.due_date
+      ? new Date(
+          assignment.due_date
+        ).toLocaleTimeString(
+          [],
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        )
+      : "",
 
     points:
       assignment.points,
@@ -349,7 +424,7 @@ export default function Assignment() {
 
     allowedFileTypes:
       assignment.allowed_file_types ||
-      ".py, .zip, .pdf",
+      ".pdf, .zip",
 
     maxFileSizeMB:
       assignment.max_file_size_mb ||
@@ -368,7 +443,9 @@ export default function Assignment() {
     submission.status === "graded"
       ? {
           score:
-            submission.score,
+            Number(
+              submission.score
+            ) || 0,
 
           maxScore:
             assignment.points,
@@ -388,17 +465,20 @@ export default function Assignment() {
         }
       : null;
 
+  // =========================
+  // RENDER
+  // =========================
+
   return (
     <div className="mx-auto max-w-[900px] px-4 py-6 lg:px-8">
 
-      {/* BACK */}
+      {/* BACK TO COURSE */}
 
       <Link
         to={`/courses/${assignment.course_id}`}
         className="mb-4 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
       >
         <ArrowLeft size={14} />
-
         Back to course
       </Link>
 
@@ -419,7 +499,6 @@ export default function Assignment() {
         </h2>
 
         <ul className="mt-3 space-y-2">
-
           {currentAssignment.instructions.map(
             (line, index) => (
               <li
@@ -434,7 +513,6 @@ export default function Assignment() {
               </li>
             )
           )}
-
         </ul>
 
         {/* RUBRIC */}
@@ -444,7 +522,6 @@ export default function Assignment() {
         </h3>
 
         <div className="mt-2 space-y-1.5">
-
           {currentAssignment.rubric.map(
             (row) => (
               <div
@@ -464,9 +541,18 @@ export default function Assignment() {
               </div>
             )
           )}
-
         </div>
       </div>
+
+      {/* ERROR DURING SUBMISSION */}
+
+      {error && (
+        <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-4">
+          <p className="text-sm font-semibold text-red-600">
+            {error}
+          </p>
+        </div>
+      )}
 
       {/* SUBMISSION */}
 
@@ -505,25 +591,10 @@ export default function Assignment() {
             </p>
 
             <p className="mt-1 text-xs text-slate-500">
-              {submission?.files
-                ?.length || 0}{" "}
-              file
-              {submission
-                ?.files?.length ===
-              1
-                ? ""
-                : "s"}{" "}
-              submitted on{" "}
-              {submission
-                ?.submitted_at
-                ? new Date(
-                    submission.submitted_at
-                  ).toLocaleString()
-                : "just now"}
-              .
-              <br />
-              You'll be notified
-              when it's graded.
+              Your assignment was
+              submitted successfully.
+              You&apos;ll be notified
+              when it&apos;s graded.
             </p>
 
           </div>

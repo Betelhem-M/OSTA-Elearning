@@ -1,6 +1,10 @@
 const pool = require("../config/database");
 
 const Submission = {
+  // =========================
+  // FIND SUBMISSION BY ID
+  // =========================
+
   async findById(id) {
     const [rows] = await pool.execute(
       `
@@ -18,16 +22,32 @@ const Submission = {
         CONCAT(u.first_name, ' ', u.last_name) AS student_name,
         u.email AS student_email
       FROM submissions s
-      JOIN assignments a ON s.assignment_id = a.id
-      JOIN users u ON s.user_id = u.id
+      JOIN assignments a
+        ON s.assignment_id = a.id
+      JOIN users u
+        ON s.user_id = u.id
       WHERE s.id = ?
       LIMIT 1
       `,
       [id]
     );
 
-    return rows[0] || null;
+    if (!rows[0]) {
+      return null;
+    }
+
+    const files = await Submission.findFiles(id);
+
+    return {
+      ...rows[0],
+      files,
+    };
   },
+
+  // =========================
+  // FIND SUBMISSIONS
+  // BY ASSIGNMENT
+  // =========================
 
   async findByAssignment(assignmentId) {
     const [rows] = await pool.execute(
@@ -45,17 +65,31 @@ const Submission = {
         CONCAT(u.first_name, ' ', u.last_name) AS student_name,
         u.email AS student_email
       FROM submissions s
-      JOIN users u ON s.user_id = u.id
+      JOIN users u
+        ON s.user_id = u.id
       WHERE s.assignment_id = ?
       ORDER BY s.submitted_at DESC
       `,
       [assignmentId]
     );
 
+    for (const submission of rows) {
+      submission.files = await Submission.findFiles(
+        submission.id
+      );
+    }
+
     return rows;
   },
 
-  async findByUserAndAssignment(userId, assignmentId) {
+  // =========================
+  // FIND USER SUBMISSION
+  // =========================
+
+  async findByUserAndAssignment(
+    userId,
+    assignmentId
+  ) {
     const [rows] = await pool.execute(
       `
       SELECT
@@ -69,15 +103,31 @@ const Submission = {
         graded_at,
         status
       FROM submissions
-      WHERE user_id = ? AND assignment_id = ?
+      WHERE user_id = ?
+        AND assignment_id = ?
       ORDER BY submitted_at DESC
       LIMIT 1
       `,
       [userId, assignmentId]
     );
 
-    return rows[0] || null;
+    if (!rows[0]) {
+      return null;
+    }
+
+    const files = await Submission.findFiles(
+      rows[0].id
+    );
+
+    return {
+      ...rows[0],
+      files,
+    };
   },
+
+  // =========================
+  // CREATE SUBMISSION
+  // =========================
 
   async create({
     assignmentId,
@@ -104,10 +154,17 @@ const Submission = {
     return result.insertId;
   },
 
-  async grade(id, {
-    score,
-    instructorComment,
-  }) {
+  // =========================
+  // GRADE
+  // =========================
+
+  async grade(
+    id,
+    {
+      score,
+      instructorComment,
+    }
+  ) {
     const [result] = await pool.execute(
       `
       UPDATE submissions
@@ -128,6 +185,10 @@ const Submission = {
     return result.affectedRows > 0;
   },
 
+  // =========================
+  // MARK LATE
+  // =========================
+
   async markLate(id) {
     const [result] = await pool.execute(
       `
@@ -140,6 +201,10 @@ const Submission = {
 
     return result.affectedRows > 0;
   },
+
+  // =========================
+  // ADD FILE
+  // =========================
 
   async addFile({
     submissionId,
@@ -174,6 +239,10 @@ const Submission = {
 
     return result.insertId;
   },
+
+  // =========================
+  // FIND FILES
+  // =========================
 
   async findFiles(submissionId) {
     const [rows] = await pool.execute(

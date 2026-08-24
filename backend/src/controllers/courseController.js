@@ -1,6 +1,9 @@
 const Course = require("../models/Course");
 
 const courseController = {
+  // =====================================================
+  // GET ALL COURSES
+  // =====================================================
   async getAll(req, res) {
     try {
       const courses = await Course.findAll();
@@ -15,9 +18,14 @@ const courseController = {
     }
   },
 
+  // =====================================================
+  // GET COURSE BY ID
+  // =====================================================
   async getById(req, res) {
     try {
-      const course = await Course.findById(req.params.id);
+      const course = await Course.findById(
+        req.params.id
+      );
 
       if (!course) {
         return res.status(404).json({
@@ -35,6 +43,9 @@ const courseController = {
     }
   },
 
+  // =====================================================
+  // CREATE COURSE
+  // =====================================================
   async create(req, res) {
     try {
       const {
@@ -48,18 +59,36 @@ const courseController = {
         status,
       } = req.body;
 
-      if (!title || !description || !categoryId) {
+      // -------------------------------------------------
+      // VALIDATION
+      // -------------------------------------------------
+      if (
+        !title ||
+        !description ||
+        !categoryId
+      ) {
         return res.status(400).json({
-          message: "Title, description, and category are required",
+          message:
+            "Title, description, and category are required",
         });
       }
 
-      if (req.user.role !== "instructor" && req.user.role !== "admin") {
+      // -------------------------------------------------
+      // ROLE CHECK
+      // -------------------------------------------------
+      if (
+        req.user.role !== "instructor" &&
+        req.user.role !== "admin"
+      ) {
         return res.status(403).json({
-          message: "Only instructors and admins can create courses",
+          message:
+            "Only instructors and admins can create courses",
         });
       }
 
+      // -------------------------------------------------
+      // CREATE
+      // -------------------------------------------------
       const courseId = await Course.create({
         title,
         description,
@@ -72,37 +101,58 @@ const courseController = {
         status,
       });
 
-      const course = await Course.findById(courseId);
+      // -------------------------------------------------
+      // GET CREATED COURSE
+      // -------------------------------------------------
+      const course =
+        await Course.findById(courseId);
 
       return res.status(201).json({
-        message: "Course created successfully",
+        message:
+          "Course created successfully",
         course,
       });
     } catch (error) {
-      console.error("Create course error:", error);
+      console.error(
+        "Create course error:",
+        error
+      );
 
       return res.status(500).json({
-        message: "Failed to create course",
+        message:
+          "Failed to create course",
       });
     }
   },
 
+  // =====================================================
+  // UPDATE COURSE
+  // =====================================================
   async update(req, res) {
     try {
-      const course = await Course.findById(req.params.id);
+      const course =
+        await Course.findById(req.params.id);
 
+      // -------------------------------------------------
+      // COURSE EXISTS?
+      // -------------------------------------------------
       if (!course) {
         return res.status(404).json({
           message: "Course not found",
         });
       }
 
+      // -------------------------------------------------
+      // OWNERSHIP CHECK
+      // -------------------------------------------------
       if (
         req.user.role !== "admin" &&
-        course.instructor_id !== req.user.id
+        Number(course.instructor_id) !==
+          Number(req.user.id)
       ) {
         return res.status(403).json({
-          message: "You are not allowed to update this course",
+          message:
+            "You are not allowed to update this course",
         });
       }
 
@@ -117,61 +167,158 @@ const courseController = {
         status,
       } = req.body;
 
-      await Course.update(req.params.id, {
-        title,
-        description,
-        longDescription,
-        categoryId,
-        level,
-        price,
-        thumbnailColor,
-        status,
-      });
+      // -------------------------------------------------
+      // VALIDATION
+      // -------------------------------------------------
+      if (
+        !title ||
+        !description ||
+        !categoryId
+      ) {
+        return res.status(400).json({
+          message:
+            "Title, description, and category are required",
+        });
+      }
 
-      const updatedCourse = await Course.findById(req.params.id);
+      // -------------------------------------------------
+      // UPDATE
+      // -------------------------------------------------
+      await Course.update(
+        req.params.id,
+        {
+          title,
+          description,
+          longDescription,
+          categoryId,
+          level,
+          price,
+          thumbnailColor,
+          status,
+        }
+      );
+
+      // -------------------------------------------------
+      // RETURN UPDATED COURSE
+      // -------------------------------------------------
+      const updatedCourse =
+        await Course.findById(
+          req.params.id
+        );
 
       return res.status(200).json({
-        message: "Course updated successfully",
+        message:
+          "Course updated successfully",
         course: updatedCourse,
       });
     } catch (error) {
-      console.error("Update course error:", error);
+      console.error(
+        "Update course error:",
+        error
+      );
 
       return res.status(500).json({
-        message: "Failed to update course",
+        message:
+          "Failed to update course",
       });
     }
   },
 
+  // =====================================================
+  // DELETE COURSE
+  // =====================================================
   async delete(req, res) {
     try {
-      const course = await Course.findById(req.params.id);
+      const course =
+        await Course.findById(req.params.id);
 
+      // -------------------------------------------------
+      // COURSE EXISTS?
+      // -------------------------------------------------
       if (!course) {
         return res.status(404).json({
           message: "Course not found",
         });
       }
 
+      // -------------------------------------------------
+      // OWNERSHIP CHECK
+      // -------------------------------------------------
       if (
         req.user.role !== "admin" &&
-        course.instructor_id !== req.user.id
+        Number(course.instructor_id) !==
+          Number(req.user.id)
       ) {
         return res.status(403).json({
-          message: "You are not allowed to delete this course",
+          message:
+            "You are not allowed to delete this course",
         });
       }
 
-      await Course.delete(req.params.id);
+      // -------------------------------------------------
+      // DELETE
+      // -------------------------------------------------
+      await Course.delete(
+        req.params.id
+      );
 
       return res.status(200).json({
-        message: "Course deleted successfully",
+        message:
+          "Course deleted successfully",
       });
     } catch (error) {
-      console.error("Delete course error:", error);
+      console.error(
+        "Delete course error:",
+        error
+      );
 
       return res.status(500).json({
-        message: "Failed to delete course",
+        message:
+          "Failed to delete course",
+      });
+    }
+  },
+
+  // =====================================================
+  // GET MY COURSES
+  // =====================================================
+  async getMyCourses(req, res) {
+    try {
+      // -------------------------------------------------
+      // ROLE CHECK
+      // -------------------------------------------------
+      if (
+        req.user.role !== "instructor" &&
+        req.user.role !== "admin"
+      ) {
+        return res.status(403).json({
+          message:
+            "Only instructors and admins can access this route",
+        });
+      }
+
+      // -------------------------------------------------
+      // GET COURSES OWNED BY CURRENT USER
+      // -------------------------------------------------
+      const courses =
+        await Course.findByInstructorId(
+          req.user.id
+        );
+
+      return res.status(200).json(
+        Array.isArray(courses)
+          ? courses
+          : []
+      );
+    } catch (error) {
+      console.error(
+        "Get my courses error:",
+        error
+      );
+
+      return res.status(500).json({
+        message:
+          "Failed to fetch your courses",
       });
     }
   },
