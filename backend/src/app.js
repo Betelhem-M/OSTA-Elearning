@@ -68,6 +68,14 @@ const instructorRoutes =
 const userRoutes =
   require("./routes/userRoutes");
 
+const studentRoutes =
+  require("./routes/studentRoutes");
+
+const noteRoutes =
+  require("./routes/noteRoutes");
+
+
+
 const path = require("path");
 
 const app = express();
@@ -86,6 +94,8 @@ app.get("/", (req, res) => {
       "OSTA-Elearning API is running",
   });
 });
+
+app.use("/api/notes", noteRoutes);
 
 /* =========================
    AUTH ROUTES
@@ -118,6 +128,15 @@ app.use(
 );
 
 /* =========================
+   STUDENT ROUTES
+========================= */
+
+app.use(
+  "/api/student",
+  studentRoutes
+);
+
+/* =========================
    COURSE / LEARNING ROUTES
 ========================= */
 
@@ -125,6 +144,10 @@ app.use(
   "/api/courses",
   courseRoutes
 );
+
+app.use("/api/courses", courseRoutes);
+app.use("/api/lessons", lessonRoutes);
+app.use("/api/quizzes", quizRoutes);
 
 app.use(
   "/api/categories",
@@ -159,8 +182,6 @@ app.use(
 /* =========================
    ASSESSMENT ROUTES
 ========================= */
-
-app.use(express.json());
 
 app.use(
   "/uploads",

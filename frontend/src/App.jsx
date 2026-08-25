@@ -1,16 +1,21 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import PublicLayout from "@layouts/PublicLayout";
 import StudentLayout from "@layouts/StudentLayout";
+import StudentAwarePublicLayout from "@layouts/StudentAwarePublicLayout";
 import InstructorLayout from "@layouts/InstructorLayout";
 import AdminLayout from "@layouts/AdminLayout";
 
 import PrivateRoute from "./routes/PrivateRoute";
 import RoleRoute from "./routes/RoleRoute";
 
-// =========================
+// =====================================================
 // PUBLIC PAGES
-// =========================
+// =====================================================
 
 import Landing from "@pages/public/Landing";
 import Marketplace from "@pages/public/Marketplace";
@@ -21,29 +26,32 @@ import Competitions from "@pages/public/Competitions";
 import EventsCalendar from "@pages/public/EventsCalendar";
 import Discussion from "@pages/public/Discussion";
 
-// =========================
+// =====================================================
 // AUTH PAGES
-// =========================
+// =====================================================
 
 import Login from "@pages/auth/Login";
 import Register from "@pages/auth/Register";
 import ForgotPassword from "@pages/auth/ForgotPassword";
 
-// =========================
+// =====================================================
 // STUDENT PAGES
-// =========================
+// =====================================================
 
 import StudentDashboard from "@pages/student/Dashboard";
+import MyLearning from "@pages/student/MyLearning";
 import LessonPlayer from "@pages/student/LessonPlayer";
 import Quiz from "@pages/student/Quiz";
 import Assignment from "@pages/student/Assignment";
-import Certificate from "@pages/student/Certificate";
 import Profile from "@pages/student/Profile";
 import Notifications from "@pages/student/Notifications";
+import Certificates from "@pages/student/Certificates";
+import CertificateView from "@pages/student/CertificateView";
+import Community from "@pages/student/Community";
 
-// =========================
+// =====================================================
 // INSTRUCTOR PAGES
-// =========================
+// =====================================================
 
 import InstructorDashboard from "@pages/instructor/Dashboard";
 import MyCourses from "@pages/instructor/MyCourses";
@@ -53,9 +61,9 @@ import InstructorStudents from "@pages/instructor/Students";
 import InstructorAnalytics from "@pages/instructor/Analytics";
 import InstructorSettings from "@pages/instructor/Settings";
 
-// =========================
+// =====================================================
 // ADMIN PAGES
-// =========================
+// =====================================================
 
 import AdminDashboard from "@pages/admin/Dashboard";
 import AdminUsers from "@pages/admin/Users";
@@ -67,51 +75,14 @@ import AdminSettings from "@pages/admin/Settings";
 export default function App() {
   return (
     <Routes>
-
-      {/* =========================
-          PUBLIC LAYOUT
-      ========================= */}
+      {/* =================================================
+          NORMAL PUBLIC PAGES
+      ================================================= */}
 
       <Route element={<PublicLayout />}>
-
         <Route
           path="/"
           element={<Landing />}
-        />
-
-        <Route
-          path="/courses"
-          element={<Marketplace />}
-        />
-
-        <Route
-          path="/courses/:courseId"
-          element={<CourseDetails />}
-        />
-
-        <Route
-          path="/innovation-hub"
-          element={<InnovationHub />}
-        />
-
-        <Route
-          path="/research"
-          element={<ResearchPortal />}
-        />
-
-        <Route
-          path="/competitions"
-          element={<Competitions />}
-        />
-
-        <Route
-          path="/events"
-          element={<EventsCalendar />}
-        />
-
-        <Route
-          path="/discussion"
-          element={<Discussion />}
         />
 
         <Route
@@ -129,11 +100,55 @@ export default function App() {
           element={<ForgotPassword />}
         />
 
+        <Route
+          path="/innovation-hub"
+          element={<InnovationHub />}
+        />
+
+        <Route
+          path="/research"
+          element={<ResearchPortal />}
+        />
+
+        <Route
+          path="/competitions"
+          element={<Competitions />}
+        />
       </Route>
 
-      {/* =========================
+      {/* =================================================
+          SHARED PUBLIC / STUDENT-AWARE PAGES
+      ================================================= */}
+
+      <Route
+        element={
+          <StudentAwarePublicLayout />
+        }
+      >
+        <Route
+          path="/courses"
+          element={<Marketplace />}
+        />
+
+        <Route
+          path="/courses/:courseId"
+          element={<CourseDetails />}
+        />
+
+        <Route
+          path="/events"
+          element={<EventsCalendar />}
+        />
+
+        <Route
+          path="/discussion"
+          element={<Discussion />}
+        />
+      </Route>
+
+      {/* =================================================
           STUDENT LAYOUT
-      ========================= */}
+      ================================================= */}
 
       <Route
         element={
@@ -142,11 +157,28 @@ export default function App() {
           </PrivateRoute>
         }
       >
+        {/* DASHBOARD */}
 
         <Route
           path="/dashboard"
           element={<StudentDashboard />}
         />
+
+        {/* MY LEARNING */}
+
+        <Route
+          path="/my-learning"
+          element={<MyLearning />}
+        />
+
+        {/* COMMUNITY */}
+
+        <Route
+          path="/community"
+          element={<Community />}
+        />
+
+        {/* ASSIGNMENTS DEFAULT */}
 
         <Route
           path="/assignments"
@@ -158,51 +190,59 @@ export default function App() {
           }
         />
 
-        <Route
-          path="/certificates"
-          element={
-            <Navigate
-              to="/certificates/python-basics-cert"
-              replace
-            />
-          }
-        />
+        {/* LESSON PLAYER */}
 
         <Route
           path="/learn/:lessonId"
           element={<LessonPlayer />}
         />
 
+        {/* QUIZ */}
+
         <Route
           path="/quiz/:quizId"
           element={<Quiz />}
         />
+
+        {/* ASSIGNMENT */}
 
         <Route
           path="/assignments/:assignmentId"
           element={<Assignment />}
         />
 
+        {/* =================================================
+            CERTIFICATES
+        ================================================= */}
+
+        <Route
+          path="/certificates"
+          element={<Certificates />}
+        />
+
         <Route
           path="/certificates/:certificateId"
-          element={<Certificate />}
+          element={<CertificateView />}
         />
+
+        {/* PROFILE */}
 
         <Route
           path="/profile"
           element={<Profile />}
         />
 
+        {/* NOTIFICATIONS */}
+
         <Route
           path="/notifications"
           element={<Notifications />}
         />
-
       </Route>
 
-      {/* =========================
+      {/* =================================================
           INSTRUCTOR LAYOUT
-      ========================= */}
+      ================================================= */}
 
       <Route
         element={
@@ -211,7 +251,6 @@ export default function App() {
           </RoleRoute>
         }
       >
-
         <Route
           path="/instructor/dashboard"
           element={<InstructorDashboard />}
@@ -246,12 +285,11 @@ export default function App() {
           path="/instructor/settings"
           element={<InstructorSettings />}
         />
-
       </Route>
 
-      {/* =========================
+      {/* =================================================
           ADMIN LAYOUT
-      ========================= */}
+      ================================================= */}
 
       <Route
         element={
@@ -260,24 +298,14 @@ export default function App() {
           </RoleRoute>
         }
       >
-
         <Route
           path="/admin/dashboard"
           element={<AdminDashboard />}
         />
 
         <Route
-          path="/admin/settings"
-          element={<AdminSettings />}
-        />
-
-        <Route
           path="/admin/users"
           element={<AdminUsers />}
-        />
-        <Route
-          path="/admin/system"
-          element={<SystemHealth />}
         />
 
         <Route
@@ -290,8 +318,30 @@ export default function App() {
           element={<AdminReports />}
         />
 
+        <Route
+          path="/admin/system"
+          element={<SystemHealth />}
+        />
+
+        <Route
+          path="/admin/settings"
+          element={<AdminSettings />}
+        />
       </Route>
 
+      {/* =================================================
+          FALLBACK
+      ================================================= */}
+
+      <Route
+        path="*"
+        element={
+          <Navigate
+            to="/"
+            replace
+          />
+        }
+      />
     </Routes>
   );
 }

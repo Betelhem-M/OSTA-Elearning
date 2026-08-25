@@ -1,7 +1,7 @@
 const express = require("express");
 
-const certificateController =
-  require("../controllers/certificateController");
+const noteController =
+  require("../controllers/noteController");
 
 const authMiddleware =
   require("../middleware/authMiddleware");
@@ -9,33 +9,43 @@ const authMiddleware =
 const router = express.Router();
 
 // =====================================================
-// MY CERTIFICATES
+// GET NOTES FOR A LESSON
 // =====================================================
 
 router.get(
-  "/my",
+  "/lesson/:lessonId",
   authMiddleware,
-  certificateController.getMyCertificates
+  noteController.getByLesson
 );
 
 // =====================================================
-// GENERATE CERTIFICATE
+// CREATE NOTE
 // =====================================================
 
 router.post(
-  "/generate/:courseId",
+  "/lesson/:lessonId",
   authMiddleware,
-  certificateController.generate
+  noteController.create
 );
 
 // =====================================================
-// GET SINGLE CERTIFICATE
+// UPDATE NOTE
 // =====================================================
 
-router.get(
+router.put(
   "/:id",
   authMiddleware,
-  certificateController.getById
+  noteController.update
+);
+
+// =====================================================
+// DELETE NOTE
+// =====================================================
+
+router.delete(
+  "/:id",
+  authMiddleware,
+  noteController.delete
 );
 
 module.exports = router;

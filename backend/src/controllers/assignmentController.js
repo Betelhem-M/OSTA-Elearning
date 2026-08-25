@@ -1,19 +1,28 @@
-const Assignment = require("../models/Assignment");
-const Submission = require("../models/Submission");
+const Assignment =
+  require("../models/Assignment");
+
+const Submission =
+  require("../models/Submission");
+
+const Notification =
+  require("../models/Notification");
 
 const assignmentController = {
-  // =========================
+  // =====================================================
   // GET ASSIGNMENT BY ID
-  // =========================
+  // =====================================================
 
   async getById(req, res) {
     try {
       const assignment =
-        await Assignment.findById(req.params.id);
+        await Assignment.findById(
+          req.params.id
+        );
 
       if (!assignment) {
         return res.status(404).json({
-          message: "Assignment not found",
+          message:
+            "Assignment not found",
         });
       }
 
@@ -33,14 +42,15 @@ const assignmentController = {
       );
 
       return res.status(500).json({
-        message: "Failed to fetch assignment",
+        message:
+          "Failed to fetch assignment",
       });
     }
   },
 
-  // =========================
+  // =====================================================
   // GET ASSIGNMENTS BY COURSE
-  // =========================
+  // =====================================================
 
   async getByCourse(req, res) {
     try {
@@ -49,7 +59,11 @@ const assignmentController = {
           req.params.courseId
         );
 
-      return res.status(200).json(assignments);
+      return res.status(200).json(
+        Array.isArray(assignments)
+          ? assignments
+          : []
+      );
     } catch (error) {
       console.error(
         "Get course assignments error:",
@@ -57,14 +71,15 @@ const assignmentController = {
       );
 
       return res.status(500).json({
-        message: "Failed to fetch assignments",
+        message:
+          "Failed to fetch assignments",
       });
     }
   },
 
-  // =========================
+  // =====================================================
   // CREATE
-  // =========================
+  // =====================================================
 
   async create(req, res) {
     try {
@@ -81,7 +96,10 @@ const assignmentController = {
         status,
       } = req.body;
 
-      if (!courseId || !title) {
+      if (
+        !courseId ||
+        !title
+      ) {
         return res.status(400).json({
           message:
             "Course ID and title are required",
@@ -125,9 +143,9 @@ const assignmentController = {
     }
   },
 
-  // =========================
+  // =====================================================
   // UPDATE
-  // =========================
+  // =====================================================
 
   async update(req, res) {
     try {
@@ -138,7 +156,8 @@ const assignmentController = {
 
       if (!assignment) {
         return res.status(404).json({
-          message: "Assignment not found",
+          message:
+            "Assignment not found",
         });
       }
 
@@ -155,7 +174,8 @@ const assignmentController = {
       return res.status(200).json({
         message:
           "Assignment updated successfully",
-        assignment: updatedAssignment,
+        assignment:
+          updatedAssignment,
       });
     } catch (error) {
       console.error(
@@ -170,9 +190,9 @@ const assignmentController = {
     }
   },
 
-  // =========================
+  // =====================================================
   // DELETE
-  // =========================
+  // =====================================================
 
   async delete(req, res) {
     try {
@@ -183,7 +203,8 @@ const assignmentController = {
 
       if (!deleted) {
         return res.status(404).json({
-          message: "Assignment not found",
+          message:
+            "Assignment not found",
         });
       }
 
@@ -204,33 +225,49 @@ const assignmentController = {
     }
   },
 
+  // =====================================================
+  // GET MY SUBMISSION
+  // =====================================================
+
   async getMySubmission(req, res) {
-  try {
-    const submission =
-      await Submission.findByUserAndAssignment(
-        req.user.id,
-        req.params.assignmentId
+    try {
+      const assignment =
+        await Assignment.findById(
+          req.params.assignmentId
+        );
+
+      if (!assignment) {
+        return res.status(404).json({
+          message:
+            "Assignment not found",
+        });
+      }
+
+      const submission =
+        await Submission.findByUserAndAssignment(
+          req.user.id,
+          req.params.assignmentId
+        );
+
+      return res.status(200).json(
+        submission || null
+      );
+    } catch (error) {
+      console.error(
+        "Get my submission error:",
+        error
       );
 
-    return res.status(200).json(
-      submission || null
-    );
-  } catch (error) {
-    console.error(
-      "Get my submission error:",
-      error
-    );
+      return res.status(500).json({
+        message:
+          "Failed to fetch your submission",
+      });
+    }
+  },
 
-    return res.status(500).json({
-      message:
-        "Failed to fetch your submission",
-    });
-  }
-},
-
-  // =========================
+  // =====================================================
   // GET SUBMISSIONS
-  // =========================
+  // =====================================================
 
   async getSubmissions(req, res) {
     try {
@@ -240,7 +277,11 @@ const assignmentController = {
         );
 
       return res.status(200).json(
-        submissions
+        Array.isArray(
+          submissions
+        )
+          ? submissions
+          : []
       );
     } catch (error) {
       console.error(
@@ -255,19 +296,16 @@ const assignmentController = {
     }
   },
 
-  // =========================
+  // =====================================================
   // SUBMIT ASSIGNMENT
-  // =========================
+  // =====================================================
 
   async submit(req, res) {
     try {
-      const assignmentId = Number(
-        req.params.assignmentId
-      );
-
-      // =========================
-      // CHECK ASSIGNMENT
-      // =========================
+      const assignmentId =
+        Number(
+          req.params.assignmentId
+        );
 
       const assignment =
         await Assignment.findById(
@@ -275,20 +313,17 @@ const assignmentController = {
         );
 
       if (!assignment) {
-        // Delete uploaded files if assignment
-        // doesn't exist
         if (req.files) {
-          deleteUploadedFiles(req.files);
+          deleteUploadedFiles(
+            req.files
+          );
         }
 
         return res.status(404).json({
-          message: "Assignment not found",
+          message:
+            "Assignment not found",
         });
       }
-
-      // =========================
-      // CHECK EXISTING SUBMISSION
-      // =========================
 
       const existing =
         await Submission.findByUserAndAssignment(
@@ -298,18 +333,17 @@ const assignmentController = {
 
       if (existing) {
         if (req.files) {
-          deleteUploadedFiles(req.files);
+          deleteUploadedFiles(
+            req.files
+          );
         }
 
         return res.status(409).json({
           message:
             "You already submitted this assignment",
+          submission: existing,
         });
       }
-
-      // =========================
-      // CHECK FILES
-      // =========================
 
       if (
         !req.files ||
@@ -321,20 +355,13 @@ const assignmentController = {
         });
       }
 
-      // =========================
-      // CREATE SUBMISSION
-      // =========================
-
       const submissionId =
         await Submission.create({
           assignmentId,
           userId: req.user.id,
-          comment: req.body.comment,
+          comment:
+            req.body.comment,
         });
-
-      // =========================
-      // SAVE FILE INFORMATION
-      // =========================
 
       for (const file of req.files) {
         await Submission.addFile({
@@ -352,10 +379,6 @@ const assignmentController = {
         });
       }
 
-      // =========================
-      // GET COMPLETE SUBMISSION
-      // =========================
-
       const submission =
         await Submission.findById(
           submissionId
@@ -372,13 +395,15 @@ const assignmentController = {
         error
       );
 
-      // Remove uploaded files if something failed
       if (req.files) {
-        deleteUploadedFiles(req.files);
+        deleteUploadedFiles(
+          req.files
+        );
       }
 
       if (
-        error.code === "LIMIT_FILE_SIZE"
+        error.code ===
+        "LIMIT_FILE_SIZE"
       ) {
         return res.status(400).json({
           message:
@@ -387,7 +412,8 @@ const assignmentController = {
       }
 
       if (
-        error.code === "LIMIT_FILE_COUNT"
+        error.code ===
+        "LIMIT_FILE_COUNT"
       ) {
         return res.status(400).json({
           message:
@@ -403,9 +429,9 @@ const assignmentController = {
     }
   },
 
-  // =========================
+  // =====================================================
   // GRADE SUBMISSION
-  // =========================
+  // =====================================================
 
   async gradeSubmission(req, res) {
     try {
@@ -426,17 +452,51 @@ const assignmentController = {
         instructorComment,
       } = req.body;
 
-      if (score === undefined) {
+      const numericScore =
+        Number(score);
+
+      if (
+        !Number.isFinite(
+          numericScore
+        ) ||
+        numericScore < 0
+      ) {
         return res.status(400).json({
-          message: "Score is required",
+          message:
+            "A valid score is required",
+        });
+      }
+
+      const assignment =
+        await Assignment.findById(
+          submission.assignment_id
+        );
+
+      const maxScore =
+        Number(
+          assignment?.points ||
+            submission.points ||
+            100
+        );
+
+      if (
+        numericScore >
+        maxScore
+      ) {
+        return res.status(400).json({
+          message:
+            `Score cannot exceed ${maxScore}`,
         });
       }
 
       await Submission.grade(
         req.params.submissionId,
         {
-          score,
-          instructorComment,
+          score:
+            numericScore,
+          instructorComment:
+            instructorComment ||
+            "",
         }
       );
 
@@ -445,9 +505,31 @@ const assignmentController = {
           req.params.submissionId
         );
 
+      // =================================================
+      // REAL STUDENT NOTIFICATION
+      // =================================================
+
+      await Notification.create({
+        userId:
+          submission.user_id,
+
+        title:
+          "Assignment graded",
+
+        message:
+          `Your assignment "${
+            assignment?.title ||
+            "Assignment"
+          }" has been graded. You received ${numericScore}/${maxScore} points.`,
+
+        category:
+          "Assignment",
+      });
+
       return res.status(200).json({
         message:
           "Submission graded successfully",
+
         submission:
           updatedSubmission,
       });
@@ -465,17 +547,26 @@ const assignmentController = {
   },
 };
 
-// =========================
+// =====================================================
 // DELETE UPLOADED FILES
-// =========================
+// =====================================================
 
-function deleteUploadedFiles(files) {
+function deleteUploadedFiles(
+  files
+) {
   const fs = require("fs");
 
   for (const file of files) {
     try {
-      if (file.path && fs.existsSync(file.path)) {
-        fs.unlinkSync(file.path);
+      if (
+        file.path &&
+        fs.existsSync(
+          file.path
+        )
+      ) {
+        fs.unlinkSync(
+          file.path
+        );
       }
     } catch (error) {
       console.error(
@@ -486,4 +577,5 @@ function deleteUploadedFiles(files) {
   }
 }
 
-module.exports = assignmentController;
+module.exports =
+  assignmentController;

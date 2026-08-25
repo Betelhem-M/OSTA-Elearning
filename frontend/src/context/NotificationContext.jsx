@@ -1,23 +1,199 @@
-import { createContext, useContext, useState } from 'react';
-import { initialNotifications } from '@mocks/notifications';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-const NotificationContext = createContext(null);
+import { apiRequest } from "@services/api";
+import { useAuth } from "@context/AuthContext";
 
-export function NotificationProvider({ children }) {
-  const [notifications, setNotifications] = useState(initialNotifications);
+const NotificationContext =
+  createContext(null);
 
-  const markAsRead = id =>
-    setNotifications(prev => prev.map(n => (n.id === id ? { ...n, unread: false } : n)));
+export function NotificationProvider({
+  children,
+}) {
+  const {
+    token,
+    isAuthenticated,
+  } = useAuth();
 
-  const markAllAsRead = () => setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+  const [
+    notifications,
+    setNotifications,
+  ] = useState([]);
 
-  const dismiss = id => setNotifications(prev => prev.filter(n => n.id !== id));
+  const [loading, setLoading] =
+    useState(false);
 
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const unreadCount =
+    useMemo(
+      () =>
+        notifications.filter(
+          (item) =>
+            !Boolean(
+              item.is_read
+            )
+        ).length,
+      [notifications]
+    );
+
+  async function loadNotifications() {
+    if (
+      !isAuthenticated ||
+      !token
+    ) {
+      setNotifications([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const data =
+        await apiRequest(
+          "/notifications/my",
+          {
+            token,
+          }
+        );
+
+      setNotifications(
+        Array.isArray(data)
+          ? data
+          : []
+      );
+    } catch (error) {
+      console.error(
+        "Notification context error:",
+        error
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function markNotificationRead(
+    id
+  ) {
+    await apiRequest(
+      `/notifications/${id}/read`,
+      {
+        token,
+        method: "PUT",
+      }
+    );
+
+    setNotifications(
+      (previous) =>
+        previous.map(
+          (item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  is_read: 1,
+                }
+              : item
+        )
+    );
+  }
+
+  async function markAllNotificationsRead() {
+    await apiRequest(
+      "/notifications/my/read-all",
+      {
+        token,
+        method: "PUT",
+      }
+    );
+
+    setNotifications(
+      (previous) =>
+        previous.map(
+          (item) => ({
+            ...item,
+            is_read: 1,
+          })
+        )
+    );
+  }
+
+  async function removeNotification(
+    id
+  ) {
+    await apiRequest(
+      `/notifications/${id}`,
+      {
+        token,
+        method: "DELETE",
+      }
+    );
+
+    setNotifications(
+      (previous) =>
+        previous.filter(
+          (item) =>
+            item.id !== id
+        )
+    );
+  }
+
+  useEffect(() => {
+    loadNotifications();
+
+    if (
+      !isAuthenticated ||
+      !token
+    ) {
+      return undefined;
+    }
+
+    const timer =
+      setInterval(
+        loadNotifications,
+        30000
+      );
+
+    return () =>
+      clearInterval(timer);
+  }, [
+    isAuthenticated,
+    token,
+  ]);
+
+  useEffect(() => {
+    function handleRefresh() {
+      loadNotifications();
+    }
+
+    window.addEventListener(
+      "osta-notifications-refresh",
+      handleRefresh
+    );
+
+    return () =>
+      window.removeEventListener(
+        "osta-notifications-refresh",
+        handleRefresh
+      );
+  }, [
+    isAuthenticated,
+    token,
+  ]);
 
   return (
     <NotificationContext.Provider
-      value={{ notifications, markAsRead, markAllAsRead, dismiss, unreadCount }}
+      value={{
+        notifications,
+        unreadCount,
+        loading,
+        loadNotifications,
+        markNotificationRead,
+        markAllNotificationsRead,
+        removeNotification,
+      }}
     >
       {children}
     </NotificationContext.Provider>
@@ -25,7 +201,16 @@ export function NotificationProvider({ children }) {
 }
 
 export function useNotifications() {
-  const ctx = useContext(NotificationContext);
-  if (!ctx) throw new Error('useNotifications must be used within NotificationProvider');
-  return ctx;
+  const context =
+    useContext(
+      NotificationContext
+    );
+
+  if (!context) {
+    throw new Error(
+      "useNotifications must be used within NotificationProvider"
+    );
+  }
+
+  return context;
 }

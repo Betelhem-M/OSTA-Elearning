@@ -1,63 +1,143 @@
-import { useState } from 'react'
-import { hackathons, innovationIdeas, startups, innovationStats } from '@mocks/innovationData'
-import HackathonCard from '@components/innovation/HackathonCard'
-import InnovationIdeaCard from '@components/innovation/InnovationIdeaCard'
-import StartupCard from '@components/innovation/StartupCard'
-import SubmitIdeaForm from '@components/innovation/SubmitIdeaForm'
+const InnovationIdea = require("../models/InnovationIdea");
+const Startup = require("../models/Startup");
 
-let nextIdeaId = 100
+const innovationController = {
+  async getIdeas(req, res) {
+    try {
+      const ideas = await InnovationIdea.findAll();
+      res.json(ideas);
+    } catch (error) {
+      console.error("Get ideas error:", error);
+      res.status(500).json({
+        message: "Failed to fetch innovation ideas",
+      });
+    }
+  },
 
-export default function InnovationHub() {
-  const [ideas, setIdeas] = useState(innovationIdeas)
+  async getIdea(req, res) {
+    try {
+      const idea = await InnovationIdea.findById(req.params.id);
 
-  function handleAddIdea(newIdea) {
-    setIdeas((prev) => [{ ...newIdea, id: nextIdeaId++ }, ...prev])
-  }
+      if (!idea) {
+        return res.status(404).json({
+          message: "Innovation idea not found",
+        });
+      }
 
-  return (
-    <main className="mx-auto max-w-[1100px] px-5 py-8 lg:px-10">
-      <h1 className="text-2xl font-extrabold text-ink">Innovation Hub</h1>
-      <p className="mt-1 text-sm text-slate-500">Hackathons, ideas, and startups from OSTA's community.</p>
+      res.json(idea);
+    } catch (error) {
+      console.error("Get idea error:", error);
+      res.status(500).json({
+        message: "Failed to fetch innovation idea",
+      });
+    }
+  },
 
-      <div className="mt-5 grid grid-cols-3 gap-4">
-        {innovationStats.map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-slate-100 bg-white p-4 text-center">
-            <p className="text-xl font-extrabold text-primary">{stat.value}</p>
-            <p className="mt-1 text-[11px] font-semibold text-slate-500">{stat.label}</p>
-          </div>
-        ))}
-      </div>
+  async createIdea(req, res) {
+    try {
+      const { title, description, category } = req.body;
 
-      <section className="mt-8">
-        <h2 className="mb-3 text-lg font-bold text-ink">Active Hackathons</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {hackathons.map((h) => (
-            <HackathonCard key={h.id} hackathon={h} />
-          ))}
-        </div>
-      </section>
+      if (!title) {
+        return res.status(400).json({
+          message: "Title is required",
+        });
+      }
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <section>
-          <h2 className="mb-3 text-lg font-bold text-ink">Innovation Ideas</h2>
-          <div className="space-y-3">
-            {ideas.map((idea) => (
-              <InnovationIdeaCard key={idea.id} idea={idea} />
-            ))}
-          </div>
-        </section>
+      const id = await InnovationIdea.create({
+        title,
+        description,
+        category,
+        userId: req.user.id,
+      });
 
-        <SubmitIdeaForm onSubmit={handleAddIdea} />
-      </div>
+      const idea = await InnovationIdea.findById(id);
 
-      <section className="mt-8">
-        <h2 className="mb-3 text-lg font-bold text-ink">Startups from OSTA</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {startups.map((s) => (
-            <StartupCard key={s.id} startup={s} />
-          ))}
-        </div>
-      </section>
-    </main>
-  )
-}
+      res.status(201).json({
+        message: "Innovation idea submitted successfully",
+        idea,
+      });
+    } catch (error) {
+      console.error("Create idea error:", error);
+      res.status(500).json({
+        message: "Failed to submit innovation idea",
+      });
+    }
+  },
+
+  async voteIdea(req, res) {
+    try {
+      await InnovationIdea.vote(
+        req.params.id,
+        req.user.id
+      );
+
+      res.json({
+        message: "Vote recorded successfully",
+      });
+    } catch (error) {
+      if (error.code === "ER_DUP_ENTRY") {
+        return res.status(409).json({
+          message: "You already voted for this idea",
+        });
+      }
+
+      console.error("Vote idea error:", error);
+      res.status(500).json({
+        message: "Failed to vote for idea",
+      });
+    }
+  },
+
+  async getStartups(req, res) {
+    try {
+      const startups = await Startup.findAll();
+      res.json(startups);
+    } catch (error) {
+      console.error("Get startups error:", error);
+      res.status(500).json({
+        message: "Failed to fetch startups",
+      });
+    }
+  },
+
+  async createStartup(req, res) {
+    try {
+      const {
+        name,
+        description,
+        category,
+        stage,
+        website,
+      } = req.body;
+
+      if (!name) {
+        return res.status(400).json({
+          message: "Startup name is required",
+        });
+      }
+
+      const id = await Startup.create({
+        name,
+        description,
+        founderId: req.user.id,
+        category,
+        stage,
+        website,
+      });
+
+      const startup = await Startup.findById(id);
+
+      res.status(201).json({
+        message: "Startup created successfully",
+        startup,
+      });
+    } catch (error) {
+      console.error("Create startup error:", error);
+      res.status(500).json({
+        message: "Failed to create startup",
+      });
+    }
+  },
+};
+
+module.exports = innovationController;

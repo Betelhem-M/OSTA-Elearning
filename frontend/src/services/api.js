@@ -1,27 +1,102 @@
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL =
+  "http://localhost:5000/api";
 
-export async function apiRequest(endpoint, options = {}) {
-  const { token, method = "GET", body } = options;
+export async function apiRequest(
+  endpoint,
+  options = {}
+) {
+  const {
+    token:
+      providedToken = null,
+    method = "GET",
+    body,
+  } = options;
 
-  const headers = {
-    "Content-Type": "application/json",
-  };
+  // If caller doesn't supply a token,
+  // automatically use the currently stored token.
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  const token =
+    providedToken ||
+    localStorage.getItem(
+      "osta_token"
+    );
+
+  const headers = {};
+
+  if (body !== undefined) {
+    headers["Content-Type"] =
+      "application/json";
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method,
-    headers,
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
+  if (token) {
+    headers.Authorization =
+      `Bearer ${token}`;
+  }
 
-  const data = await response.json().catch(() => ({}));
+  let response;
+
+  try {
+    response = await fetch(
+      `${API_BASE_URL}${endpoint}`,
+      {
+        method,
+        headers,
+        ...(body !== undefined
+          ? {
+              body: JSON.stringify(
+                body
+              ),
+            }
+          : {}),
+      }
+    );
+  } catch (error) {
+    console.error(
+      "API connection error:",
+      error
+    );
+
+    throw new Error(
+      "Unable to connect to the OSTA server. Make sure the backend is running."
+    );
+  }
+
+  const data =
+    await response
+      .json()
+      .catch(() => ({}));
+
+  // =====================================================
+  // AUTH EXPIRED / INVALID
+  // =====================================================
+
+  if (response.status === 401) {
+    localStorage.removeItem(
+      "osta_token"
+    );
+
+    localStorage.removeItem(
+      "osta_user"
+    );
+
+    window.dispatchEvent(
+      new Event("osta-auth-expired")
+    );
+
+    throw new Error(
+      data.message ||
+        "Your session has expired. Please log in again."
+    );
+  }
+
+  // =====================================================
+  // OTHER ERRORS
+  // =====================================================
 
   if (!response.ok) {
     throw new Error(
-      data.message || `Request failed with status ${response.status}`
+      data.message ||
+        `Request failed with status ${response.status}`
     );
   }
 

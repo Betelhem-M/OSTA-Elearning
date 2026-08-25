@@ -1,72 +1,176 @@
-import { Outlet, Link } from 'react-router-dom';
-import { Menu, Bell, User } from 'lucide-react';
-import Sidebar from '@components/layout/Sidebar';
-import BottomNav from '@components/layout/BottomNav';
-import { STUDENT_BOTTOM_NAV } from '@constants/navigation';
-import { useSidebarDrawer } from '@hooks/useSidebarDrawer';
-import { useNotifications } from '@context/NotificationContext';
-import { useAuth } from '@context/AuthContext';
+import { Outlet, Link } from "react-router-dom";
+import {
+  Menu,
+  Bell,
+} from "lucide-react";
 
-// Updated sidebar matrix mapping correct parameterized assignment paths and profile navigation items
+import Sidebar from "@components/layout/Sidebar";
+import BottomNav from "@components/layout/BottomNav";
+
+import { STUDENT_BOTTOM_NAV } from "@constants/navigation";
+
+import { useSidebarDrawer } from "@hooks/useSidebarDrawer";
+import { useNotifications } from "@context/NotificationContext";
+import { useAuth } from "@context/AuthContext";
+
+// =====================================================
+// STUDENT SIDEBAR
+// =====================================================
+
 const STUDENT_SIDEBAR_NAV = [
-  { label: 'Dashboard', href: '/dashboard', icon: 'LayoutDashboard' },
-  { label: 'My Courses', href: '/courses', icon: 'BookOpen' },
-  { label: 'Assignments', href: '/assignments/data-structures-assignment', icon: 'FileText' },
-  { label: 'Certificates', href: '/certificates/python-basics-cert', icon: 'Award' },
-  { label: 'Community', href: '/discussion', icon: 'MessageCircle' },
-  { label: 'Profile', href: '/profile', icon: 'User' },
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    icon: "LayoutDashboard",
+  },
+
+  {
+    label: "My Courses",
+    href: "/courses",
+    icon: "BookOpen",
+  },
+
+  {
+    label: "Assignments",
+    href: "/assignments/data-structures-assignment",
+    icon: "FileText",
+  },
+
+  {
+    label: "Certificates",
+    href: "/certificates",
+    icon: "Award",
+  },
+
+  {
+    label: "Community",
+    href: "/community",
+    icon: "MessageCircle",
+  },
+
+  {
+    label: "Profile",
+    href: "/profile",
+    icon: "User",
+  },
 ];
 
 export default function StudentLayout() {
-  const drawer = useSidebarDrawer();
-  const { unreadCount } = useNotifications();
-  const { user } = useAuth();
+  const drawer =
+    useSidebarDrawer();
+
+  const { unreadCount } =
+    useNotifications();
+
+  const { user } =
+    useAuth();
+
+  const getInitial = () => {
+    if (!user) {
+      return "U";
+    }
+
+    if (user.first_name) {
+      return user.first_name[0].toUpperCase();
+    }
+
+    if (user.name) {
+      return user.name[0].toUpperCase();
+    }
+
+    if (user.email) {
+      return user.email[0].toUpperCase();
+    }
+
+    return "U";
+  };
 
   return (
-    <div className="min-h-screen bg-surface text-ink font-sans">
-      <Sidebar navItems={STUDENT_SIDEBAR_NAV} isOpen={drawer.isOpen} onClose={drawer.close} />
+    <div className="min-h-screen bg-surface font-sans text-ink">
+      {/* =================================================
+          SIDEBAR
+      ================================================= */}
 
-      {/* Desktop/Tablet Header */}
+      <Sidebar
+        navItems={
+          STUDENT_SIDEBAR_NAV
+        }
+        isOpen={
+          drawer.isOpen
+        }
+        onClose={
+          drawer.close
+        }
+      />
+
+      {/* =================================================
+          HEADER
+      ================================================= */}
+
       <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur lg:pl-64">
+        {/* MOBILE MENU */}
+
         <button
+          type="button"
           className="rounded-lg p-2 hover:bg-slate-100 lg:hidden"
           aria-label="Open navigation"
-          onClick={drawer.open}
+          onClick={
+            drawer.open
+          }
         >
           <Menu size={20} />
         </button>
+
+        {/* DESKTOP SPACER */}
+
         <div className="hidden lg:block" />
-        
-        {/* Interactive Utility Row: Notifications + Profile Avatar Badge */}
+
+        {/* =================================================
+            UTILITY ACTIONS
+        ================================================= */}
+
         <div className="flex items-center gap-3">
+          {/* NOTIFICATIONS */}
+
           <Link
             to="/notifications"
-            className="relative rounded-full p-2 hover:bg-slate-50 text-slate-600 transition-colors"
+            className="relative rounded-full p-2 text-slate-600 transition-colors hover:bg-slate-50"
             aria-label="Notifications"
           >
             <Bell size={20} />
+
             {unreadCount > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                 {unreadCount}
               </span>
             )}
           </Link>
-          
+
+          {/* PROFILE */}
+
           <Link
             to="/profile"
             aria-label="Your profile"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-black text-primary hover:ring-2 hover:ring-primary/20 transition-all uppercase"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-black uppercase text-primary transition-all hover:ring-2 hover:ring-primary/20"
           >
-            {user?.name ? user.name[0] : 'U'}
+            {getInitial()}
           </Link>
         </div>
       </header>
+
+      {/* =================================================
+          PAGE CONTENT
+      ================================================= */}
 
       <main className="pb-24 lg:pb-8 lg:pl-64">
         <div className="mx-auto max-w-5xl px-4 py-6">
           <Outlet />
         </div>
       </main>
+
+      {/* =================================================
+          MOBILE BOTTOM NAVIGATION
+      ================================================= */}
 
       <BottomNav />
     </div>

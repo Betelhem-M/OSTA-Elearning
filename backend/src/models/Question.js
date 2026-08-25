@@ -1,6 +1,10 @@
 const pool = require("../config/database");
 
 const Question = {
+  // =====================================================
+  // GET QUESTION BY ID
+  // =====================================================
+
   async findById(id) {
     const [rows] = await pool.execute(
       `
@@ -30,8 +34,7 @@ const Question = {
         id,
         question_id,
         option_key,
-        option_text,
-        is_correct
+        option_text
       FROM question_options
       WHERE question_id = ?
       ORDER BY id ASC
@@ -45,46 +48,56 @@ const Question = {
     };
   },
 
-  async findByQuiz(quizId) {
-    const [questions] = await pool.execute(
-      `
-      SELECT
-        id,
-        quiz_id,
-        question_number,
-        prompt,
-        code,
-        difficulty,
-        points,
-        created_at
-      FROM questions
-      WHERE quiz_id = ?
-      ORDER BY question_number ASC
-      `,
-      [quizId]
-    );
+  // =====================================================
+  // GET QUESTIONS BY QUIZ
+  // =====================================================
 
-    for (const question of questions) {
-      const [options] = await pool.execute(
+  async findByQuiz(quizId) {
+    const [questions] =
+      await pool.execute(
         `
         SELECT
           id,
-          question_id,
-          option_key,
-          option_text,
-          is_correct
-        FROM question_options
-        WHERE question_id = ?
-        ORDER BY id ASC
+          quiz_id,
+          question_number,
+          prompt,
+          code,
+          difficulty,
+          points,
+          created_at
+        FROM questions
+        WHERE quiz_id = ?
+        ORDER BY question_number ASC
         `,
-        [question.id]
+        [quizId]
       );
 
-      question.options = options;
+    for (const question of questions) {
+      const [options] =
+        await pool.execute(
+          `
+          SELECT
+            id,
+            question_id,
+            option_key,
+            option_text
+          FROM question_options
+          WHERE question_id = ?
+          ORDER BY id ASC
+          `,
+          [question.id]
+        );
+
+      question.options =
+        options;
     }
 
     return questions;
   },
+
+  // =====================================================
+  // CREATE QUESTION
+  // =====================================================
 
   async create({
     quizId,
@@ -95,35 +108,38 @@ const Question = {
     points = 1,
     options = [],
   }) {
-    const connection = await pool.getConnection();
+    const connection =
+      await pool.getConnection();
 
     try {
       await connection.beginTransaction();
 
-      const [questionResult] = await connection.execute(
-        `
-        INSERT INTO questions
-        (
-          quiz_id,
-          question_number,
-          prompt,
-          code,
-          difficulty,
-          points
-        )
-        VALUES (?, ?, ?, ?, ?, ?)
-        `,
-        [
-          quizId,
-          questionNumber,
-          prompt,
-          code || null,
-          difficulty,
-          points,
-        ]
-      );
+      const [questionResult] =
+        await connection.execute(
+          `
+          INSERT INTO questions
+          (
+            quiz_id,
+            question_number,
+            prompt,
+            code,
+            difficulty,
+            points
+          )
+          VALUES (?, ?, ?, ?, ?, ?)
+          `,
+          [
+            quizId,
+            questionNumber,
+            prompt,
+            code || null,
+            difficulty,
+            points,
+          ]
+        );
 
-      const questionId = questionResult.insertId;
+      const questionId =
+        questionResult.insertId;
 
       for (const option of options) {
         await connection.execute(
@@ -141,7 +157,9 @@ const Question = {
             questionId,
             option.optionKey,
             option.optionText,
-            option.isCorrect ? 1 : 0,
+            option.isCorrect
+              ? 1
+              : 0,
           ]
         );
       }
@@ -156,7 +174,10 @@ const Question = {
         )
         WHERE id = ?
         `,
-        [quizId, quizId]
+        [
+          quizId,
+          quizId,
+        ]
       );
 
       await connection.commit();
@@ -170,36 +191,48 @@ const Question = {
     }
   },
 
-  async update(id, {
-    questionNumber,
-    prompt,
-    code,
-    difficulty,
-    points,
-  }) {
-    const [result] = await pool.execute(
-      `
-      UPDATE questions
-      SET
-        question_number = ?,
-        prompt = ?,
-        code = ?,
-        difficulty = ?,
-        points = ?
-      WHERE id = ?
-      `,
-      [
-        questionNumber,
-        prompt,
-        code || null,
-        difficulty,
-        points,
-        id,
-      ]
-    );
+  // =====================================================
+  // UPDATE QUESTION
+  // =====================================================
+
+  async update(
+    id,
+    {
+      questionNumber,
+      prompt,
+      code,
+      difficulty,
+      points,
+    }
+  ) {
+    const [result] =
+      await pool.execute(
+        `
+        UPDATE questions
+        SET
+          question_number = ?,
+          prompt = ?,
+          code = ?,
+          difficulty = ?,
+          points = ?
+        WHERE id = ?
+        `,
+        [
+          questionNumber,
+          prompt,
+          code || null,
+          difficulty,
+          points,
+          id,
+        ]
+      );
 
     return result.affectedRows > 0;
   },
+
+  // =====================================================
+  // ADD OPTION
+  // =====================================================
 
   async addOption({
     questionId,
@@ -207,27 +240,32 @@ const Question = {
     optionText,
     isCorrect = false,
   }) {
-    const [result] = await pool.execute(
-      `
-      INSERT INTO question_options
-      (
-        question_id,
-        option_key,
-        option_text,
-        is_correct
-      )
-      VALUES (?, ?, ?, ?)
-      `,
-      [
-        questionId,
-        optionKey,
-        optionText,
-        isCorrect ? 1 : 0,
-      ]
-    );
+    const [result] =
+      await pool.execute(
+        `
+        INSERT INTO question_options
+        (
+          question_id,
+          option_key,
+          option_text,
+          is_correct
+        )
+        VALUES (?, ?, ?, ?)
+        `,
+        [
+          questionId,
+          optionKey,
+          optionText,
+          isCorrect ? 1 : 0,
+        ]
+      );
 
     return result.insertId;
   },
+
+  // =====================================================
+  // UPDATE OPTION
+  // =====================================================
 
   async updateOption(
     optionId,
@@ -237,51 +275,69 @@ const Question = {
       isCorrect,
     }
   ) {
-    const [result] = await pool.execute(
-      `
-      UPDATE question_options
-      SET
-        option_key = ?,
-        option_text = ?,
-        is_correct = ?
-      WHERE id = ?
-      `,
-      [
-        optionKey,
-        optionText,
-        isCorrect ? 1 : 0,
-        optionId,
-      ]
-    );
+    const [result] =
+      await pool.execute(
+        `
+        UPDATE question_options
+        SET
+          option_key = ?,
+          option_text = ?,
+          is_correct = ?
+        WHERE id = ?
+        `,
+        [
+          optionKey,
+          optionText,
+          isCorrect ? 1 : 0,
+          optionId,
+        ]
+      );
 
     return result.affectedRows > 0;
   },
+
+  // =====================================================
+  // DELETE OPTION
+  // =====================================================
 
   async deleteOption(optionId) {
-    const [result] = await pool.execute(
-      "DELETE FROM question_options WHERE id = ?",
-      [optionId]
-    );
+    const [result] =
+      await pool.execute(
+        "DELETE FROM question_options WHERE id = ?",
+        [optionId]
+      );
 
     return result.affectedRows > 0;
   },
 
+  // =====================================================
+  // DELETE QUESTION
+  // =====================================================
+
   async delete(id) {
-    const [questionRows] = await pool.execute(
-      "SELECT quiz_id FROM questions WHERE id = ? LIMIT 1",
-      [id]
-    );
+    const [questionRows] =
+      await pool.execute(
+        `
+        SELECT quiz_id
+        FROM questions
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [id]
+      );
 
     if (!questionRows[0]) {
       return false;
     }
 
-    const quizId = questionRows[0].quiz_id;
+    const quizId =
+      questionRows[0].quiz_id;
 
-    const [result] = await pool.execute(
-      "DELETE FROM questions WHERE id = ?",
-      [id]
-    );
+    const [result] =
+      await pool.execute(
+        "DELETE FROM questions WHERE id = ?",
+        [id]
+      );
 
     if (result.affectedRows > 0) {
       await pool.execute(
@@ -294,7 +350,10 @@ const Question = {
         )
         WHERE id = ?
         `,
-        [quizId, quizId]
+        [
+          quizId,
+          quizId,
+        ]
       );
     }
 
