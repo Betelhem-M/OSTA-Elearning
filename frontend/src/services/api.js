@@ -6,20 +6,17 @@ export async function apiRequest(
   options = {}
 ) {
   const {
-    token:
-      providedToken = null,
+    token: providedToken = null,
     method = "GET",
     body,
+    includeAuth = true,
   } = options;
-
-  // If caller doesn't supply a token,
-  // automatically use the currently stored token.
 
   const token =
     providedToken ||
-    localStorage.getItem(
-      "osta_token"
-    );
+    (includeAuth
+      ? localStorage.getItem("osta_token")
+      : null);
 
   const headers = {};
 
@@ -28,7 +25,7 @@ export async function apiRequest(
       "application/json";
   }
 
-  if (token) {
+  if (token && includeAuth) {
     headers.Authorization =
       `Bearer ${token}`;
   }
@@ -67,26 +64,48 @@ export async function apiRequest(
       .catch(() => ({}));
 
   // =====================================================
-  // AUTH EXPIRED / INVALID
+  // AUTHENTICATION FAILURE
   // =====================================================
 
   if (response.status === 401) {
-    localStorage.removeItem(
-      "osta_token"
-    );
-
-    localStorage.removeItem(
-      "osta_user"
-    );
-
-    window.dispatchEvent(
-      new Event("osta-auth-expired")
-    );
-
-    throw new Error(
+    const message =
       data.message ||
-        "Your session has expired. Please log in again."
-    );
+      "Authentication required.";
+
+    /*
+     * Do NOT automatically delete the stored
+     * authentication session here.
+     *
+     * A 401 can come from a single request that
+     * failed while the rest of the session is still
+     * valid. The application should decide when to
+     * actually log the user out.
+     */
+
+    const authError =
+      new Error(message);
+
+    authError.status = 401;
+    authError.code = "AUTH_REQUIRED";
+
+    throw authError;
+  }
+
+  // =====================================================
+  // FORBIDDEN
+  // =====================================================
+
+  if (response.status === 403) {
+    const error =
+      new Error(
+        data.message ||
+          "You do not have permission to perform this action."
+      );
+
+    error.status = 403;
+    error.code = "FORBIDDEN";
+
+    throw error;
   }
 
   // =====================================================
@@ -94,10 +113,16 @@ export async function apiRequest(
   // =====================================================
 
   if (!response.ok) {
-    throw new Error(
-      data.message ||
-        `Request failed with status ${response.status}`
-    );
+    const error =
+      new Error(
+        data.message ||
+          `Request failed with status ${response.status}`
+      );
+
+    error.status =
+      response.status;
+
+    throw error;
   }
 
   return data;

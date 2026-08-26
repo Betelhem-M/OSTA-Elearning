@@ -75,11 +75,13 @@ import AdminSettings from "@pages/admin/Settings";
 export default function App() {
   return (
     <Routes>
+
       {/* =================================================
-          NORMAL PUBLIC PAGES
+          PUBLIC PAGES
       ================================================= */}
 
       <Route element={<PublicLayout />}>
+
         <Route
           path="/"
           element={<Landing />}
@@ -101,23 +103,26 @@ export default function App() {
         />
 
         <Route
-          path="/innovation-hub"
-          element={<InnovationHub />}
-        />
-
-        <Route
-          path="/research"
-          element={<ResearchPortal />}
-        />
-
-        <Route
           path="/competitions"
           element={<Competitions />}
         />
+
       </Route>
 
       {/* =================================================
-          SHARED PUBLIC / STUDENT-AWARE PAGES
+          PUBLIC / STUDENT-AWARE ECOSYSTEM PAGES
+          
+          Guest:
+            PublicLayout
+
+          Student:
+            StudentLayout
+
+          Researcher:
+            StudentLayout + researcher navigation
+
+          Entrepreneur:
+            StudentLayout + innovator navigation
       ================================================= */}
 
       <Route
@@ -125,6 +130,7 @@ export default function App() {
           <StudentAwarePublicLayout />
         }
       >
+
         <Route
           path="/courses"
           element={<Marketplace />}
@@ -136,6 +142,16 @@ export default function App() {
         />
 
         <Route
+          path="/innovation-hub"
+          element={<InnovationHub />}
+        />
+
+        <Route
+          path="/research"
+          element={<ResearchPortal />}
+        />
+
+        <Route
           path="/events"
           element={<EventsCalendar />}
         />
@@ -144,10 +160,37 @@ export default function App() {
           path="/discussion"
           element={<Discussion />}
         />
+
       </Route>
 
       {/* =================================================
-          STUDENT LAYOUT
+          SHARED AUTHENTICATED PAGES
+          
+          Profile and notifications are intentionally
+          outside StudentLayout. Their own pages select
+          the correct role-specific navigation.
+      ================================================= */}
+
+      <Route
+        path="/profile"
+        element={
+          <PrivateRoute>
+            <Profile />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/notifications"
+        element={
+          <PrivateRoute>
+            <Notifications />
+          </PrivateRoute>
+        }
+      />
+
+      {/* =================================================
+          STUDENT / RESEARCHER / ENTREPRENEUR AREA
       ================================================= */}
 
       <Route
@@ -157,28 +200,21 @@ export default function App() {
           </PrivateRoute>
         }
       >
-        {/* DASHBOARD */}
 
         <Route
           path="/dashboard"
           element={<StudentDashboard />}
         />
 
-        {/* MY LEARNING */}
-
         <Route
           path="/my-learning"
           element={<MyLearning />}
         />
 
-        {/* COMMUNITY */}
-
         <Route
           path="/community"
           element={<Community />}
         />
-
-        {/* ASSIGNMENTS DEFAULT */}
 
         <Route
           path="/assignments"
@@ -190,30 +226,20 @@ export default function App() {
           }
         />
 
-        {/* LESSON PLAYER */}
-
         <Route
           path="/learn/:lessonId"
           element={<LessonPlayer />}
         />
-
-        {/* QUIZ */}
 
         <Route
           path="/quiz/:quizId"
           element={<Quiz />}
         />
 
-        {/* ASSIGNMENT */}
-
         <Route
           path="/assignments/:assignmentId"
           element={<Assignment />}
         />
-
-        {/* =================================================
-            CERTIFICATES
-        ================================================= */}
 
         <Route
           path="/certificates"
@@ -225,23 +251,10 @@ export default function App() {
           element={<CertificateView />}
         />
 
-        {/* PROFILE */}
-
-        <Route
-          path="/profile"
-          element={<Profile />}
-        />
-
-        {/* NOTIFICATIONS */}
-
-        <Route
-          path="/notifications"
-          element={<Notifications />}
-        />
       </Route>
 
       {/* =================================================
-          INSTRUCTOR LAYOUT
+          INSTRUCTOR AREA
       ================================================= */}
 
       <Route
@@ -251,6 +264,7 @@ export default function App() {
           </RoleRoute>
         }
       >
+
         <Route
           path="/instructor/dashboard"
           element={<InstructorDashboard />}
@@ -285,10 +299,11 @@ export default function App() {
           path="/instructor/settings"
           element={<InstructorSettings />}
         />
+
       </Route>
 
       {/* =================================================
-          ADMIN LAYOUT
+          ADMIN AREA
       ================================================= */}
 
       <Route
@@ -298,6 +313,7 @@ export default function App() {
           </RoleRoute>
         }
       >
+
         <Route
           path="/admin/dashboard"
           element={<AdminDashboard />}
@@ -327,6 +343,7 @@ export default function App() {
           path="/admin/settings"
           element={<AdminSettings />}
         />
+
       </Route>
 
       {/* =================================================
@@ -342,6 +359,7 @@ export default function App() {
           />
         }
       />
+
     </Routes>
   );
 }

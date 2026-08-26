@@ -9,6 +9,10 @@ const AuthContext = createContext(null);
 
 const API_URL = "http://localhost:5000/api";
 
+// =====================================================
+// LOAD SAVED USER
+// =====================================================
+
 function loadSavedUser() {
   const savedUser =
     localStorage.getItem("osta_user");
@@ -19,28 +23,46 @@ function loadSavedUser() {
 
   try {
     return JSON.parse(savedUser);
-  } catch {
-    localStorage.removeItem("osta_user");
+  } catch (error) {
+    console.error(
+      "Failed to read saved OSTA user:",
+      error
+    );
+
+    localStorage.removeItem(
+      "osta_user"
+    );
+
     return null;
   }
 }
 
-function loadSavedToken() {
-  const savedToken =
-    localStorage.getItem("osta_token");
+// =====================================================
+// LOAD SAVED TOKEN
+// =====================================================
 
-  return savedToken || null;
+function loadSavedToken() {
+  return (
+    localStorage.getItem(
+      "osta_token"
+    ) || null
+  );
 }
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(loadSavedUser);
-  const [token, setToken] = useState(loadSavedToken);
+export function AuthProvider({
+  children,
+}) {
+  const [user, setUser] =
+    useState(loadSavedUser);
+
+  const [token, setToken] =
+    useState(loadSavedToken);
 
   const isAuthenticated =
     Boolean(user && token);
 
   // =====================================================
-  // SAVE USER
+  // PERSIST USER
   // =====================================================
 
   useEffect(() => {
@@ -50,12 +72,14 @@ export function AuthProvider({ children }) {
         JSON.stringify(user)
       );
     } else {
-      localStorage.removeItem("osta_user");
+      localStorage.removeItem(
+        "osta_user"
+      );
     }
   }, [user]);
 
   // =====================================================
-  // SAVE TOKEN
+  // PERSIST TOKEN
   // =====================================================
 
   useEffect(() => {
@@ -72,7 +96,8 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   // =====================================================
-  // CLEAR AUTH
+  // CLEAR AUTHENTICATION
+  // ONLY USED WHEN USER LOGS OUT
   // =====================================================
 
   function clearAuth() {
@@ -89,51 +114,52 @@ export function AuthProvider({ children }) {
   }
 
   // =====================================================
-  // LISTEN FOR EXPIRED TOKEN
-  // =====================================================
-
-  useEffect(() => {
-    function handleAuthExpired() {
-      clearAuth();
-    }
-
-    window.addEventListener(
-      "osta-auth-expired",
-      handleAuthExpired
-    );
-
-    return () => {
-      window.removeEventListener(
-        "osta-auth-expired",
-        handleAuthExpired
-      );
-    };
-  }, []);
-
-  // =====================================================
   // LOGIN
   // =====================================================
 
-  async function login(email, password) {
-    const response = await fetch(
-      `${API_URL}/auth/login`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          password,
-        }),
-      }
-    );
+  async function login(
+    email,
+    password
+  ) {
+    let response;
+
+    try {
+      response = await fetch(
+        `${API_URL}/auth/login`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            email:
+              email.trim(),
+            password,
+          }),
+        }
+      );
+    } catch (error) {
+      console.error(
+        "Login connection error:",
+        error
+      );
+
+      throw new Error(
+        "Unable to connect to the OSTA server. Make sure the backend is running."
+      );
+    }
 
     const data =
       await response
         .json()
         .catch(() => ({}));
+
+    // =================================================
+    // LOGIN ERROR
+    // =================================================
 
     if (!response.ok) {
       throw new Error(
@@ -142,21 +168,35 @@ export function AuthProvider({ children }) {
       );
     }
 
-    if (!data.token || !data.user) {
+    // =================================================
+    // VALIDATE RESPONSE
+    // =================================================
+
+    if (
+      !data.token ||
+      !data.user
+    ) {
       throw new Error(
         "Login response is missing user or token."
       );
     }
 
+    // =================================================
+    // UPDATE STATE
+    // =================================================
+
     setUser(data.user);
     setToken(data.token);
 
-    // Write immediately instead of waiting
-    // for React effects.
+    // =================================================
+    // PERSIST IMMEDIATELY
+    // =================================================
 
     localStorage.setItem(
       "osta_user",
-      JSON.stringify(data.user)
+      JSON.stringify(
+        data.user
+      )
     );
 
     localStorage.setItem(
@@ -171,25 +211,46 @@ export function AuthProvider({ children }) {
   // REGISTER
   // =====================================================
 
-  async function register(formData) {
-    const response = await fetch(
-      `${API_URL}/auth/register`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-        body: JSON.stringify(
-          formData
-        ),
-      }
-    );
+  async function register(
+    formData
+  ) {
+    let response;
+
+    try {
+      response = await fetch(
+        `${API_URL}/auth/register`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify(
+            formData
+          ),
+        }
+      );
+    } catch (error) {
+      console.error(
+        "Registration connection error:",
+        error
+      );
+
+      throw new Error(
+        "Unable to connect to the OSTA server. Make sure the backend is running."
+      );
+    }
 
     const data =
       await response
         .json()
         .catch(() => ({}));
+
+    // =================================================
+    // REGISTRATION ERROR
+    // =================================================
 
     if (!response.ok) {
       throw new Error(
@@ -198,18 +259,35 @@ export function AuthProvider({ children }) {
       );
     }
 
-    if (!data.token || !data.user) {
+    // =================================================
+    // VALIDATE RESPONSE
+    // =================================================
+
+    if (
+      !data.token ||
+      !data.user
+    ) {
       throw new Error(
         "Registration response is missing user or token."
       );
     }
 
+    // =================================================
+    // UPDATE STATE
+    // =================================================
+
     setUser(data.user);
     setToken(data.token);
 
+    // =================================================
+    // PERSIST IMMEDIATELY
+    // =================================================
+
     localStorage.setItem(
       "osta_user",
-      JSON.stringify(data.user)
+      JSON.stringify(
+        data.user
+      )
     );
 
     localStorage.setItem(
@@ -221,6 +299,27 @@ export function AuthProvider({ children }) {
   }
 
   // =====================================================
+  // UPDATE CURRENT USER
+  // =====================================================
+
+  function updateUser(
+    updatedUser
+  ) {
+    if (!updatedUser) {
+      return;
+    }
+
+    setUser(updatedUser);
+
+    localStorage.setItem(
+      "osta_user",
+      JSON.stringify(
+        updatedUser
+      )
+    );
+  }
+
+  // =====================================================
   // LOGOUT
   // =====================================================
 
@@ -228,14 +327,24 @@ export function AuthProvider({ children }) {
     clearAuth();
   }
 
+  // =====================================================
+  // CONTEXT
+  // =====================================================
+
   return (
     <AuthContext.Provider
       value={{
         user,
+        setUser,
+        updateUser,
+
         token,
+        setToken,
+
         login,
         register,
         logout,
+
         isAuthenticated,
       }}
     >
@@ -244,9 +353,15 @@ export function AuthProvider({ children }) {
   );
 }
 
+// =====================================================
+// USE AUTH
+// =====================================================
+
 export function useAuth() {
   const context =
-    useContext(AuthContext);
+    useContext(
+      AuthContext
+    );
 
   if (!context) {
     throw new Error(

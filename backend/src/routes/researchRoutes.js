@@ -1,9 +1,18 @@
-const express = require("express");
+const express =
+  require("express");
 
-const researchController = require("../controllers/researchController");
-const authMiddleware = require("../middleware/authMiddleware");
+const researchController =
+  require("../controllers/researchController");
 
-const router = express.Router();
+const authMiddleware =
+  require("../middleware/authMiddleware");
+
+const router =
+  express.Router();
+
+// =====================================================
+// PUBLIC
+// =====================================================
 
 router.get(
   "/researchers",
@@ -15,11 +24,34 @@ router.get(
   researchController.getResearcher
 );
 
+router.get(
+  "/publications",
+  researchController.getPublications
+);
+
+// =====================================================
+// AUTHENTICATED RESEARCH ACCESS
+// =====================================================
+
+router.get(
+  "/publications/:id",
+  authMiddleware,
+  researchController.getPublication
+);
+
+// =====================================================
+// RESEARCHER PROFILE
+// =====================================================
+
 router.post(
   "/researchers",
   authMiddleware,
   researchController.createResearcher
 );
+
+// =====================================================
+// PUBLICATION MANAGEMENT
+// =====================================================
 
 router.post(
   "/publications",
@@ -39,4 +71,21 @@ router.delete(
   researchController.deletePublication
 );
 
-module.exports = router;
+// =====================================================
+// ADMIN MODERATION
+// =====================================================
+
+router.get(
+  "/admin/publications",
+  authMiddleware,
+  researchController.getAllForAdmin
+);
+
+router.put(
+  "/admin/publications/:id/status",
+  authMiddleware,
+  researchController.updatePublicationStatus
+);
+
+module.exports =
+  router;

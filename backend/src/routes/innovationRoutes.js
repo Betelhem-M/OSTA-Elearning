@@ -1,28 +1,59 @@
 const express = require("express");
 
-const innovationController = require("../controllers/innovationController");
-const authMiddleware = require("../middleware/authMiddleware");
+const innovationController =
+  require("../controllers/innovationController");
+
+const authMiddleware =
+  require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.get("/ideas", innovationController.getIdeas);
+// =====================================================
+// PUBLIC
+// =====================================================
 
-router.get("/ideas/:id", innovationController.getIdea);
-
-router.post(
+// Published innovation ideas
+router.get(
   "/ideas",
-  authMiddleware,
-  innovationController.createIdea
+  innovationController.getIdeas
 );
 
+// Published innovation idea details
+router.get(
+  "/ideas/:id",
+  innovationController.getIdea
+);
+
+// Public startups
+router.get(
+  "/startups",
+  innovationController.getStartups
+);
+
+// =====================================================
+// AUTHENTICATED
+// =====================================================
+
+// Vote for an idea
 router.post(
   "/ideas/:id/vote",
   authMiddleware,
   innovationController.voteIdea
 );
 
-router.get("/startups", innovationController.getStartups);
+// =====================================================
+// INNOVATOR ONLY
+// account_type = entrepreneur
+// =====================================================
 
+// Submit innovation idea
+router.post(
+  "/ideas",
+  authMiddleware,
+  innovationController.createIdea
+);
+
+// Submit startup
 router.post(
   "/startups",
   authMiddleware,

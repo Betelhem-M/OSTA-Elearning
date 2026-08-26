@@ -1,7 +1,11 @@
 const pool = require("../config/database");
 
 const Publication = {
-  async findAll() {
+  // =====================================================
+  // PUBLIC PUBLISHED PUBLICATIONS
+  // =====================================================
+
+  async findPublished() {
     const [rows] = await pool.execute(`
       SELECT
         p.id,
@@ -11,7 +15,12 @@ const Publication = {
         p.field,
         p.publication_year,
         p.publication_url,
-        CONCAT(u.first_name, ' ', u.last_name) AS researcher_name,
+        p.status,
+        CONCAT(
+          u.first_name,
+          ' ',
+          u.last_name
+        ) AS researcher_name,
         p.created_at,
         p.updated_at
       FROM publications p
@@ -19,11 +28,18 @@ const Publication = {
         ON p.researcher_id = r.id
       JOIN users u
         ON r.user_id = u.id
-      ORDER BY p.publication_year DESC, p.created_at DESC
+      WHERE p.status = 'published'
+      ORDER BY
+        p.publication_year DESC,
+        p.created_at DESC
     `);
 
     return rows;
   },
+
+  // =====================================================
+  // PUBLICATION BY ID
+  // =====================================================
 
   async findById(id) {
     const [rows] = await pool.execute(
@@ -36,7 +52,12 @@ const Publication = {
         p.field,
         p.publication_year,
         p.publication_url,
-        CONCAT(u.first_name, ' ', u.last_name) AS researcher_name,
+        p.status,
+        CONCAT(
+          u.first_name,
+          ' ',
+          u.last_name
+        ) AS researcher_name,
         p.created_at,
         p.updated_at
       FROM publications p
@@ -53,6 +74,10 @@ const Publication = {
     return rows[0] || null;
   },
 
+  // =====================================================
+  // RESEARCHER'S OWN PUBLICATIONS
+  // =====================================================
+
   async findByResearcher(researcherId) {
     const [rows] = await pool.execute(
       `
@@ -64,17 +89,58 @@ const Publication = {
         field,
         publication_year,
         publication_url,
+        status,
         created_at,
         updated_at
       FROM publications
       WHERE researcher_id = ?
-      ORDER BY publication_year DESC, created_at DESC
+      ORDER BY
+        created_at DESC
       `,
       [researcherId]
     );
 
     return rows;
   },
+
+  // =====================================================
+  // ALL PUBLICATIONS
+  // ADMIN
+  // =====================================================
+
+  async findAll() {
+    const [rows] = await pool.execute(`
+      SELECT
+        p.id,
+        p.researcher_id,
+        p.title,
+        p.abstract,
+        p.field,
+        p.publication_year,
+        p.publication_url,
+        p.status,
+        CONCAT(
+          u.first_name,
+          ' ',
+          u.last_name
+        ) AS researcher_name,
+        p.created_at,
+        p.updated_at
+      FROM publications p
+      JOIN researchers r
+        ON p.researcher_id = r.id
+      JOIN users u
+        ON r.user_id = u.id
+      ORDER BY
+        p.created_at DESC
+    `);
+
+    return rows;
+  },
+
+  // =====================================================
+  // CREATE
+  // =====================================================
 
   async create({
     researcherId,
@@ -83,6 +149,7 @@ const Publication = {
     field,
     publicationYear,
     publicationUrl,
+    status = "pending",
   }) {
     const [result] = await pool.execute(
       `
@@ -93,9 +160,10 @@ const Publication = {
         abstract,
         field,
         publication_year,
-        publication_url
+        publication_url,
+        status
       )
-      VALUES (?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
       [
         researcherId,
@@ -104,11 +172,16 @@ const Publication = {
         field || null,
         publicationYear || null,
         publicationUrl || null,
+        status,
       ]
     );
 
     return result.insertId;
   },
+
+  // =====================================================
+  // UPDATE PUBLICATION CONTENT
+  // =====================================================
 
   async update(
     id,
@@ -144,9 +217,33 @@ const Publication = {
     return result.affectedRows > 0;
   },
 
+  // =====================================================
+  // CHANGE STATUS
+  // =====================================================
+
+  async updateStatus(id, status) {
+    const [result] = await pool.execute(
+      `
+      UPDATE publications
+      SET status = ?
+      WHERE id = ?
+      `,
+      [status, id]
+    );
+
+    return result.affectedRows > 0;
+  },
+
+  // =====================================================
+  // DELETE
+  // =====================================================
+
   async delete(id) {
     const [result] = await pool.execute(
-      "DELETE FROM publications WHERE id = ?",
+      `
+      DELETE FROM publications
+      WHERE id = ?
+      `,
       [id]
     );
 

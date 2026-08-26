@@ -6,7 +6,11 @@ const userController =
 const authMiddleware =
   require("../middleware/authMiddleware");
 
-const router = express.Router();
+const profileUpload =
+  require("../middleware/profileUploadMiddleware");
+
+const router =
+  express.Router();
 
 // =====================================================
 // CURRENT USER
@@ -29,6 +33,29 @@ router.put(
 );
 
 // =====================================================
+// UPLOAD PROFILE PHOTO
+// =====================================================
+
+router.post(
+  "/me/profile-image",
+  authMiddleware,
+  profileUpload.single(
+    "profileImage"
+  ),
+  userController.uploadProfileImage
+);
+
+// =====================================================
+// REMOVE PROFILE PHOTO
+// =====================================================
+
+router.delete(
+  "/me/profile-image",
+  authMiddleware,
+  userController.removeProfileImage
+);
+
+// =====================================================
 // CHANGE PASSWORD
 // =====================================================
 
@@ -38,4 +65,5 @@ router.put(
   userController.changePassword
 );
 
-module.exports = router;
+module.exports =
+  router;

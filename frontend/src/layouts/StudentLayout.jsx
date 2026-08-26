@@ -1,4 +1,8 @@
-import { Outlet, Link } from "react-router-dom";
+import {
+  Outlet,
+  Link,
+} from "react-router-dom";
+
 import {
   Menu,
   Bell,
@@ -7,99 +11,74 @@ import {
 import Sidebar from "@components/layout/Sidebar";
 import BottomNav from "@components/layout/BottomNav";
 
-import { STUDENT_BOTTOM_NAV } from "@constants/navigation";
+import {
+  getAuthenticatedNavigation,
+} from "@constants/navigation";
 
-import { useSidebarDrawer } from "@hooks/useSidebarDrawer";
-import { useNotifications } from "@context/NotificationContext";
-import { useAuth } from "@context/AuthContext";
+import {
+  useSidebarDrawer,
+} from "@hooks/useSidebarDrawer";
 
-// =====================================================
-// STUDENT SIDEBAR
-// =====================================================
+import {
+  useNotifications,
+} from "@context/NotificationContext";
 
-const STUDENT_SIDEBAR_NAV = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: "LayoutDashboard",
-  },
-
-  {
-    label: "My Courses",
-    href: "/courses",
-    icon: "BookOpen",
-  },
-
-  {
-    label: "Assignments",
-    href: "/assignments/data-structures-assignment",
-    icon: "FileText",
-  },
-
-  {
-    label: "Certificates",
-    href: "/certificates",
-    icon: "Award",
-  },
-
-  {
-    label: "Community",
-    href: "/community",
-    icon: "MessageCircle",
-  },
-
-  {
-    label: "Profile",
-    href: "/profile",
-    icon: "User",
-  },
-];
+import {
+  useAuth,
+} from "@context/AuthContext";
 
 export default function StudentLayout() {
   const drawer =
     useSidebarDrawer();
 
-  const { unreadCount } =
-    useNotifications();
+  const {
+    unreadCount,
+  } = useNotifications();
 
-  const { user } =
-    useAuth();
+  const {
+    user,
+  } = useAuth();
 
-  const getInitial = () => {
-    if (!user) {
-      return "U";
-    }
+  const navigation =
+    getAuthenticatedNavigation(
+      user
+    );
 
-    if (user.first_name) {
+  function getInitial() {
+    if (user?.first_name) {
       return user.first_name[0].toUpperCase();
     }
 
-    if (user.name) {
+    if (user?.name) {
       return user.name[0].toUpperCase();
     }
 
-    if (user.email) {
+    if (user?.email) {
       return user.email[0].toUpperCase();
     }
 
     return "U";
-  };
+  }
 
   return (
     <div className="min-h-screen bg-surface font-sans text-ink">
+
       {/* =================================================
           SIDEBAR
       ================================================= */}
 
       <Sidebar
         navItems={
-          STUDENT_SIDEBAR_NAV
+          navigation.navigation
         }
         isOpen={
           drawer.isOpen
         }
         onClose={
           drawer.close
+        }
+        subtitle={
+          navigation.subtitle
         }
       />
 
@@ -108,6 +87,7 @@ export default function StudentLayout() {
       ================================================= */}
 
       <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur lg:pl-64">
+
         {/* MOBILE MENU */}
 
         <button
@@ -121,20 +101,17 @@ export default function StudentLayout() {
           <Menu size={20} />
         </button>
 
-        {/* DESKTOP SPACER */}
-
         <div className="hidden lg:block" />
 
-        {/* =================================================
-            UTILITY ACTIONS
-        ================================================= */}
+        {/* HEADER ACTIONS */}
 
         <div className="flex items-center gap-3">
+
           {/* NOTIFICATIONS */}
 
           <Link
             to="/notifications"
-            className="relative rounded-full p-2 text-slate-600 transition-colors hover:bg-slate-50"
+            className="relative rounded-full p-2 text-slate-600 transition hover:bg-slate-50"
             aria-label="Notifications"
           >
             <Bell size={20} />
@@ -151,7 +128,7 @@ export default function StudentLayout() {
           <Link
             to="/profile"
             aria-label="Your profile"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-black uppercase text-primary transition-all hover:ring-2 hover:ring-primary/20"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-black uppercase text-primary transition hover:ring-2 hover:ring-primary/20"
           >
             {getInitial()}
           </Link>
@@ -159,20 +136,27 @@ export default function StudentLayout() {
       </header>
 
       {/* =================================================
-          PAGE CONTENT
+          CONTENT
       ================================================= */}
 
       <main className="pb-24 lg:pb-8 lg:pl-64">
-        <div className="mx-auto max-w-5xl px-4 py-6">
+        <div className="mx-auto max-w-6xl px-4 py-6">
           <Outlet />
         </div>
       </main>
 
       {/* =================================================
-          MOBILE BOTTOM NAVIGATION
+          STUDENT BOTTOM NAV ONLY
       ================================================= */}
 
-      <BottomNav />
+      {navigation.type ===
+        "student" && (
+        <BottomNav
+          items={
+            navigation.bottomNavigation
+          }
+        />
+      )}
     </div>
   );
 }

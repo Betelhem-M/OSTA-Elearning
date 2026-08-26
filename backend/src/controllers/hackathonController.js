@@ -1,45 +1,101 @@
-const Hackathon = require("../models/Hackathon");
+const Hackathon =
+  require("../models/Hackathon");
 
 const hackathonController = {
+  // =====================================================
+  // PUBLIC
+  // =====================================================
+
   async getAll(req, res) {
     try {
-      const hackathons = await Hackathon.findAll();
-      res.json(hackathons);
+      const hackathons =
+        await Hackathon.findAll();
+
+      return res.status(200).json(
+        Array.isArray(
+          hackathons
+        )
+          ? hackathons
+          : []
+      );
     } catch (error) {
-      console.error("Get hackathons error:", error);
-      res.status(500).json({
-        message: "Failed to fetch hackathons",
+      console.error(
+        "Get hackathons error:",
+        error
+      );
+
+      return res.status(500).json({
+        message:
+          "Failed to fetch hackathons",
       });
     }
   },
+
+  // =====================================================
+  // PUBLIC
+  // =====================================================
 
   async getById(req, res) {
     try {
-      const hackathon = await Hackathon.findById(req.params.id);
+      const hackathon =
+        await Hackathon.findById(
+          req.params.id
+        );
 
       if (!hackathon) {
         return res.status(404).json({
-          message: "Hackathon not found",
+          message:
+            "Hackathon not found",
         });
       }
 
-      res.json(hackathon);
+      if (
+        ![
+          "published",
+          "active",
+          "upcoming",
+          "completed",
+        ].includes(
+          hackathon.status
+        )
+      ) {
+        return res.status(404).json({
+          message:
+            "Hackathon is not publicly available",
+        });
+      }
+
+      return res.status(200).json(
+        hackathon
+      );
     } catch (error) {
-      console.error("Get hackathon error:", error);
-      res.status(500).json({
-        message: "Failed to fetch hackathon",
+      console.error(
+        "Get hackathon error:",
+        error
+      );
+
+      return res.status(500).json({
+        message:
+          "Failed to fetch hackathon",
       });
     }
   },
+
+  // =====================================================
+  // CREATE
+  // =====================================================
 
   async create(req, res) {
     try {
       if (
-        req.user.role !== "admin" &&
-        req.user.role !== "instructor"
+        req.user.role !==
+          "admin" &&
+        req.user.role !==
+          "instructor"
       ) {
         return res.status(403).json({
-          message: "Only instructors and admins can create hackathons",
+          message:
+            "Only instructors and admins can create hackathons",
         });
       }
 
@@ -52,104 +108,169 @@ const hackathonController = {
         status,
       } = req.body;
 
-      if (!title || !deadline) {
+      if (
+        !title ||
+        !deadline
+      ) {
         return res.status(400).json({
-          message: "Title and deadline are required",
+          message:
+            "Title and deadline are required",
         });
       }
 
-      const id = await Hackathon.create({
-        title,
-        description,
-        category,
-        deadline,
-        prize,
-        status,
-        createdBy: req.user.id,
-      });
+      const id =
+        await Hackathon.create({
+          title,
+          description,
+          category,
+          deadline,
+          prize,
+          status,
+          createdBy:
+            req.user.id,
+        });
 
-      const hackathon = await Hackathon.findById(id);
+      const hackathon =
+        await Hackathon.findById(
+          id
+        );
 
-      res.status(201).json({
-        message: "Hackathon created successfully",
+      return res.status(201).json({
+        message:
+          "Hackathon created successfully",
         hackathon,
       });
     } catch (error) {
-      console.error("Create hackathon error:", error);
-      res.status(500).json({
-        message: "Failed to create hackathon",
+      console.error(
+        "Create hackathon error:",
+        error
+      );
+
+      return res.status(500).json({
+        message:
+          "Failed to create hackathon",
       });
     }
   },
+
+  // =====================================================
+  // UPDATE
+  // =====================================================
 
   async update(req, res) {
     try {
-      const hackathon = await Hackathon.findById(req.params.id);
+      const hackathon =
+        await Hackathon.findById(
+          req.params.id
+        );
 
       if (!hackathon) {
         return res.status(404).json({
-          message: "Hackathon not found",
+          message:
+            "Hackathon not found",
         });
       }
 
       if (
-        req.user.role !== "admin" &&
-        hackathon.created_by !== req.user.id
+        req.user.role !==
+          "admin" &&
+        Number(
+          hackathon.created_by
+        ) !==
+          Number(
+            req.user.id
+          )
       ) {
         return res.status(403).json({
-          message: "You are not allowed to update this hackathon",
+          message:
+            "You are not allowed to update this hackathon",
         });
       }
 
-      await Hackathon.update(req.params.id, req.body);
-
-      const updatedHackathon = await Hackathon.findById(
-        req.params.id
+      await Hackathon.update(
+        req.params.id,
+        req.body
       );
 
-      res.json({
-        message: "Hackathon updated successfully",
-        hackathon: updatedHackathon,
+      const updatedHackathon =
+        await Hackathon.findById(
+          req.params.id
+        );
+
+      return res.status(200).json({
+        message:
+          "Hackathon updated successfully",
+        hackathon:
+          updatedHackathon,
       });
     } catch (error) {
-      console.error("Update hackathon error:", error);
-      res.status(500).json({
-        message: "Failed to update hackathon",
+      console.error(
+        "Update hackathon error:",
+        error
+      );
+
+      return res.status(500).json({
+        message:
+          "Failed to update hackathon",
       });
     }
   },
 
+  // =====================================================
+  // DELETE
+  // =====================================================
+
   async delete(req, res) {
     try {
-      const hackathon = await Hackathon.findById(req.params.id);
+      const hackathon =
+        await Hackathon.findById(
+          req.params.id
+        );
 
       if (!hackathon) {
         return res.status(404).json({
-          message: "Hackathon not found",
+          message:
+            "Hackathon not found",
         });
       }
 
       if (
-        req.user.role !== "admin" &&
-        hackathon.created_by !== req.user.id
+        req.user.role !==
+          "admin" &&
+        Number(
+          hackathon.created_by
+        ) !==
+          Number(
+            req.user.id
+          )
       ) {
         return res.status(403).json({
-          message: "You are not allowed to delete this hackathon",
+          message:
+            "You are not allowed to delete this hackathon",
         });
       }
 
-      await Hackathon.delete(req.params.id);
+      await Hackathon.delete(
+        req.params.id
+      );
 
-      res.json({
-        message: "Hackathon deleted successfully",
+      return res.status(200).json({
+        message:
+          "Hackathon deleted successfully",
       });
     } catch (error) {
-      console.error("Delete hackathon error:", error);
-      res.status(500).json({
-        message: "Failed to delete hackathon",
+      console.error(
+        "Delete hackathon error:",
+        error
+      );
+
+      return res.status(500).json({
+        message:
+          "Failed to delete hackathon",
       });
     }
   },
 };
 
-module.exports = hackathonController;
+module.exports =
+  hackathonController;

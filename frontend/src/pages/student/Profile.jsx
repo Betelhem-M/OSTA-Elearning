@@ -1,189 +1,353 @@
-import { useEffect, useMemo, useState } from "react";
 import {
-  Pencil,
-  Moon,
-  Sun,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  Activity,
   Award,
-  Mail,
-  Phone,
-  MapPin,
-  Lock,
-  Save,
-  X,
-  ShieldCheck,
+  BarChart3,
+  Bell,
   BookOpen,
-  CheckCircle2,
+  FileBarChart,
+  FileText,
+  GraduationCap,
+  LayoutDashboard,
+  Lightbulb,
+  Lock,
   LogOut,
-  UserCircle2,
+  Menu,
+  Pencil,
+  Save,
+  Settings,
+  ShieldCheck,
+  Trash2,
+  Upload,
+  User,
+  Users,
+  X,
 } from "lucide-react";
 
-import { useTheme } from "@context/ThemeContext";
-import { useAuth } from "@context/AuthContext";
-import { apiRequest } from "@services/api";
+import {
+  Link,
+  Outlet,
+} from "react-router-dom";
 
-function formatDate(value) {
-  if (!value) return "—";
+import Sidebar from "@components/layout/Sidebar";
+import BottomNav from "@components/layout/BottomNav";
 
-  const date = new Date(value);
+import {
+  STUDENT_BOTTOM_NAV,
+  STUDENT_SIDEBAR_NAV,
+  INSTRUCTOR_SIDEBAR_NAV,
+  ADMIN_SIDEBAR_NAV,
+} from "@constants/navigation";
 
-  if (Number.isNaN(date.getTime())) {
-    return value;
+import {
+  useAuth,
+} from "@context/AuthContext";
+
+import {
+  useNotifications,
+} from "@context/NotificationContext";
+
+import {
+  useSidebarDrawer,
+} from "@hooks/useSidebarDrawer";
+
+import {
+  apiRequest,
+} from "@services/api";
+
+const API_URL =
+  "http://localhost:5000/api";
+
+function getRoleInfo(user) {
+  if (
+    user?.role ===
+    "admin"
+  ) {
+    return {
+      label: "Administrator",
+      title:
+        "Administrator Profile",
+      subtitle:
+        "Manage your OSTA administrator account",
+      icon: ShieldCheck,
+      navigation:
+        ADMIN_SIDEBAR_NAV,
+    };
   }
 
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  if (
+    user?.role ===
+    "instructor"
+  ) {
+    return {
+      label: "Instructor",
+      title:
+        "Instructor Profile",
+      subtitle:
+        "Manage your teaching identity and account",
+      icon: BookOpen,
+      navigation:
+        INSTRUCTOR_SIDEBAR_NAV,
+    };
+  }
+
+  if (
+    user?.account_type ===
+    "researcher"
+  ) {
+    return {
+      label: "Researcher",
+      title:
+        "Researcher Profile",
+      subtitle:
+        "Manage your research identity and account",
+      icon: GraduationCap,
+      navigation: [
+        {
+          label: "Research",
+          href: "/research",
+          icon: "FlaskConical",
+        },
+        {
+          label: "Profile",
+          href: "/profile",
+          icon: "User",
+        },
+        {
+          label: "Notifications",
+          href: "/notifications",
+          icon: "Bell",
+        },
+      ],
+    };
+  }
+
+  if (
+    user?.account_type ===
+    "entrepreneur"
+  ) {
+    return {
+      label: "Innovator",
+      title:
+        "Innovator Profile",
+      subtitle:
+        "Manage your innovation identity and account",
+      icon: Lightbulb,
+      navigation: [
+        {
+          label:
+            "Innovation Hub",
+          href:
+            "/innovation-hub",
+          icon: "Lightbulb",
+        },
+        {
+          label: "Profile",
+          href: "/profile",
+          icon: "User",
+        },
+        {
+          label: "Notifications",
+          href: "/notifications",
+          icon: "Bell",
+        },
+      ],
+    };
+  }
+
+  return {
+    label: "Student",
+    title:
+      "Student Profile",
+    subtitle:
+      "Manage your learning identity and account",
+    icon: GraduationCap,
+    navigation:
+      STUDENT_SIDEBAR_NAV,
+    student: true,
+  };
 }
 
 function getInitials(user) {
-  if (!user) return "U";
-
-  const first = user.first_name?.[0] || "";
-  const last = user.last_name?.[0] || "";
-
-  const initials = `${first}${last}`.trim();
+  const initials =
+    `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}`;
 
   if (initials) {
     return initials.toUpperCase();
   }
 
   return (
-    user.email?.[0] || "U"
+    user?.email?.[0] ||
+    "U"
   ).toUpperCase();
 }
 
 export default function Profile() {
-  const { isDark, toggleTheme } = useTheme();
-
   const {
-    user: authUser,
+    user,
+    setUser,
     logout,
   } = useAuth();
 
-  const [user, setUser] = useState(
-    authUser || null
-  );
+  const {
+    unreadCount,
+  } = useNotifications();
 
-  const [certificates, setCertificates] =
-    useState([]);
+  const drawer =
+    useSidebarDrawer();
 
-  const [enrollments, setEnrollments] =
-    useState([]);
+  const roleInfo =
+    useMemo(
+      () =>
+        getRoleInfo(user),
+      [user]
+    );
 
-  const [progressRows, setProgressRows] =
-    useState([]);
+  const RoleIcon =
+    roleInfo.icon;
 
-  const [loading, setLoading] =
-    useState(true);
-
-  const [saving, setSaving] =
-    useState(false);
-
-  const [
-    changingPassword,
-    setChangingPassword,
-  ] = useState(false);
+  const fileInputRef =
+    useRef(null);
 
   const [
-    editingProfile,
-    setEditingProfile,
-  ] = useState(false);
+    profile,
+    setProfile,
+  ] = useState(user);
 
   const [
-    showPasswordForm,
-    setShowPasswordForm,
-  ] = useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const [success, setSuccess] =
-    useState("");
-
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    region: "",
+    form,
+    setForm,
+  ] = useState({
+    firstName:
+      user?.first_name ||
+      "",
+    lastName:
+      user?.last_name ||
+      "",
+    email:
+      user?.email ||
+      "",
+    phone:
+      user?.phone ||
+      "",
+    region:
+      user?.region ||
+      "",
   });
 
   const [
-    passwordForm,
-    setPasswordForm,
+    editing,
+    setEditing,
+  ] = useState(false);
+
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
+
+  const [
+    uploading,
+    setUploading,
+  ] = useState(false);
+
+  const [
+    removingPhoto,
+    setRemovingPhoto,
+  ] = useState(false);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+  const [
+    success,
+    setSuccess,
+  ] = useState("");
+
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
+
+  const [
+    password,
+    setPassword,
   ] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
+    currentPassword:
+      "",
+    newPassword:
+      "",
+    confirmPassword:
+      "",
   });
 
   // =====================================================
   // LOAD PROFILE
   // =====================================================
 
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
   async function loadProfile() {
     try {
       setLoading(true);
       setError("");
 
-      const [
-        profileResponse,
-        certificatesResponse,
-        enrollmentsResponse,
-        progressResponse,
-      ] = await Promise.all([
-        apiRequest("/users/me"),
-        apiRequest("/certificates/my"),
-        apiRequest("/enrollments/my"),
-        apiRequest("/progress/my"),
-      ]);
+      const response =
+        await apiRequest(
+          "/users/me"
+        );
 
-      const realUser =
-        profileResponse?.user || null;
+      const currentUser =
+        response?.user;
 
-      setUser(realUser);
+      if (!currentUser) {
+        throw new Error(
+          "Profile information was not returned."
+        );
+      }
+
+      setProfile(
+        currentUser
+      );
+
+      setUser(
+        currentUser
+      );
 
       setForm({
         firstName:
-          realUser?.first_name || "",
+          currentUser.first_name ||
+          "",
         lastName:
-          realUser?.last_name || "",
+          currentUser.last_name ||
+          "",
         email:
-          realUser?.email || "",
+          currentUser.email ||
+          "",
         phone:
-          realUser?.phone || "",
+          currentUser.phone ||
+          "",
         region:
-          realUser?.region || "",
+          currentUser.region ||
+          "",
       });
-
-      setCertificates(
-        Array.isArray(
-          certificatesResponse
-        )
-          ? certificatesResponse
-          : []
-      );
-
-      setEnrollments(
-        Array.isArray(
-          enrollmentsResponse
-        )
-          ? enrollmentsResponse
-          : []
-      );
-
-      setProgressRows(
-        Array.isArray(
-          progressResponse
-        )
-          ? progressResponse
-          : []
-      );
     } catch (err) {
       console.error(
-        "Profile load error:",
+        "Profile loading error:",
         err
       );
 
@@ -196,61 +360,44 @@ export default function Profile() {
     }
   }
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
   // =====================================================
-  // UPDATE FORM
+  // UPDATE FIELD
   // =====================================================
 
-  function handleFormChange(
+  function updateField(
     field,
     value
   ) {
-    setForm((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
+    setForm(
+      (previous) => ({
+        ...previous,
+        [field]: value,
+      })
+    );
 
-    setSuccess("");
     setError("");
+    setSuccess("");
   }
 
   // =====================================================
   // SAVE PROFILE
   // =====================================================
 
-  async function handleSaveProfile() {
+  async function saveProfile() {
     try {
       setSaving(true);
       setError("");
       setSuccess("");
 
-      const firstName =
-        form.firstName.trim();
-
-      const lastName =
-        form.lastName.trim();
-
-      const email =
-        form.email.trim();
-
-      const phone =
-        form.phone.trim();
-
-      const region =
-        form.region.trim();
-
       if (
-        !firstName ||
-        !lastName ||
-        !email ||
-        !phone ||
-        !region
+        !form.firstName.trim() ||
+        !form.lastName.trim() ||
+        !form.email.trim() ||
+        !form.phone.trim() ||
+        !form.region.trim()
       ) {
         throw new Error(
-          "First name, last name, email, phone, and region are required."
+          "All profile fields are required."
         );
       }
 
@@ -260,47 +407,35 @@ export default function Profile() {
           {
             method: "PUT",
             body: {
-              firstName,
-              lastName,
-              email,
-              phone,
-              region,
+              firstName:
+                form.firstName.trim(),
+              lastName:
+                form.lastName.trim(),
+              email:
+                form.email.trim(),
+              phone:
+                form.phone.trim(),
+              region:
+                form.region.trim(),
             },
           }
         );
 
-      const updatedUser =
-        response?.user;
-
-      if (!updatedUser) {
+      if (!response?.user) {
         throw new Error(
-          "The server did not return the updated profile."
+          "Updated profile was not returned."
         );
       }
 
-      setUser(updatedUser);
-
-      setForm({
-        firstName:
-          updatedUser.first_name || "",
-        lastName:
-          updatedUser.last_name || "",
-        email:
-          updatedUser.email || "",
-        phone:
-          updatedUser.phone || "",
-        region:
-          updatedUser.region || "",
-      });
-
-      localStorage.setItem(
-        "osta_user",
-        JSON.stringify(
-          updatedUser
-        )
+      setProfile(
+        response.user
       );
 
-      setEditingProfile(false);
+      setUser(
+        response.user
+      );
+
+      setEditing(false);
 
       setSuccess(
         "Your profile was updated successfully."
@@ -324,81 +459,235 @@ export default function Profile() {
   // CANCEL EDIT
   // =====================================================
 
-  function handleCancelProfileEdit() {
+  function cancelEdit() {
     setForm({
       firstName:
-        user?.first_name || "",
+        profile?.first_name ||
+        "",
       lastName:
-        user?.last_name || "",
+        profile?.last_name ||
+        "",
       email:
-        user?.email || "",
+        profile?.email ||
+        "",
       phone:
-        user?.phone || "",
+        profile?.phone ||
+        "",
       region:
-        user?.region || "",
+        profile?.region ||
+        "",
     });
 
-    setEditingProfile(false);
-    setError("");
+    setEditing(false);
   }
 
   // =====================================================
-  // PASSWORD FORM
+  // SELECT PHOTO
   // =====================================================
 
-  function handlePasswordChange(
-    field,
-    value
+  function handlePhotoClick() {
+    fileInputRef.current?.click();
+  }
+
+  // =====================================================
+  // UPLOAD PHOTO
+  // =====================================================
+
+  async function handlePhotoChange(
+    event
   ) {
-    setPasswordForm(
-      (previous) => ({
-        ...previous,
-        [field]: value,
-      })
-    );
+    const file =
+      event.target.files?.[0];
 
-    setError("");
-    setSuccess("");
-  }
+    event.target.value = "";
 
-  // =====================================================
-  // CHANGE PASSWORD
-  // =====================================================
+    if (!file) {
+      return;
+    }
 
-  async function handleChangePassword() {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
+
+    if (
+      !allowedTypes.includes(
+        file.type
+      )
+    ) {
+      setError(
+        "Please choose a JPG, PNG, WEBP, or GIF image."
+      );
+      return;
+    }
+
+    if (
+      file.size >
+      5 * 1024 * 1024
+    ) {
+      setError(
+        "Profile photo must be 5 MB or smaller."
+      );
+      return;
+    }
+
     try {
-      setChangingPassword(true);
+      setUploading(true);
       setError("");
       setSuccess("");
 
-      const {
-        currentPassword,
-        newPassword,
-        confirmPassword,
-      } = passwordForm;
+      const token =
+        localStorage.getItem(
+          "osta_token"
+        );
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "profileImage",
+        file
+      );
+
+      const response =
+        await fetch(
+          `${API_URL}/users/me/profile-image`,
+          {
+            method: "POST",
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+            },
+            body:
+              formData,
+          }
+        );
+
+      const data =
+        await response
+          .json()
+          .catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+            "Failed to upload profile photo."
+        );
+      }
+
+      setProfile(
+        data.user
+      );
+
+      setUser(
+        data.user
+      );
+
+      localStorage.setItem(
+        "osta_user",
+        JSON.stringify(
+          data.user
+        )
+      );
+
+      setSuccess(
+        "Profile photo updated successfully."
+      );
+    } catch (err) {
+      console.error(
+        "Profile photo upload error:",
+        err
+      );
+
+      setError(
+        err.message ||
+          "Failed to upload profile photo."
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  // =====================================================
+  // REMOVE PHOTO
+  // =====================================================
+
+  async function removePhoto() {
+    try {
+      setRemovingPhoto(true);
+      setError("");
+      setSuccess("");
+
+      const response =
+        await apiRequest(
+          "/users/me/profile-image",
+          {
+            method: "DELETE",
+          }
+        );
+
+      setProfile(
+        response.user
+      );
+
+      setUser(
+        response.user
+      );
+
+      setSuccess(
+        "Profile photo removed successfully."
+      );
+    } catch (err) {
+      console.error(
+        "Remove profile photo error:",
+        err
+      );
+
+      setError(
+        err.message ||
+          "Failed to remove profile photo."
+      );
+    } finally {
+      setRemovingPhoto(false);
+    }
+  }
+
+  // =====================================================
+  // PASSWORD
+  // =====================================================
+
+  async function changePassword() {
+    try {
+      setError("");
+      setSuccess("");
 
       if (
-        !currentPassword ||
-        !newPassword ||
-        !confirmPassword
+        !password.currentPassword ||
+        !password.newPassword ||
+        !password.confirmPassword
       ) {
         throw new Error(
           "Please complete all password fields."
         );
       }
 
-      if (newPassword.length < 6) {
+      if (
+        password.newPassword.length <
+        6
+      ) {
         throw new Error(
           "New password must be at least 6 characters."
         );
       }
 
       if (
-        newPassword !==
-        confirmPassword
+        password.newPassword !==
+        password.confirmPassword
       ) {
         throw new Error(
-          "New password and confirmation do not match."
+          "New password confirmation does not match."
         );
       }
 
@@ -407,87 +696,58 @@ export default function Profile() {
         {
           method: "PUT",
           body: {
-            currentPassword,
-            newPassword,
+            currentPassword:
+              password.currentPassword,
+            newPassword:
+              password.newPassword,
           },
         }
       );
 
-      setPasswordForm({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
+      setPassword({
+        currentPassword:
+          "",
+        newPassword:
+          "",
+        confirmPassword:
+          "",
       });
 
-      setShowPasswordForm(false);
+      setShowPassword(
+        false
+      );
 
       setSuccess(
         "Your password was changed successfully."
       );
     } catch (err) {
       console.error(
-        "Change password error:",
+        "Password change error:",
         err
       );
 
       setError(
         err.message ||
-          "Failed to change your password."
+          "Failed to change password."
       );
-    } finally {
-      setChangingPassword(false);
     }
   }
 
   // =====================================================
-  // LOGOUT
+  // PHOTO URL
   // =====================================================
 
-  function handleLogout() {
-    logout();
-  }
-
-  // =====================================================
-  // REAL STATISTICS
-  // =====================================================
-
-  const completedLessons =
-    useMemo(() => {
-      return progressRows.filter(
-        (item) =>
-          Boolean(
-            item.completed
-          )
-      ).length;
-    }, [progressRows]);
-
-  const completedCourses =
-    useMemo(() => {
-      return certificates.length;
-    }, [certificates]);
-
-  const averageProgress =
-    useMemo(() => {
-      if (!progressRows.length) {
-        return 0;
-      }
-
-      const total =
-        progressRows.reduce(
-          (sum, item) =>
-            sum +
-            Number(
-              item.progress_percent ||
-                0
-            ),
-          0
-        );
-
-      return Math.round(
-        total /
-          progressRows.length
-      );
-    }, [progressRows]);
+  const profileImageUrl =
+    profile?.profile_image
+      ? profile.profile_image.startsWith(
+          "http"
+        )
+        ? profile.profile_image
+        : `${API_URL.replace(
+            "/api",
+            ""
+          )}${profile.profile_image}`
+      : null;
 
   // =====================================================
   // LOADING
@@ -495,690 +755,623 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <section className="rounded-2xl border border-slate-100 bg-white p-10 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <ShieldCheck
+      <div className="flex min-h-screen items-center justify-center bg-surface">
+        <div className="text-center">
+          <User
             size={40}
             className="mx-auto animate-pulse text-primary/50"
           />
 
-          <p className="mt-4 text-sm text-slate-500 dark:text-slate-300">
+          <p className="mt-4 text-sm text-slate-500">
             Loading your profile...
           </p>
-        </section>
+        </div>
       </div>
     );
   }
 
-  const displayName =
-    `${user?.first_name || ""} ${
-      user?.last_name || ""
-    }`.trim() ||
-    "OSTA Student";
-
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-surface font-sans text-ink">
       {/* =================================================
-          SUCCESS
+          ROLE SIDEBAR
       ================================================= */}
 
-      {success && (
-        <div className="rounded-xl border border-green-100 bg-green-50 p-4">
-          <p className="text-sm font-semibold text-green-700">
-            {success}
-          </p>
-        </div>
-      )}
+      <Sidebar
+        navItems={
+          roleInfo.navigation
+        }
+        isOpen={
+          drawer.isOpen
+        }
+        onClose={
+          drawer.close
+        }
+        subtitle={
+          roleInfo.subtitle
+        }
+      />
 
       {/* =================================================
-          ERROR
+          HEADER
       ================================================= */}
 
-      {error && (
-        <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-          <p className="text-sm font-semibold text-red-600">
-            {error}
-          </p>
-        </div>
-      )}
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur lg:pl-64">
+        <button
+          type="button"
+          onClick={
+            drawer.open
+          }
+          className="rounded-lg p-2 hover:bg-slate-50 lg:hidden"
+          aria-label="Open navigation"
+        >
+          <Menu size={20} />
+        </button>
 
-      {/* =================================================
-          PROFILE HEADER
-      ================================================= */}
+        <div className="hidden lg:block" />
 
-      <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.07)] dark:border-slate-700 dark:bg-slate-800">
-        <div className="flex flex-wrap items-start justify-between gap-6">
-          <div className="flex items-start gap-4">
-            {user?.profile_image ? (
-              <img
-                src={user.profile_image}
-                alt={displayName}
-                className="h-20 w-20 shrink-0 rounded-full object-cover"
-              />
-            ) : (
-              <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary-light text-xl font-extrabold text-primary">
-                {getInitials(user)}
+        <div className="flex items-center gap-3">
+          <Link
+            to="/notifications"
+            className="relative rounded-full p-2 text-slate-600 hover:bg-slate-50"
+          >
+            <Bell size={20} />
+
+            {unreadCount >
+              0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                {
+                  unreadCount
+                }
               </span>
             )}
+          </Link>
 
-            <div>
-              <h1 className="text-xl font-extrabold text-ink dark:text-white">
-                {displayName}
-              </h1>
-
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">
-                OSTA Student
-              </p>
-
-              <p className="mt-2 text-xs text-slate-400">
-                Member since{" "}
-                {formatDate(
-                  user?.created_at
-                )}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {!editingProfile ? (
-              <button
-                type="button"
-                onClick={() =>
-                  setEditingProfile(
-                    true
-                  )
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-primary-light text-xs font-black text-primary">
+            {profileImageUrl ? (
+              <img
+                src={
+                  profileImageUrl
                 }
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-hover"
-              >
-                <Pencil size={15} />
-                Edit Profile
-              </button>
+                alt={`${profile.first_name} ${profile.last_name}`}
+                className="h-full w-full object-cover"
+              />
             ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={
-                    handleSaveProfile
-                  }
-                  disabled={saving}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-                >
-                  <Save size={15} />
-
-                  {saving
-                    ? "Saving..."
-                    : "Save Changes"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={
-                    handleCancelProfileEdit
-                  }
-                  disabled={saving}
-                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-300"
-                >
-                  <X size={15} />
-                  Cancel
-                </button>
-              </>
+              getInitials(
+                profile
+              )
             )}
-
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-pressed={isDark}
-              aria-label="Toggle theme"
-              className="rounded-lg border border-slate-200 p-2.5 text-slate-500 hover:border-primary hover:text-primary dark:border-slate-600"
-            >
-              {isDark ? (
-                <Sun size={18} />
-              ) : (
-                <Moon size={18} />
-              )}
-            </button>
           </div>
         </div>
-
-        {/* =================================================
-            PERSONAL INFORMATION
-        ================================================= */}
-
-        <div className="mt-7 border-t border-slate-100 pt-6 dark:border-slate-700">
-          <h2 className="text-sm font-bold text-ink dark:text-white">
-            Personal Information
-          </h2>
-
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {/* FIRST NAME */}
-
-            <div>
-              <label className="mb-2 block text-xs font-bold text-slate-500">
-                First Name
-              </label>
-
-              <input
-                value={
-                  form.firstName
-                }
-                disabled={
-                  !editingProfile
-                }
-                onChange={(event) =>
-                  handleFormChange(
-                    "firstName",
-                    event.target
-                      .value
-                  )
-                }
-                className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-ink outline-none focus:border-primary disabled:bg-slate-50 disabled:text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:disabled:bg-slate-700"
-              />
-            </div>
-
-            {/* LAST NAME */}
-
-            <div>
-              <label className="mb-2 block text-xs font-bold text-slate-500">
-                Last Name
-              </label>
-
-              <input
-                value={
-                  form.lastName
-                }
-                disabled={
-                  !editingProfile
-                }
-                onChange={(event) =>
-                  handleFormChange(
-                    "lastName",
-                    event.target
-                      .value
-                  )
-                }
-                className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-ink outline-none focus:border-primary disabled:bg-slate-50 disabled:text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:disabled:bg-slate-700"
-              />
-            </div>
-
-            {/* EMAIL */}
-
-            <div>
-              <label className="mb-2 block text-xs font-bold text-slate-500">
-                Email
-              </label>
-
-              <div className="relative">
-                <Mail
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-
-                <input
-                  type="email"
-                  value={
-                    form.email
-                  }
-                  disabled={
-                    !editingProfile
-                  }
-                  onChange={(event) =>
-                    handleFormChange(
-                      "email",
-                      event.target
-                        .value
-                    )
-                  }
-                  className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-ink outline-none focus:border-primary disabled:bg-slate-50 disabled:text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:disabled:bg-slate-700"
-                />
-              </div>
-            </div>
-
-            {/* PHONE */}
-
-            <div>
-              <label className="mb-2 block text-xs font-bold text-slate-500">
-                Phone
-              </label>
-
-              <div className="relative">
-                <Phone
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-
-                <input
-                  value={
-                    form.phone
-                  }
-                  disabled={
-                    !editingProfile
-                  }
-                  onChange={(event) =>
-                    handleFormChange(
-                      "phone",
-                      event.target
-                        .value
-                    )
-                  }
-                  className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-ink outline-none focus:border-primary disabled:bg-slate-50 disabled:text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:disabled:bg-slate-700"
-                />
-              </div>
-            </div>
-
-            {/* REGION */}
-
-            <div>
-              <label className="mb-2 block text-xs font-bold text-slate-500">
-                Region
-              </label>
-
-              <div className="relative">
-                <MapPin
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-
-                <input
-                  value={
-                    form.region
-                  }
-                  disabled={
-                    !editingProfile
-                  }
-                  onChange={(event) =>
-                    handleFormChange(
-                      "region",
-                      event.target
-                        .value
-                    )
-                  }
-                  className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-ink outline-none focus:border-primary disabled:bg-slate-50 disabled:text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:disabled:bg-slate-700"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      </header>
 
       {/* =================================================
-          LEARNING STATISTICS
+          CONTENT
       ================================================= */}
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <BookOpen
-            size={20}
-            className="text-primary"
-          />
+      <main
+        className={`pb-24 lg:pb-8 lg:pl-64`}
+      >
+        <div className="mx-auto max-w-5xl px-4 py-6">
+          <div className="space-y-6">
+            {/* =================================================
+                PROFILE HEADER
+            ================================================= */}
 
-          <p className="mt-3 text-xs font-semibold text-slate-400">
-            Enrolled Courses
-          </p>
+            <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-6">
+                <div className="flex items-start gap-5">
+                  {/* AVATAR */}
 
-          <p className="mt-1 text-2xl font-extrabold text-ink dark:text-white">
-            {enrollments.length}
-          </p>
-        </div>
+                  <div className="relative">
+                    <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-primary-light text-2xl font-extrabold text-primary ring-4 ring-white shadow-md">
+                      {profileImageUrl ? (
+                        <img
+                          src={
+                            profileImageUrl
+                          }
+                          alt={`${profile.first_name} ${profile.last_name}`}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        getInitials(
+                          profile
+                        )
+                      )}
+                    </div>
 
-        <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <CheckCircle2
-            size={20}
-            className="text-primary"
-          />
+                    <button
+                      type="button"
+                      onClick={
+                        handlePhotoClick
+                      }
+                      disabled={
+                        uploading
+                      }
+                      className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-primary text-white shadow-sm hover:bg-primary-hover disabled:opacity-60"
+                      title="Upload profile photo"
+                    >
+                      <Upload
+                        size={14}
+                      />
+                    </button>
 
-          <p className="mt-3 text-xs font-semibold text-slate-400">
-            Completed Lessons
-          </p>
-
-          <p className="mt-1 text-2xl font-extrabold text-ink dark:text-white">
-            {completedLessons}
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <Award
-            size={20}
-            className="text-primary"
-          />
-
-          <p className="mt-3 text-xs font-semibold text-slate-400">
-            Certificates
-          </p>
-
-          <p className="mt-1 text-2xl font-extrabold text-ink dark:text-white">
-            {completedCourses}
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-          <ShieldCheck
-            size={20}
-            className="text-primary"
-          />
-
-          <p className="mt-3 text-xs font-semibold text-slate-400">
-            Learning Progress
-          </p>
-
-          <p className="mt-1 text-2xl font-extrabold text-ink dark:text-white">
-            {averageProgress}%
-          </p>
-        </div>
-      </section>
-
-      {/* =================================================
-          ACHIEVEMENTS
-      ================================================= */}
-
-      <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        <div>
-          <h2 className="text-lg font-bold text-ink dark:text-white">
-            Achievements
-          </h2>
-
-          <p className="mt-1 text-xs text-slate-400">
-            Certificates and achievements earned through your
-            actual learning progress.
-          </p>
-        </div>
-
-        {certificates.length === 0 ? (
-          <div className="mt-5 rounded-xl border border-dashed border-slate-200 p-8 text-center dark:border-slate-600">
-            <Award
-              size={35}
-              className="mx-auto text-slate-300"
-            />
-
-            <p className="mt-3 text-sm font-semibold text-slate-500 dark:text-slate-300">
-              No certificates earned yet
-            </p>
-
-            <p className="mt-1 text-xs text-slate-400">
-              Complete your courses and pass the required assessments
-              to unlock your first certificate.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {certificates.map(
-              (certificate) => (
-                <div
-                  key={
-                    certificate.id
-                  }
-                  className="rounded-xl border border-slate-100 p-4 dark:border-slate-700"
-                >
-                  <div className="flex items-start gap-3">
-                    <Award
-                      size={19}
-                      className="shrink-0 text-primary"
+                    <input
+                      ref={
+                        fileInputRef
+                      }
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={
+                        handlePhotoChange
+                      }
+                      className="hidden"
                     />
+                  </div>
 
-                    <div>
-                      <p className="text-sm font-bold text-ink dark:text-white">
+                  {/* IDENTITY */}
+
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-light px-3 py-1 text-[10px] font-bold uppercase text-primary">
+                        <RoleIcon
+                          size={
+                            12
+                          }
+                        />
+
                         {
-                          certificate.course_title
+                          roleInfo.label
+                        }
+                      </span>
+                    </div>
+
+                    <h1 className="mt-2 text-xl font-extrabold text-ink">
+                      {
+                        profile.first_name
+                      }{" "}
+                      {
+                        profile.last_name
+                      }
+                    </h1>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      {
+                        roleInfo.subtitle
+                      }
+                    </p>
+
+                    {profile.email && (
+                      <p className="mt-1 text-xs text-slate-400">
+                        {
+                          profile.email
                         }
                       </p>
+                    )}
 
-                      <p className="mt-1 text-xs text-slate-400">
-                        Completed{" "}
-                        {formatDate(
-                          certificate.completion_date
-                        )}
-                      </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={
+                          handlePhotoClick
+                        }
+                        disabled={
+                          uploading
+                        }
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-white hover:bg-primary-hover disabled:opacity-60"
+                      >
+                        <Upload
+                          size={13}
+                        />
 
-                      {certificate.score !==
-                        null && (
-                        <p className="mt-1 text-xs font-semibold text-primary">
-                          Score:{" "}
-                          {
-                            certificate.score
-                          }%
-                        </p>
+                        {uploading
+                          ? "Uploading..."
+                          : profileImageUrl
+                            ? "Change Photo"
+                            : "Upload Photo"}
+                      </button>
+
+                      {profileImageUrl && (
+                        <button
+                          type="button"
+                          onClick={
+                            removePhoto
+                          }
+                          disabled={
+                            removingPhoto
+                          }
+                          className="inline-flex items-center gap-2 rounded-lg border border-red-100 px-3.5 py-2 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-60"
+                        >
+                          <Trash2
+                            size={
+                              13
+                            }
+                          />
+
+                          {removingPhoto
+                            ? "Removing..."
+                            : "Remove Photo"}
+                        </button>
                       )}
                     </div>
                   </div>
                 </div>
-              )
-            )}
-          </div>
-        )}
-      </section>
 
-      {/* =================================================
-          COMPLETED COURSES
-      ================================================= */}
+                {/* EDIT */}
 
-      <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        <h2 className="text-lg font-bold text-ink dark:text-white">
-          Completed Courses
-        </h2>
+                {!editing && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditing(
+                        true
+                      )
+                    }
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-primary-hover"
+                  >
+                    <Pencil size={14} />
+                    Edit Profile
+                  </button>
+                )}
 
-        <p className="mt-1 text-xs text-slate-400">
-          Courses completed through the OSTA learning platform.
-        </p>
-
-        <div className="mt-4 space-y-3">
-          {certificates.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center dark:border-slate-600">
-              <p className="text-sm text-slate-400">
-                No completed courses yet.
-              </p>
-            </div>
-          ) : (
-            certificates.map(
-              (certificate) => (
-                <div
-                  key={
-                    certificate.id
-                  }
-                  className="flex items-center gap-3 rounded-xl border border-slate-100 p-4 dark:border-slate-700"
-                >
-                  <Award
-                    size={18}
-                    className="shrink-0 text-primary"
-                  />
-
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-ink dark:text-white">
-                      {
-                        certificate.course_title
+                {editing && (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={
+                        saveProfile
                       }
-                    </p>
+                      disabled={
+                        saving
+                      }
+                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60"
+                    >
+                      <Save
+                        size={
+                          14
+                        }
+                      />
 
-                    <p className="text-xs text-slate-400">
-                      Completed{" "}
-                      {formatDate(
-                        certificate.completion_date
-                      )}
+                      {saving
+                        ? "Saving..."
+                        : "Save"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={
+                        cancelEdit
+                      }
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600"
+                    >
+                      <X size={14} />
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* =================================================
+                MESSAGES
+            ================================================= */}
+
+            {error && (
+              <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600">
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="rounded-xl border border-green-100 bg-green-50 p-4 text-sm font-semibold text-green-700">
+                {success}
+              </div>
+            )}
+
+            {/* =================================================
+                PERSONAL INFORMATION
+            ================================================= */}
+
+            <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-2">
+                <User
+                  size={17}
+                  className="text-primary"
+                />
+
+                <h2 className="text-base font-bold text-ink">
+                  Personal Information
+                </h2>
+              </div>
+
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                {[
+                  [
+                    "First Name",
+                    "firstName",
+                    form.firstName,
+                  ],
+                  [
+                    "Last Name",
+                    "lastName",
+                    form.lastName,
+                  ],
+                  [
+                    "Email",
+                    "email",
+                    form.email,
+                  ],
+                  [
+                    "Phone",
+                    "phone",
+                    form.phone,
+                  ],
+                  [
+                    "Region",
+                    "region",
+                    form.region,
+                  ],
+                ].map(
+                  ([
+                    label,
+                    field,
+                    value,
+                  ]) => (
+                    <div key={field}>
+                      <label className="mb-2 block text-xs font-bold text-slate-500">
+                        {label}
+                      </label>
+
+                      <input
+                        type={
+                          field ===
+                          "email"
+                            ? "email"
+                            : "text"
+                        }
+                        value={
+                          value
+                        }
+                        disabled={
+                          !editing
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          updateField(
+                            field,
+                            event
+                              .target
+                              .value
+                          )
+                        }
+                        className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-primary disabled:bg-slate-50 disabled:text-slate-500"
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+            </section>
+
+            {/* =================================================
+                ROLE CARD
+            ================================================= */}
+
+            <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-2">
+                <RoleIcon
+                  size={17}
+                  className="text-primary"
+                />
+
+                <h2 className="text-base font-bold text-ink">
+                  OSTA{" "}
+                  {
+                    roleInfo.label
+                  }{" "}
+                  Account
+                </h2>
+              </div>
+
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl bg-slate-50 p-5">
+                  <p className="text-xs font-semibold text-slate-400">
+                    Account Role
+                  </p>
+
+                  <p className="mt-1 text-sm font-bold text-ink">
+                    {roleInfo.label}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-slate-50 p-5">
+                  <p className="text-xs font-semibold text-slate-400">
+                    Account Status
+                  </p>
+
+                  <p className="mt-1 text-sm font-bold text-primary">
+                    Active
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* =================================================
+                SECURITY
+            ================================================= */}
+
+            <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light text-primary">
+                    <Lock size={18} />
+                  </div>
+
+                  <div>
+                    <h2 className="text-base font-bold text-ink">
+                      Account Security
+                    </h2>
+
+                    <p className="mt-1 text-xs leading-5 text-slate-400">
+                      Keep your OSTA account secure.
                     </p>
                   </div>
                 </div>
-              )
-            )
-          )}
-        </div>
-      </section>
 
-      {/* =================================================
-          ACCOUNT SECURITY
-      ================================================= */}
+                {!showPassword && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword(
+                        true
+                      )
+                    }
+                    className="text-xs font-bold text-primary hover:underline"
+                  >
+                    Change Password
+                  </button>
+                )}
+              </div>
 
-      <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold text-ink dark:text-white">
-              Account Security
-            </h2>
+              {showPassword && (
+                <div className="mt-5 max-w-xl space-y-4">
+                  <input
+                    type="password"
+                    placeholder="Current password"
+                    value={
+                      password.currentPassword
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setPassword(
+                        (
+                          previous
+                        ) => ({
+                          ...previous,
+                          currentPassword:
+                            event
+                              .target
+                              .value,
+                        })
+                      )
+                    }
+                    className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-primary"
+                  />
 
-            <p className="mt-1 text-xs text-slate-400">
-              Keep your OSTA account secure and up to date.
-            </p>
-          </div>
+                  <input
+                    type="password"
+                    placeholder="New password"
+                    value={
+                      password.newPassword
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setPassword(
+                        (
+                          previous
+                        ) => ({
+                          ...previous,
+                          newPassword:
+                            event
+                              .target
+                              .value,
+                        })
+                      )
+                    }
+                    className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-primary"
+                  />
 
-          {!showPasswordForm && (
-            <button
-              type="button"
-              onClick={() =>
-                setShowPasswordForm(
-                  true
-                )
-              }
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 hover:border-primary hover:text-primary dark:border-slate-600 dark:text-slate-300"
-            >
-              <Lock size={15} />
-              Change Password
-            </button>
-          )}
-        </div>
+                  <input
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={
+                      password.confirmPassword
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setPassword(
+                        (
+                          previous
+                        ) => ({
+                          ...previous,
+                          confirmPassword:
+                            event
+                              .target
+                              .value,
+                        })
+                      )
+                    }
+                    className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-primary"
+                  />
 
-        {showPasswordForm && (
-          <div className="mt-6 max-w-xl space-y-4">
-            <div>
-              <label className="mb-2 block text-xs font-bold text-slate-500">
-                Current Password
-              </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={
+                        changePassword
+                      }
+                      className="rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-white"
+                    >
+                      Change Password
+                    </button>
 
-              <input
-                type="password"
-                autoComplete="current-password"
-                value={
-                  passwordForm.currentPassword
-                }
-                onChange={(event) =>
-                  handlePasswordChange(
-                    "currentPassword",
-                    event.target
-                      .value
-                  )
-                }
-                className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-primary dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-              />
-            </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPassword(
+                          false
+                        )
+                      }
+                      className="rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
 
-            <div>
-              <label className="mb-2 block text-xs font-bold text-slate-500">
-                New Password
-              </label>
+            {/* =================================================
+                LOGOUT
+            ================================================= */}
 
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={
-                  passwordForm.newPassword
-                }
-                onChange={(event) =>
-                  handlePasswordChange(
-                    "newPassword",
-                    event.target
-                      .value
-                  )
-                }
-                className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-primary dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-              />
-            </div>
+            <section className="rounded-2xl border border-red-100 bg-red-50 p-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-base font-bold text-red-700">
+                    Sign out of OSTA
+                  </h2>
 
-            <div>
-              <label className="mb-2 block text-xs font-bold text-slate-500">
-                Confirm New Password
-              </label>
+                  <p className="mt-1 text-xs text-red-600/80">
+                    End your current session on this device.
+                  </p>
+                </div>
 
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={
-                  passwordForm.confirmPassword
-                }
-                onChange={(event) =>
-                  handlePasswordChange(
-                    "confirmPassword",
-                    event.target
-                      .value
-                  )
-                }
-                className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-primary dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={
-                  handleChangePassword
-                }
-                disabled={
-                  changingPassword
-                }
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"
-              >
-                <Lock size={14} />
-
-                {changingPassword
-                  ? "Changing..."
-                  : "Change Password"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPasswordForm(
-                    false
-                  );
-
-                  setPasswordForm({
-                    currentPassword:
-                      "",
-                    newPassword:
-                      "",
-                    confirmPassword:
-                      "",
-                  });
-
-                  setError("");
-                }}
-                className="rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-300"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* =================================================
-          ACCOUNT
-      ================================================= */}
-
-      <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-        <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300">
-            <UserCircle2
-              size={20}
-            />
-          </div>
-
-          <div>
-            <h2 className="text-lg font-bold text-ink dark:text-white">
-              Account
-            </h2>
-
-            <p className="mt-1 text-xs leading-5 text-slate-400">
-              Manage your OSTA account session. Logging out will
-              securely remove your active session from this browser.
-            </p>
+                <button
+                  type="button"
+                  onClick={
+                    logout
+                  }
+                  className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-100"
+                >
+                  <LogOut
+                    size={14}
+                  />
+                  Log Out
+                </button>
+              </div>
+            </section>
           </div>
         </div>
+      </main>
 
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="mt-5 inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-5 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-100"
-        >
-          <LogOut size={16} />
-          Log Out
-        </button>
-      </section>
+      {/* STUDENT BOTTOM NAV */}
+
+      {roleInfo.student && (
+        <BottomNav />
+      )}
     </div>
   );
 }

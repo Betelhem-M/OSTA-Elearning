@@ -1,60 +1,82 @@
-const pool = require("../config/database");
+const pool =
+  require("../config/database");
 
 const Hackathon = {
+  // =====================================================
+  // PUBLIC HACKATHONS
+  // =====================================================
+
   async findAll() {
-    const [rows] = await pool.execute(`
-      SELECT
-        h.id,
-        h.title,
-        h.description,
-        h.category,
-        h.deadline,
-        h.prize,
-        h.status,
-        h.created_by,
-        h.created_at,
-        COUNT(hp.id) AS team_count
-      FROM hackathons h
-      LEFT JOIN hackathon_participants hp
-        ON h.id = hp.hackathon_id
-      GROUP BY
-        h.id,
-        h.title,
-        h.description,
-        h.category,
-        h.deadline,
-        h.prize,
-        h.status,
-        h.created_by,
-        h.created_at
-      ORDER BY h.deadline ASC
-    `);
+    const [rows] =
+      await pool.execute(`
+        SELECT
+          h.id,
+          h.title,
+          h.description,
+          h.category,
+          h.deadline,
+          h.prize,
+          h.status,
+          h.created_by,
+          h.created_at,
+          COUNT(hp.id) AS team_count
+        FROM hackathons h
+        LEFT JOIN hackathon_participants hp
+          ON h.id = hp.hackathon_id
+        WHERE h.status IN (
+          'published',
+          'active',
+          'upcoming',
+          'completed'
+        )
+        GROUP BY
+          h.id,
+          h.title,
+          h.description,
+          h.category,
+          h.deadline,
+          h.prize,
+          h.status,
+          h.created_by,
+          h.created_at
+        ORDER BY
+          h.deadline ASC
+      `);
 
     return rows;
   },
 
+  // =====================================================
+  // FIND BY ID
+  // =====================================================
+
   async findById(id) {
-    const [rows] = await pool.execute(
-      `
-      SELECT
-        id,
-        title,
-        description,
-        category,
-        deadline,
-        prize,
-        status,
-        created_by,
-        created_at
-      FROM hackathons
-      WHERE id = ?
-      LIMIT 1
-      `,
-      [id]
-    );
+    const [rows] =
+      await pool.execute(
+        `
+        SELECT
+          id,
+          title,
+          description,
+          category,
+          deadline,
+          prize,
+          status,
+          created_by,
+          created_at
+        FROM hackathons
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [id]
+      );
 
     return rows[0] || null;
   },
+
+  // =====================================================
+  // CREATE
+  // =====================================================
 
   async create({
     title,
@@ -62,79 +84,107 @@ const Hackathon = {
     category,
     deadline,
     prize,
-    status = "draft",
+    status =
+      "draft",
     createdBy,
   }) {
-    const [result] = await pool.execute(
-      `
-      INSERT INTO hackathons
-      (
-        title,
-        description,
-        category,
-        deadline,
-        prize,
-        status,
-        created_by
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        title,
-        description || null,
-        category || null,
-        deadline,
-        prize || null,
-        status,
-        createdBy || null,
-      ]
-    );
+    const [result] =
+      await pool.execute(
+        `
+        INSERT INTO hackathons
+        (
+          title,
+          description,
+          category,
+          deadline,
+          prize,
+          status,
+          created_by
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          title,
+          description ||
+            null,
+          category ||
+            null,
+          deadline,
+          prize || null,
+          status,
+          createdBy ||
+            null,
+        ]
+      );
 
     return result.insertId;
   },
 
-  async update(id, {
-    title,
-    description,
-    category,
-    deadline,
-    prize,
-    status,
-  }) {
-    const [result] = await pool.execute(
-      `
-      UPDATE hackathons
-      SET
-        title = ?,
-        description = ?,
-        category = ?,
-        deadline = ?,
-        prize = ?,
-        status = ?
-      WHERE id = ?
-      `,
-      [
-        title,
-        description || null,
-        category || null,
-        deadline,
-        prize || null,
-        status,
-        id,
-      ]
-    );
+  // =====================================================
+  // UPDATE
+  // =====================================================
 
-    return result.affectedRows > 0;
+  async update(
+    id,
+    {
+      title,
+      description,
+      category,
+      deadline,
+      prize,
+      status,
+    }
+  ) {
+    const [result] =
+      await pool.execute(
+        `
+        UPDATE hackathons
+        SET
+          title = ?,
+          description = ?,
+          category = ?,
+          deadline = ?,
+          prize = ?,
+          status = ?
+        WHERE id = ?
+        `,
+        [
+          title,
+          description ||
+            null,
+          category ||
+            null,
+          deadline,
+          prize || null,
+          status,
+          id,
+        ]
+      );
+
+    return (
+      result.affectedRows > 0
+    );
   },
 
-  async delete(id) {
-    const [result] = await pool.execute(
-      "DELETE FROM hackathons WHERE id = ?",
-      [id]
-    );
+  // =====================================================
+  // DELETE
+  // =====================================================
 
-    return result.affectedRows > 0;
+  async delete(id) {
+    const [result] =
+      await pool.execute(
+        `
+        DELETE FROM hackathons
+        WHERE id = ?
+        `,
+        [id]
+      );
+
+    return (
+      result.affectedRows > 0
+    );
   },
 };
 
-module.exports = Hackathon;
+module.exports =
+  Hackathon;
