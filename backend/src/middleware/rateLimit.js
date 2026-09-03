@@ -1,0 +1,2 @@
+const buckets=new Map();
+module.exports=function rateLimit({windowMs=15*60*1000,max=10,message='Too many requests. Please try again later.'}={}){return(req,res,next)=>{const key=`${req.ip}:${req.baseUrl}${req.path}`;const now=Date.now();let b=buckets.get(key);if(!b||now-b.start>windowMs)b={start:now,count:0};b.count++;buckets.set(key,b);if(b.count>max)return res.status(429).json({success:false,message});next();};};

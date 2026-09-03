@@ -7,6 +7,8 @@ import {
 
 import {
   Activity,
+  Eye,
+  EyeOff,
   Award,
   BarChart3,
   Bell,
@@ -186,6 +188,18 @@ function getInitials(user) {
     user?.email?.[0] ||
     "U"
   ).toUpperCase();
+}
+
+function PasswordField(props) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <input {...props} type={visible ? "text" : "password"} className={`${props.className || ""} pr-11`} />
+      <button type="button" onClick={() => setVisible(v => !v)} aria-label={visible ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary">
+        {visible ? <EyeOff size={17} /> : <Eye size={17} />}
+      </button>
+    </div>
+  );
 }
 
 export default function Profile() {
@@ -1234,8 +1248,7 @@ export default function Profile() {
 
               {showPassword && (
                 <div className="mt-5 max-w-xl space-y-4">
-                  <input
-                    type="password"
+                  <PasswordField
                     placeholder="Current password"
                     value={
                       password.currentPassword
@@ -1258,8 +1271,7 @@ export default function Profile() {
                     className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-primary"
                   />
 
-                  <input
-                    type="password"
+                  <PasswordField
                     placeholder="New password"
                     value={
                       password.newPassword
@@ -1282,8 +1294,7 @@ export default function Profile() {
                     className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-primary"
                   />
 
-                  <input
-                    type="password"
+                  <PasswordField
                     placeholder="Confirm new password"
                     value={
                       password.confirmPassword

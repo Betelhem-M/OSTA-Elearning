@@ -3,7 +3,7 @@ const pool =
 
 const Hackathon = {
   // =====================================================
-  // PUBLIC HACKATHONS
+  // PUBLIC competitions
   // =====================================================
 
   async findAll() {
@@ -20,7 +20,7 @@ const Hackathon = {
           h.created_by,
           h.created_at,
           COUNT(hp.id) AS team_count
-        FROM hackathons h
+        FROM competitions h
         LEFT JOIN hackathon_participants hp
           ON h.id = hp.hackathon_id
         WHERE h.status IN (
@@ -64,7 +64,7 @@ const Hackathon = {
           status,
           created_by,
           created_at
-        FROM hackathons
+        FROM competitions
         WHERE id = ?
         LIMIT 1
         `,
@@ -91,7 +91,7 @@ const Hackathon = {
     const [result] =
       await pool.execute(
         `
-        INSERT INTO hackathons
+        INSERT INTO competitions
         (
           title,
           description,
@@ -138,7 +138,7 @@ const Hackathon = {
     const [result] =
       await pool.execute(
         `
-        UPDATE hackathons
+        UPDATE competitions
         SET
           title = ?,
           description = ?,
@@ -174,7 +174,7 @@ const Hackathon = {
     const [result] =
       await pool.execute(
         `
-        DELETE FROM hackathons
+        DELETE FROM competitions
         WHERE id = ?
         `,
         [id]

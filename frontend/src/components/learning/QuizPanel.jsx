@@ -41,16 +41,18 @@ export default function QuizPanel({
       setLoading(true);
       setError("");
 
-      const quizzes =
-        await apiRequest(
-          `/quizzes/course/${courseId}`
-        );
+     const quizResponse =
+  await apiRequest(
+    `/quizzes/course/${courseId}`
+  );
 
-      if (!Array.isArray(quizzes)) {
-        throw new Error(
-          "Invalid quiz response."
-        );
-      }
+const quizzes = quizResponse?.data;
+
+if (!Array.isArray(quizzes)) {
+  throw new Error(
+    "Invalid quiz response."
+  );
+}
 
       const lessonQuiz =
         quizzes.find(
@@ -127,125 +129,130 @@ export default function QuizPanel({
       );
     }, [quiz]);
 
-  async function startQuiz() {
-    try {
-      setError("");
-      setResult(null);
-      setAnswers({});
 
-      const response =
-        await apiRequest(
-          `/quizzes/${quiz.id}/attempts`,
-          {
-            method: "POST",
-          }
-        );
 
-      setAttempt(
-        response.attempt
-      );
-    } catch (err) {
-      setError(
-        err.message ||
-          "Failed to start quiz."
-      );
-    }
+async function startQuiz() {
+  if (!quiz?.id) {
+    setError("Quiz ID is missing.");
+    return;
   }
 
-  async function selectAnswer(
-    questionId,
-    optionId
-  ) {
-    if (!attempt) return;
+  try {
+    setError("");
+    setResult(null);
+    setAnswers({});
 
-    setAnswers(
-      (previous) => ({
-        ...previous,
-        [questionId]:
-          Number(optionId),
-      })
+    const response = await apiRequest(
+      `/quizzes/${quiz.id}/attempts`,
+      {
+        method: "POST",
+      }
     );
 
-    try {
-      setSavingAnswer(true);
-
-      await apiRequest(
-        `/quizzes/attempts/${attempt.id}/answers`,
-        {
-          method: "POST",
-          body: {
-            questionId:
-              Number(
-                questionId
-              ),
-            selectedOptionId:
-              Number(
-                optionId
-              ),
-          },
-        }
-      );
-    } catch (err) {
-      console.error(
-        "Save answer error:",
-        err
-      );
-
-      setError(
-        err.message ||
-          "Failed to save answer."
-      );
-    } finally {
-      setSavingAnswer(false);
+    if (!response?.attempt) {
+      throw new Error("Invalid attempt response from server.");
     }
+
+    setAttempt(response.attempt);
+  } catch (err) {
+    console.error("Start quiz error:", err);
+
+    setError(
+      err.message || "Failed to start quiz."
+    );
+  }
+}
+
+
+
+
+
+
+
+
+
+async function selectAnswer(questionId, optionId) {
+  if (!attempt?.id) {
+    setError("Quiz attempt is not available.");
+    return;
   }
 
-  async function submitQuiz() {
-    if (!attempt) return;
+  const numericQuestionId = Number(questionId);
+  const numericOptionId = Number(optionId);
 
-    const answeredCount =
-      Object.keys(
-        answers
-      ).length;
+  setAnswers((previous) => ({
+    ...previous,
+    [numericQuestionId]: numericOptionId,
+  }));
 
-    const totalQuestions =
-      quiz.questions.length;
+  try {
+    setSavingAnswer(true);
+    setError("");
 
-    if (
-      answeredCount <
-      totalQuestions
-    ) {
-      setError(
-        `Please answer all ${totalQuestions} questions before submitting.`
-      );
+    await apiRequest(
+      `/quiz-attempts/${attempt.id}/answers`,
+      {
+        method: "PUT",
+        body: {
+          questionId: numericQuestionId,
+          selectedOptionId: numericOptionId,
+        },
+      }
+    );
+  } catch (err) {
+    console.error("Save answer error:", err);
 
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      setError("");
-
-      const response =
-        await apiRequest(
-          `/quizzes/attempts/${attempt.id}/submit`,
-          {
-            method: "POST",
-          }
-        );
-
-      setResult(
-        response.result
-      );
-    } catch (err) {
-      setError(
-        err.message ||
-          "Failed to submit quiz."
-      );
-    } finally {
-      setSubmitting(false);
-    }
+    setError(
+      err.message || "Failed to save answer."
+    );
+  } finally {
+    setSavingAnswer(false);
   }
+}
+
+async function submitQuiz() {
+  if (!attempt?.id) {
+    setError("Quiz attempt is not available.");
+    return;
+  }
+
+  const answeredCount = Object.keys(answers).length;
+  const totalQuestions = quiz?.questions?.length || 0;
+
+  if (answeredCount < totalQuestions) {
+    setError(
+      `Please answer all ${totalQuestions} questions before submitting.`
+    );
+    return;
+  }
+
+  try {
+    setSubmitting(true);
+    setError("");
+
+    const response = await apiRequest(
+      `/quiz-attempts/${attempt.id}/submit`,
+      {
+        method: "POST",
+      }
+    );
+
+    if (!response?.result) {
+      throw new Error("Invalid quiz result response.");
+    }
+
+    setResult(response.result);
+  } catch (err) {
+    console.error("Submit quiz error:", err);
+
+    setError(
+      err.message || "Failed to submit quiz."
+    );
+  } finally {
+    setSubmitting(false);
+  }
+}
+
 
   if (loading) {
     return (

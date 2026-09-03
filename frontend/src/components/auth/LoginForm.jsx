@@ -37,7 +37,7 @@ export default function LoginForm() {
     try {
       const loggedInUser = await login(email, password);
 
-      navigate(getDashboardPath(loggedInUser.role));
+      navigate(getDashboardPath(loggedInUser.role, loggedInUser.account_type));
     } catch (error) {
       setErrors({
         email: '',
@@ -48,9 +48,7 @@ export default function LoginForm() {
   }
 
   function handleSocialClick(provider) {
-    alert(
-      `Signing in with ${provider} isn't available yet — there's no OAuth provider connected.`
-    );
+    setErrors((prev) => ({ ...prev, form: `${provider} sign-in is not available yet.` }));
   }
 
   return (

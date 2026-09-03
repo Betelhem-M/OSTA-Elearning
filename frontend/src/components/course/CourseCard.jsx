@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Heart, Star, Users } from 'lucide-react'
+import { Star, Users } from 'lucide-react'
+import BookmarkButton from '@components/bookmark/BookmarkButton'
 
 export default function CourseCard({ course }) {
   const [isWishlisted, setIsWishlisted] = useState(false)
@@ -12,33 +13,7 @@ export default function CourseCard({ course }) {
 
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_4px_14px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_12px_26px_rgba(15,23,42,0.1)]">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault()
-          setIsWishlisted((value) => !value)
-        }}
-        aria-label={
-          isWishlisted
-            ? `Remove ${course.title} from wishlist`
-            : `Add ${course.title} to wishlist`
-        }
-        aria-pressed={isWishlisted}
-        className={`absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 transition ${
-          isWishlisted
-            ? 'text-primary'
-            : 'text-slate-400 hover:text-primary'
-        }`}
-      >
-        <Heart
-          size={18}
-          fill={
-            isWishlisted
-              ? 'currentColor'
-              : 'none'
-          }
-        />
-      </button>
+      <BookmarkButton contentType="course" contentId={course.id} className="absolute right-3 top-3 z-10" />
 
       <Link to={`/courses/${course.id}`}>
         {/* Thumbnail */}

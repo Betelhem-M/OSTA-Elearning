@@ -12,7 +12,13 @@ import {
   RefreshCw,
 } from "lucide-react";
 
+
+
+
+
+
 import { apiRequest } from "@services/api";
+import ConfirmModal from "@components/ConfirmModal";
 
 export default function AdminCourses() {
   const [courses, setCourses] = useState([]);
@@ -33,8 +39,8 @@ export default function AdminCourses() {
   const [saving, setSaving] =
     useState(false);
 
-  const [deletingId, setDeletingId] =
-    useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [courseToDelete, setCourseToDelete] = useState(null);
 
   // =====================================================
   // LOAD ALL COURSES
@@ -302,14 +308,11 @@ export default function AdminCourses() {
   // DELETE
   // =====================================================
 
-  async function handleDelete(course) {
-    if (
-      !window.confirm(
-        `Delete "${course.title}"? This action cannot be undone.`
-      )
-    ) {
-      return;
-    }
+  function handleDelete(course) { setCourseToDelete(course); }
+
+  async function confirmDelete() {
+    const course = courseToDelete;
+    if (!course) return;
 
     try {
       setDeletingId(course.id);
@@ -353,6 +356,7 @@ export default function AdminCourses() {
       );
     } finally {
       setDeletingId(null);
+      setCourseToDelete(null);
     }
   }
 
@@ -1151,6 +1155,15 @@ export default function AdminCourses() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={Boolean(courseToDelete)}
+        title="Delete course?"
+        message={courseToDelete ? `Delete “${courseToDelete.title}”? Related learning data may also be affected.` : ""}
+        confirmText={deletingId ? "Deleting..." : "Delete course"}
+        onConfirm={confirmDelete}
+        onCancel={() => setCourseToDelete(null)}
+      />
+
     </div>
   );
 }

@@ -1,13 +1,10 @@
 const express = require("express");
 
-const instructorController =
-  require("../controllers/instructorController");
+const instructorController = require("../controllers/instructorController");
 
-const authMiddleware =
-  require("../middleware/authMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
 
-const roleMiddleware =
-  require("../middleware/roleMiddleware");
+const roleMiddleware = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
@@ -17,16 +14,11 @@ const router = express.Router();
 
 router.get(
   "/dashboard",
-
   authMiddleware,
-
-  roleMiddleware(
-    "instructor",
-    "admin"
-  ),
-
+  roleMiddleware("instructor", "admin"),
   instructorController.getDashboard
 );
+
 // =====================================================
 // INSTRUCTOR ANALYTICS
 // =====================================================
@@ -39,20 +31,34 @@ router.get(
 );
 
 // =====================================================
-// INSTRUCTOR SUBMISSIONS
+// INSTRUCTOR STUDENT PROGRESS
 // =====================================================
 
 router.get(
-  "/submissions",
-
+  "/students/progress",
   authMiddleware,
+  roleMiddleware("instructor", "admin"),
+  instructorController.getStudentProgress
+);
 
-  roleMiddleware(
-    "instructor",
-    "admin"
-  ),
+// =====================================================
+// INSTRUCTOR SUBMISSIONS
+// =====================================================
 
+// View all student submissions
+router.get(
+  "/submissions",
+  authMiddleware,
+  roleMiddleware("instructor", "admin"),
   instructorController.getSubmissions
+);
+
+// Grade a student submission
+router.put(
+  "/submissions/:submissionId/grade",
+  authMiddleware,
+  roleMiddleware("instructor", "admin"),
+  instructorController.gradeSubmission
 );
 
 // =====================================================
@@ -61,15 +67,19 @@ router.get(
 
 router.get(
   "/students",
-
   authMiddleware,
-
-  roleMiddleware(
-    "instructor",
-    "admin"
-  ),
-
+  roleMiddleware("instructor", "admin"),
   instructorController.getStudents
+);
+// =====================================================
+// INSTRUCTOR STUDENT PROGRESS
+// =====================================================
+
+router.get(
+  "/student-progress",
+  authMiddleware,
+  roleMiddleware("instructor", "admin"),
+  instructorController.getStudentProgress
 );
 
 module.exports = router;

@@ -1,0 +1,1 @@
+const express=require('express');const auth=require('../middleware/authMiddleware');const roles=require('../middleware/roleMiddleware');const c=require('../controllers/portalController');const router=express.Router();router.get('/researcher',auth,c.researcher);router.get('/entrepreneur',auth,c.entrepreneur);module.exports=router;

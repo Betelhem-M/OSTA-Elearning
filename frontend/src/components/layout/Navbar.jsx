@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, Search } from 'lucide-react'
 import { useState } from 'react'
 import { PUBLIC_NAV } from '@constants/navigation'
 import Button from '@components/ui/Button'
+import ThemeToggle from '@components/ui/ThemeToggle'
+import LanguageSwitcher from '@components/ui/LanguageSwitcher'
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -28,7 +30,7 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-3 sm:flex">
+        <div className="hidden items-center gap-2 sm:flex"><Link to="/search" aria-label="Search" className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"><Search size={18}/></Link><ThemeToggle/><LanguageSwitcher/>
           <Button as={Link} to="/login" variant="ghost">
             Sign In
           </Button>

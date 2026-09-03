@@ -1,91 +1,16 @@
-const express =
-  require("express");
-
-const researchController =
-  require("../controllers/researchController");
-
-const authMiddleware =
-  require("../middleware/authMiddleware");
-
-const router =
-  express.Router();
-
-// =====================================================
-// PUBLIC
-// =====================================================
-
-router.get(
-  "/researchers",
-  researchController.getResearchers
-);
-
-router.get(
-  "/researchers/:id",
-  researchController.getResearcher
-);
-
-router.get(
-  "/publications",
-  researchController.getPublications
-);
-
-// =====================================================
-// AUTHENTICATED RESEARCH ACCESS
-// =====================================================
-
-router.get(
-  "/publications/:id",
-  authMiddleware,
-  researchController.getPublication
-);
-
-// =====================================================
-// RESEARCHER PROFILE
-// =====================================================
-
-router.post(
-  "/researchers",
-  authMiddleware,
-  researchController.createResearcher
-);
-
-// =====================================================
-// PUBLICATION MANAGEMENT
-// =====================================================
-
-router.post(
-  "/publications",
-  authMiddleware,
-  researchController.createPublication
-);
-
-router.put(
-  "/publications/:id",
-  authMiddleware,
-  researchController.updatePublication
-);
-
-router.delete(
-  "/publications/:id",
-  authMiddleware,
-  researchController.deletePublication
-);
-
-// =====================================================
-// ADMIN MODERATION
-// =====================================================
-
-router.get(
-  "/admin/publications",
-  authMiddleware,
-  researchController.getAllForAdmin
-);
-
-router.put(
-  "/admin/publications/:id/status",
-  authMiddleware,
-  researchController.updatePublicationStatus
-);
-
-module.exports =
-  router;
+const express=require('express');
+const c=require('../controllers/researchController');
+const auth=require('../middleware/authMiddleware');
+const roles=require('../middleware/roleMiddleware');
+const router=express.Router();
+router.get('/researchers',c.getResearchers);
+router.get('/researchers/:id',c.getResearcher);
+router.get('/publications',c.getPublications);
+router.get('/publications/:id',auth,c.getPublication);
+router.post('/researchers',auth,c.createResearcher);
+router.post('/publications',auth,c.createPublication);
+router.put('/publications/:id',auth,c.updatePublication);
+router.delete('/publications/:id',auth,c.deletePublication);
+router.get('/admin/publications',auth,roles('admin'),c.getAllForAdmin);
+router.put('/admin/publications/:id/status',auth,roles('admin'),c.updatePublicationStatus);
+module.exports=router;

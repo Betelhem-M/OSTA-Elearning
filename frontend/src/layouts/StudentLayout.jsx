@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 
 import Sidebar from "@components/layout/Sidebar";
+import LanguageSwitcher from "@components/ui/LanguageSwitcher";
+import ThemeToggle from "@components/ui/ThemeToggle";
 import BottomNav from "@components/layout/BottomNav";
 
 import {
@@ -105,7 +107,7 @@ export default function StudentLayout() {
 
         {/* HEADER ACTIONS */}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3"><ThemeToggle /><LanguageSwitcher />
 
           {/* NOTIFICATIONS */}
 

@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   Users,
   BookOpen,
   CalendarDays,
   RefreshCw,
+  ChevronRight,
 } from "lucide-react";
 
 const API_URL = "http://localhost:5000/api";
 
 export default function Students() {
+  const navigate = useNavigate();
+
   const [students, setStudents] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -85,9 +89,14 @@ export default function Students() {
   // INITIAL LOAD
   // =====================================================
 
-  useEffect(() => {
-    loadStudents();
-  }, []);
+ useEffect(() => {
+  const fetchStudents = async () => {
+    await loadStudents();
+  };
+  
+  fetchStudents();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   // =====================================================
   // SEARCH
@@ -168,6 +177,14 @@ export default function Students() {
       .join("")
       .slice(0, 2)
       .toUpperCase();
+  }
+
+  // =====================================================
+  // NAVIGATE TO PROGRESS
+  // =====================================================
+
+  function openProgress(studentId) {
+    navigate(`/instructor/students/${studentId}/progress`);
   }
 
   // =====================================================
@@ -320,7 +337,7 @@ export default function Students() {
             </h2>
 
             <p className="mt-1 text-xs text-slate-400">
-              Students enrolled in at least one of your courses.
+              Students enrolled in at least one of your courses. Click a row to view detailed progress.
             </p>
           </div>
 
@@ -366,6 +383,10 @@ export default function Students() {
                   Last Enrollment
                 </th>
 
+                <th className="px-5 py-3 text-right">
+                  Progress
+                </th>
+
               </tr>
             </thead>
 
@@ -374,7 +395,8 @@ export default function Students() {
               {filteredStudents.map((student) => (
                 <tr
                   key={student.id}
-                  className="hover:bg-slate-50/70"
+                  onClick={() => openProgress(student.id)}
+                  className="cursor-pointer transition hover:bg-slate-50/70"
                 >
 
                   {/* STUDENT */}
@@ -455,6 +477,22 @@ export default function Students() {
                     </div>
                   </td>
 
+                  {/* VIEW PROGRESS */}
+
+                  <td className="px-5 py-4">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openProgress(student.id);
+                      }}
+                      className="ml-auto flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-primary transition hover:border-primary hover:bg-primary-light"
+                    >
+                      View Progress
+                      <ChevronRight size={14} />
+                    </button>
+                  </td>
+
                 </tr>
               ))}
 
@@ -463,7 +501,7 @@ export default function Students() {
               {filteredStudents.length === 0 && (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="px-5 py-10 text-center"
                   >
 

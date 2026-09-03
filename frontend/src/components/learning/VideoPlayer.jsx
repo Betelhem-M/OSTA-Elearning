@@ -19,6 +19,50 @@ function formatTime(totalSeconds) {
   return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
 }
 
+// =====================================================
+// YOUTUBE DETECTION
+// =====================================================
+
+/**
+ * Extracts the video ID from common YouTube URL formats:
+ * watch?v=, youtu.be/, embed/, shorts/. Returns null if the
+ * URL isn't a recognizable YouTube link.
+ */
+function getYouTubeId(url) {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, "");
+
+    if (host === "youtu.be") {
+      return parsed.pathname.slice(1) || null;
+    }
+
+    if (
+      host === "youtube.com" ||
+      host === "m.youtube.com" ||
+      host === "youtube-nocookie.com"
+    ) {
+      if (parsed.searchParams.get("v")) {
+        return parsed.searchParams.get("v");
+      }
+
+      const match = parsed.pathname.match(
+        /\/(embed|shorts)\/([^/?]+)/
+      );
+
+      if (match) {
+        return match[2];
+      }
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export default function VideoPlayer({
   videoUrl,
   title,
@@ -29,6 +73,9 @@ export default function VideoPlayer({
 }) {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
+
+  const youTubeId = getYouTubeId(videoUrl);
+  const isYouTube = Boolean(youTubeId);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -70,6 +117,8 @@ export default function VideoPlayer({
   ]);
 
   useEffect(() => {
+    if (isYouTube) return;
+
     const video = videoRef.current;
 
     if (!video) return;
@@ -102,7 +151,7 @@ export default function VideoPlayer({
         applyInitialPosition
       );
     };
-  }, [initialPosition, videoUrl]);
+  }, [initialPosition, videoUrl, isYouTube]);
 
   function handleLoadedMetadata() {
     const video = videoRef.current;
@@ -273,6 +322,37 @@ export default function VideoPlayer({
     console.error(
       "Video failed to load:",
       event.currentTarget.error
+    );
+  }
+
+  // =====================================================
+  // YOUTUBE EMBED
+  // =====================================================
+  // YouTube links can't be played by a native <video> tag —
+  // they need the YouTube iframe player instead. Custom
+  // progress/controls below don't apply to the iframe, so we
+  // skip them and rely on YouTube's own player controls.
+
+  if (isYouTube) {
+    return (
+      <div
+        ref={containerRef}
+        className="overflow-hidden rounded-t-xl bg-[#080d13] shadow-2xl"
+      >
+        <div className="relative aspect-video bg-black">
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${youTubeId}`}
+            title={title || "Lesson video"}
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+
+        <div className="bg-[#0F1923] px-4 py-3 text-xs text-slate-400">
+          {title}
+        </div>
+      </div>
     );
   }
 

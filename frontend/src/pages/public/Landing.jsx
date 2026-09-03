@@ -595,7 +595,7 @@ export default function Landing() {
             </h3>
 
             <p className="mt-1 text-xs leading-5 text-slate-500">
-              Explore ideas, startups, hackathons, and innovation opportunities.
+              Explore ideas, startups, competitions, and innovation opportunities.
             </p>
 
             <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary">
@@ -646,7 +646,7 @@ export default function Landing() {
             </h3>
 
             <p className="mt-1 text-xs leading-5 text-slate-500">
-              Challenge yourself through competitions, hackathons, and technology events.
+              Challenge yourself through competitions, competitions, and technology events.
             </p>
 
             <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary">

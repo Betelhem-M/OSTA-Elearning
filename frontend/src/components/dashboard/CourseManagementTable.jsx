@@ -15,124 +15,73 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-import {
-  Link,
-} from "react-router-dom";
+import { Link } from "react-router-dom";
+import ConfirmModal from "../ConfirmModal";
 
-const API_URL =
-  "http://localhost:5000/api";
+const API_URL = "http://localhost:5000/api";
 
 export default function CourseManagementTable() {
-  const [courses, setCourses] =
-    useState([]);
+  const [courses, setCourses] = useState([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [editingCourse, setEditingCourse] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [openMenu, setOpenMenu] = useState(null);
 
-  const [search, setSearch] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
-
-  const [editingCourse, setEditingCourse] =
-    useState(null);
-
-  const [saving, setSaving] =
-    useState(false);
-
-  const [openMenu, setOpenMenu] =
-    useState(null);
+  // DELETE MODAL STATE
+  const [courseToDelete, setCourseToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // =====================================================
   // GET TOKEN
   // =====================================================
-
   function getToken() {
-    return localStorage.getItem(
-      "osta_token"
-    );
+    return localStorage.getItem("osta_token");
   }
 
   // =====================================================
   // FETCH INSTRUCTOR COURSES
   // =====================================================
-
   async function loadCourses() {
     try {
       setLoading(true);
       setError("");
 
-      const token =
-        getToken();
+      const token = getToken();
 
       if (!token) {
-        setError(
-          "Your instructor session is not available. Please log in again."
-        );
+        setError("Your instructor session is not available. Please log in again.");
         return;
       }
 
-      const response =
-        await fetch(
-          `${API_URL}/courses/my-courses`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+      const response = await fetch(`${API_URL}/courses/my-courses`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      const data =
-        await response
-          .json()
-          .catch(() => ({}));
+      const data = await response.json().catch(() => ({}));
 
-      if (
-        response.status ===
-        401
-      ) {
-        setError(
-          "Your session is no longer valid. Please log in again."
-        );
-
+      if (response.status === 401) {
+        setError("Your session is no longer valid. Please log in again.");
         return;
       }
 
-      if (
-        response.status ===
-        403
-      ) {
-        setError(
-          "You do not have permission to access instructor courses."
-        );
-
+      if (response.status === 403) {
+        setError("You do not have permission to access instructor courses.");
         return;
       }
 
       if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "Failed to fetch courses"
-        );
+        throw new Error(data.message || "Failed to fetch courses");
       }
 
-      setCourses(
-        Array.isArray(data)
-          ? data
-          : []
-      );
+      setCourses(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error(
-        "Load instructor courses error:",
-        err
-      );
-
-      setError(
-        err.message ||
-          "Failed to load courses"
-      );
+      console.error("Load instructor courses error:", err);
+      setError(err.message || "Failed to load courses");
     } finally {
       setLoading(false);
     }
@@ -145,164 +94,90 @@ export default function CourseManagementTable() {
   // =====================================================
   // SEARCH
   // =====================================================
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
 
-  const filtered =
-    useMemo(() => {
-      const query =
-        search
-          .trim()
-          .toLowerCase();
-
-      if (!query) {
-        return courses;
-      }
-
-      return courses.filter(
-        (course) =>
-          String(
-            course.title ||
-              ""
-          )
-            .toLowerCase()
-            .includes(query) ||
-          String(
-            course.category_name ||
-              ""
-          )
-            .toLowerCase()
-            .includes(query)
-      );
-    }, [
-      courses,
-      search,
-    ]);
-
-  // =====================================================
-  // DELETE COURSE
-  // =====================================================
-
-  async function handleDelete(
-    course
-  ) {
-    const confirmed =
-      window.confirm(
-        `Are you sure you want to delete "${course.title}"?`
-      );
-
-    if (!confirmed) {
-      return;
+    if (!query) {
+      return courses;
     }
 
+    return courses.filter(
+      (course) =>
+        String(course.title || "").toLowerCase().includes(query) ||
+        String(course.category_name || "").toLowerCase().includes(query)
+    );
+  }, [courses, search]);
+
+  // =====================================================
+  // DELETE HANDLERS
+  // =====================================================
+  function promptDeleteCourse(course) {
+    setCourseToDelete(course);
+    setOpenMenu(null);
+  }
+
+  async function handleConfirmDelete() {
+    if (!courseToDelete) return;
+
     try {
-      const token =
-        getToken();
+      setIsDeleting(true);
+      const token = getToken();
 
       if (!token) {
-        setError(
-          "Your instructor session is not available."
-        );
+        setError("Your instructor session is not available.");
         return;
       }
 
       setError("");
 
-      const response =
-        await fetch(
-          `${API_URL}/courses/${course.id}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+      const response = await fetch(`${API_URL}/courses/${courseToDelete.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      const data =
-        await response
-          .json()
-          .catch(() => ({}));
+      const data = await response.json().catch(() => ({}));
 
-      if (
-        response.status ===
-        401
-      ) {
-        setError(
-          "Your session is no longer valid. Please log in again."
-        );
+      if (response.status === 401) {
+        setError("Your session is no longer valid. Please log in again.");
         return;
       }
 
       if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "Failed to delete course"
-        );
+        throw new Error(data.message || "Failed to delete course");
       }
 
-      setCourses(
-        (previous) =>
-          previous.filter(
-            (item) =>
-              Number(
-                item.id
-              ) !==
-              Number(
-                course.id
-              )
-          )
+      // Remove deleted course from list
+      setCourses((previous) =>
+        previous.filter(
+          (item) => Number(item.id) !== Number(courseToDelete.id)
+        )
       );
 
-      setOpenMenu(null);
-
-      window.alert(
-        "Course deleted successfully."
-      );
+      setCourseToDelete(null); // Close modal
     } catch (err) {
-      console.error(
-        "Delete course error:",
-        err
-      );
-
-      setError(
-        err.message ||
-          "Failed to delete course."
-      );
+      console.error("Delete course error:", err);
+      setError(err.message || "Failed to delete course.");
+    } finally {
+      setIsDeleting(false);
     }
   }
 
   // =====================================================
   // OPEN EDIT
   // =====================================================
-
-  function handleEdit(
-    course
-  ) {
+  function handleEdit(course) {
     setEditingCourse({
       id: course.id,
-      title:
-        course.title ||
-        "",
-      description:
-        course.description ||
-        "",
-      longDescription:
-        course.long_description ||
-        "",
-      categoryId:
-        course.category_id ||
-        "",
-      level:
-        course.level ||
-        "Beginner",
-      price:
-        course.price ??
-        0,
-      thumbnailColor:
-        course.thumbnail_color ||
-        "#2E7D32",
-      status:
-        course.status ||
-        "draft",
+      title: course.title || "",
+      description: course.description || "",
+      longDescription: course.long_description || "",
+      categoryId: course.category_id || "",
+      level: course.level || "Beginner",
+      price: course.price ?? 0,
+      thumbnailColor: course.thumbnail_color || "#2E7D32",
+      status: course.status || "draft",
     });
 
     setOpenMenu(null);
@@ -311,10 +186,7 @@ export default function CourseManagementTable() {
   // =====================================================
   // UPDATE COURSE
   // =====================================================
-
-  async function handleSaveEdit(
-    event
-  ) {
+  async function handleSaveEdit(event) {
     event.preventDefault();
 
     if (!editingCourse) {
@@ -325,122 +197,59 @@ export default function CourseManagementTable() {
       setSaving(true);
       setError("");
 
-      const token =
-        getToken();
+      const token = getToken();
 
       if (!token) {
-        setError(
-          "Your instructor session is not available."
-        );
+        setError("Your instructor session is not available.");
         return;
       }
 
-      const response =
-        await fetch(
-          `${API_URL}/courses/${editingCourse.id}`,
-          {
-            method: "PUT",
+      const response = await fetch(`${API_URL}/courses/${editingCourse.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: editingCourse.title,
+          description: editingCourse.description,
+          longDescription: editingCourse.longDescription,
+          categoryId: editingCourse.categoryId,
+          level: editingCourse.level,
+          price: editingCourse.price,
+          thumbnailColor: editingCourse.thumbnailColor,
+          status: editingCourse.status,
+        }),
+      });
 
-            headers: {
-              "Content-Type":
-                "application/json",
+      const data = await response.json().catch(() => ({}));
 
-              Authorization:
-                `Bearer ${token}`,
-            },
-
-            body: JSON.stringify({
-              title:
-                editingCourse.title,
-
-              description:
-                editingCourse.description,
-
-              longDescription:
-                editingCourse.longDescription,
-
-              categoryId:
-                editingCourse.categoryId,
-
-              level:
-                editingCourse.level,
-
-              price:
-                editingCourse.price,
-
-              thumbnailColor:
-                editingCourse.thumbnailColor,
-
-              status:
-                editingCourse.status,
-            }),
-          }
-        );
-
-      const data =
-        await response
-          .json()
-          .catch(() => ({}));
-
-      if (
-        response.status ===
-        401
-      ) {
-        setError(
-          "Your session is no longer valid. Please log in again."
-        );
+      if (response.status === 401) {
+        setError("Your session is no longer valid. Please log in again.");
         return;
       }
 
-      if (
-        response.status ===
-        403
-      ) {
-        setError(
-          "You are not allowed to modify this course."
-        );
+      if (response.status === 403) {
+        setError("You are not allowed to modify this course.");
         return;
       }
 
       if (!response.ok) {
-        throw new Error(
-          data.message ||
-            "Failed to update course"
-        );
+        throw new Error(data.message || "Failed to update course");
       }
 
-      setCourses(
-        (previous) =>
-          previous.map(
-            (course) =>
-              Number(
-                course.id
-              ) ===
-              Number(
-                editingCourse.id
-              )
-                ? data.course
-                : course
-          )
+      setCourses((previous) =>
+        previous.map((course) =>
+          Number(course.id) === Number(editingCourse.id)
+            ? data.course || course
+            : course
+        )
       );
 
-      setEditingCourse(
-        null
-      );
-
-      window.alert(
-        "Course updated successfully."
-      );
+      setEditingCourse(null);
     } catch (err) {
-      console.error(
-        "Update course error:",
-        err
-      );
-
-      setError(
-        err.message ||
-          "Failed to update course."
-      );
+      console.error("Update course error:", err);
+      setError(err.message || "Failed to update course.");
     } finally {
       setSaving(false);
     }
@@ -449,13 +258,10 @@ export default function CourseManagementTable() {
   // =====================================================
   // LOADING
   // =====================================================
-
   if (loading) {
     return (
       <section className="rounded-2xl bg-white p-8 text-center shadow-[0_2px_12px_rgba(0,0,0,0.07)]">
-        <p className="text-sm text-slate-500">
-          Loading your instructor courses...
-        </p>
+        <p className="text-sm text-slate-500">Loading your instructor courses...</p>
       </section>
     );
   }
@@ -463,20 +269,14 @@ export default function CourseManagementTable() {
   // =====================================================
   // ERROR
   // =====================================================
-
   if (error) {
     return (
       <section className="rounded-2xl bg-white p-8 text-center shadow-[0_2px_12px_rgba(0,0,0,0.07)]">
-        <p className="text-sm font-semibold text-red-500">
-          {error}
-        </p>
-
+        <p className="text-sm font-semibold text-red-500">{error}</p>
         <button
           type="button"
-          onClick={
-            loadCourses
-          }
-          className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary-hover"
+          onClick={loadCourses}
+          className="mt-4 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700"
         >
           Try Again
         </button>
@@ -489,14 +289,10 @@ export default function CourseManagementTable() {
       {/* =================================================
           COURSE TABLE
       ================================================= */}
-
       <section className="rounded-2xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.07)]">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5">
           <div>
-            <h2 className="text-sm font-bold text-ink">
-              My Courses
-            </h2>
-
+            <h2 className="text-sm font-bold text-slate-900">My Courses</h2>
             <p className="mt-1 text-xs text-slate-400">
               Courses owned and managed by your instructor account.
             </p>
@@ -507,18 +303,12 @@ export default function CourseManagementTable() {
               size={15}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
-
             <input
               type="search"
               value={search}
-              onChange={(event) =>
-                setSearch(
-                  event.target
-                    .value
-                )
-              }
+              onChange={(event) => setSearch(event.target.value)}
               placeholder="Search your courses..."
-              className="h-9 rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="h-9 rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
             />
           </div>
         </div>
@@ -527,270 +317,171 @@ export default function CourseManagementTable() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-xs font-bold uppercase tracking-wide text-slate-400">
-                <th className="px-5 py-3">
-                  Course
-                </th>
-
-                <th className="px-5 py-3">
-                  Students
-                </th>
-
-                <th className="px-5 py-3">
-                  Status
-                </th>
-
-                <th className="px-5 py-3">
-                  Last Updated
-                </th>
-
-                <th className="px-5 py-3 text-right">
-                  Actions
-                </th>
+                <th className="px-5 py-3">Course</th>
+                <th className="px-5 py-3">Students</th>
+                <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3">Last Updated</th>
+                <th className="px-5 py-3 text-right">Actions</th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-slate-100">
-              {filtered.map(
-                (course) => (
-                  <tr
-                    key={
-                      course.id
-                    }
-                    className="hover:bg-slate-50/70"
-                  >
-                    {/* COURSE */}
-
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="h-10 w-12 shrink-0 rounded-lg"
-                          style={{
-                            backgroundColor:
-                              course.thumbnail_color ||
-                              "#2E7D32",
-                          }}
-                        />
-
-                        <div className="min-w-0">
-                          <p className="truncate font-semibold text-ink">
-                            {
-                              course.title
-                            }
-                          </p>
-
-                          <p className="text-xs text-slate-400">
-                            {course.category_name ||
-                              "Uncategorized"}
-                          </p>
-                        </div>
+              {filtered.map((course) => (
+                <tr key={course.id} className="hover:bg-slate-50/70">
+                  {/* COURSE */}
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="h-10 w-12 shrink-0 rounded-lg"
+                        style={{
+                          backgroundColor:
+                            course.thumbnail_color || "#2E7D32",
+                        }}
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-slate-900">
+                          {course.title}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {course.category_name || "Uncategorized"}
+                        </p>
                       </div>
-                    </td>
+                    </div>
+                  </td>
 
-                    {/* STUDENTS */}
+                  {/* STUDENTS */}
+                  <td className="px-5 py-3 text-slate-600">
+                    {course.students ?? 0}
+                  </td>
 
-                    <td className="px-5 py-3 text-slate-600">
-                      {course.students ??
-                        0}
-                    </td>
+                  {/* STATUS */}
+                  <td className="px-5 py-3">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                        course.status === "published"
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {course.status || "draft"}
+                    </span>
+                  </td>
 
-                    {/* STATUS */}
+                  {/* UPDATED */}
+                  <td className="px-5 py-3 text-slate-500">
+                    {course.updated_at
+                      ? new Date(course.updated_at).toLocaleDateString()
+                      : "—"}
+                  </td>
 
-                    <td className="px-5 py-3">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                          course.status ===
-                          "published"
-                            ? "bg-primary-light text-primary"
-                            : "bg-slate-100 text-slate-500"
-                        }`}
+                  {/* ACTIONS */}
+                  <td className="px-5 py-3">
+                    <div className="flex justify-end gap-1">
+                      {/* MANAGE */}
+                      <Link
+                        to={`/instructor/courses/${course.id}`}
+                        aria-label={`Manage ${course.title}`}
+                        className="rounded-md p-2 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600"
+                        title="Manage course"
                       >
-                        {course.status ||
-                          "draft"}
-                      </span>
-                    </td>
+                        <Eye size={15} />
+                      </Link>
 
-                    {/* UPDATED */}
+                      {/* PUBLIC PREVIEW */}
+                      <Link
+                        to={`/courses/${course.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Open public preview of ${course.title}`}
+                        title="Open public preview"
+                        className="rounded-md p-2 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600"
+                      >
+                        <ExternalLink size={15} />
+                      </Link>
 
-                    <td className="px-5 py-3 text-slate-500">
-                      {course.updated_at
-                        ? new Date(
-                            course.updated_at
-                          ).toLocaleDateString()
-                        : "—"}
-                    </td>
+                      {/* EDIT */}
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(course)}
+                        aria-label={`Edit ${course.title}`}
+                        title="Edit course"
+                        className="rounded-md p-2 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600"
+                      >
+                        <Pencil size={15} />
+                      </button>
 
-                    {/* ACTIONS */}
+                      {/* DELETE (OPENS MODAL) */}
+                      <button
+                        type="button"
+                        onClick={() => promptDeleteCourse(course)}
+                        aria-label={`Delete ${course.title}`}
+                        title="Delete course"
+                        className="rounded-md p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 size={15} />
+                      </button>
 
-                    <td className="px-5 py-3">
-                      <div className="flex justify-end gap-1">
-                        {/* MANAGE */}
+                      {/* MORE */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOpenMenu(openMenu === course.id ? null : course.id)
+                        }
+                        aria-label={`More actions for ${course.title}`}
+                        title="More actions"
+                        className="rounded-md p-2 text-slate-400 hover:bg-slate-100"
+                      >
+                        <MoreVertical size={15} />
+                      </button>
+                    </div>
 
-                        <Link
-                          to={`/instructor/courses/${course.id}`}
-                          aria-label={`Manage ${course.title}`}
-                          className="rounded-md p-2 text-slate-400 hover:bg-primary-light hover:text-primary"
-                          title="Manage course"
-                        >
-                          <Eye
-                            size={
-                              15
-                            }
-                          />
-                        </Link>
+                    {/* MORE MENU DROPDOWN */}
+                    {openMenu === course.id && (
+                      <div className="relative">
+                        <div className="absolute right-0 z-20 mt-2 w-48 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+                          <Link
+                            to={`/instructor/courses/${course.id}`}
+                            onClick={() => setOpenMenu(null)}
+                            className="block rounded-md px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                          >
+                            Manage Course
+                          </Link>
 
-                        {/* PUBLIC PREVIEW */}
+                          <Link
+                            to={`/courses/${course.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setOpenMenu(null)}
+                            className="block rounded-md px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                          >
+                            Open Public Preview
+                          </Link>
 
-                        <Link
-                          to={`/courses/${course.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label={`Open public preview of ${course.title}`}
-                          title="Open public preview"
-                          className="rounded-md p-2 text-slate-400 hover:bg-primary-light hover:text-primary"
-                        >
-                          <ExternalLink
-                            size={
-                              15
-                            }
-                          />
-                        </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(course)}
+                            className="block w-full rounded-md px-3 py-2 text-left text-xs font-medium text-slate-600 hover:bg-slate-50"
+                          >
+                            Edit Course
+                          </button>
 
-                        {/* EDIT */}
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleEdit(
-                              course
-                            )
-                          }
-                          aria-label={`Edit ${course.title}`}
-                          title="Edit course"
-                          className="rounded-md p-2 text-slate-400 hover:bg-primary-light hover:text-primary"
-                        >
-                          <Pencil
-                            size={
-                              15
-                            }
-                          />
-                        </button>
-
-                        {/* DELETE */}
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleDelete(
-                              course
-                            )
-                          }
-                          aria-label={`Delete ${course.title}`}
-                          title="Delete course"
-                          className="rounded-md p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                        >
-                          <Trash2
-                            size={
-                              15
-                            }
-                          />
-                        </button>
-
-                        {/* MORE */}
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setOpenMenu(
-                              openMenu ===
-                                course.id
-                                ? null
-                                : course.id
-                            )
-                          }
-                          aria-label={`More actions for ${course.title}`}
-                          title="More actions"
-                          className="rounded-md p-2 text-slate-400 hover:bg-slate-100"
-                        >
-                          <MoreVertical
-                            size={
-                              15
-                            }
-                          />
-                        </button>
-                      </div>
-
-                      {/* MORE MENU */}
-
-                      {openMenu ===
-                        course.id && (
-                        <div className="relative">
-                          <div className="absolute right-0 z-20 mt-2 w-48 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
-                            <Link
-                              to={`/instructor/courses/${course.id}`}
-                              onClick={() =>
-                                setOpenMenu(
-                                  null
-                                )
-                              }
-                              className="block rounded-md px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                            >
-                              Manage Course
-                            </Link>
-
-                            <Link
-                              to={`/courses/${course.id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={() =>
-                                setOpenMenu(
-                                  null
-                                )
-                              }
-                              className="block rounded-md px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                            >
-                              Open Public Preview
-                            </Link>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleEdit(
-                                  course
-                                )
-                              }
-                              className="block w-full rounded-md px-3 py-2 text-left text-xs font-medium text-slate-600 hover:bg-slate-50"
-                            >
-                              Edit Course
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleDelete(
-                                  course
-                                )
-                              }
-                              className="block w-full rounded-md px-3 py-2 text-left text-xs font-medium text-red-500 hover:bg-red-50"
-                            >
-                              Delete Course
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => promptDeleteCourse(course)}
+                            className="block w-full rounded-md px-3 py-2 text-left text-xs font-medium text-red-500 hover:bg-red-50"
+                          >
+                            Delete Course
+                          </button>
                         </div>
-                      )}
-                    </td>
-                  </tr>
-                )
-              )}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
 
-              {filtered.length ===
-                0 && (
+              {filtered.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={
-                      5
-                    }
-                    className="px-5 py-8 text-center text-sm text-slate-400"
-                  >
+                  <td colSpan={5} className="px-5 py-8 text-center text-sm text-slate-400">
                     {search
                       ? "No courses match your search."
                       : "You haven't created any courses yet."}
@@ -803,67 +494,53 @@ export default function CourseManagementTable() {
       </section>
 
       {/* =================================================
+          CUSTOM DELETE CONFIRMATION MODAL (NO BROWSER POPUP)
+      ================================================= */}
+      <ConfirmModal
+        isOpen={Boolean(courseToDelete)}
+        title="Delete Course"
+        message={`Are you sure you want to delete "${courseToDelete?.title}"? This action cannot be undone.`}
+        confirmText={isDeleting ? "Deleting..." : "Delete"}
+        cancelText="Cancel"
+        isDanger={true}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setCourseToDelete(null)}
+      />
+
+      {/* =================================================
           EDIT MODAL
       ================================================= */}
-
       {editingCourse && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-100 p-5">
               <div>
-                <h2 className="text-lg font-bold text-ink">
-                  Edit Course
-                </h2>
-
-                <p className="mt-1 text-xs text-slate-400">
-                  Update your course information.
-                </p>
+                <h2 className="text-lg font-bold text-slate-900">Edit Course</h2>
+                <p className="mt-1 text-xs text-slate-400">Update your course information.</p>
               </div>
 
               <button
                 type="button"
-                onClick={() =>
-                  setEditingCourse(
-                    null
-                  )
-                }
+                onClick={() => setEditingCourse(null)}
                 className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <form
-              onSubmit={
-                handleSaveEdit
-              }
-              className="space-y-5 p-5"
-            >
+            <form onSubmit={handleSaveEdit} className="space-y-5 p-5">
               <div>
                 <label className="mb-1.5 block text-xs font-bold text-slate-600">
                   Course Title
                 </label>
-
                 <input
                   type="text"
-                  value={
-                    editingCourse.title
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setEditingCourse(
-                      {
-                        ...editingCourse,
-                        title:
-                          event
-                            .target
-                            .value,
-                      }
-                    )
+                  value={editingCourse.title}
+                  onChange={(e) =>
+                    setEditingCourse({ ...editingCourse, title: e.target.value })
                   }
                   required
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10"
                 />
               </div>
 
@@ -871,28 +548,14 @@ export default function CourseManagementTable() {
                 <label className="mb-1.5 block text-xs font-bold text-slate-600">
                   Description
                 </label>
-
                 <textarea
-                  value={
-                    editingCourse.description ||
-                    ""
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setEditingCourse(
-                      {
-                        ...editingCourse,
-                        description:
-                          event
-                            .target
-                            .value,
-                      }
-                    )
+                  value={editingCourse.description || ""}
+                  onChange={(e) =>
+                    setEditingCourse({ ...editingCourse, description: e.target.value })
                   }
                   required
                   rows={3}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10"
                 />
               </div>
 
@@ -900,27 +563,13 @@ export default function CourseManagementTable() {
                 <label className="mb-1.5 block text-xs font-bold text-slate-600">
                   Long Description
                 </label>
-
                 <textarea
-                  value={
-                    editingCourse.longDescription ||
-                    ""
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setEditingCourse(
-                      {
-                        ...editingCourse,
-                        longDescription:
-                          event
-                            .target
-                            .value,
-                      }
-                    )
+                  value={editingCourse.longDescription || ""}
+                  onChange={(e) =>
+                    setEditingCourse({ ...editingCourse, longDescription: e.target.value })
                   }
                   rows={5}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10"
                 />
               </div>
 
@@ -929,27 +578,14 @@ export default function CourseManagementTable() {
                   <label className="mb-1.5 block text-xs font-bold text-slate-600">
                     Category ID
                   </label>
-
                   <input
                     type="number"
-                    value={
-                      editingCourse.categoryId
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setEditingCourse(
-                        {
-                          ...editingCourse,
-                          categoryId:
-                            event
-                              .target
-                              .value,
-                        }
-                      )
+                    value={editingCourse.categoryId}
+                    onChange={(e) =>
+                      setEditingCourse({ ...editingCourse, categoryId: e.target.value })
                     }
                     required
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-600"
                   />
                 </div>
 
@@ -957,37 +593,16 @@ export default function CourseManagementTable() {
                   <label className="mb-1.5 block text-xs font-bold text-slate-600">
                     Level
                   </label>
-
                   <select
-                    value={
-                      editingCourse.level
+                    value={editingCourse.level}
+                    onChange={(e) =>
+                      setEditingCourse({ ...editingCourse, level: e.target.value })
                     }
-                    onChange={(
-                      event
-                    ) =>
-                      setEditingCourse(
-                        {
-                          ...editingCourse,
-                          level:
-                            event
-                              .target
-                              .value,
-                        }
-                      )
-                    }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-600"
                   >
-                    <option value="Beginner">
-                      Beginner
-                    </option>
-
-                    <option value="Intermediate">
-                      Intermediate
-                    </option>
-
-                    <option value="Advanced">
-                      Advanced
-                    </option>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
                   </select>
                 </div>
               </div>
@@ -997,28 +612,15 @@ export default function CourseManagementTable() {
                   <label className="mb-1.5 block text-xs font-bold text-slate-600">
                     Price
                   </label>
-
                   <input
                     type="number"
                     min="0"
                     step="0.01"
-                    value={
-                      editingCourse.price
+                    value={editingCourse.price}
+                    onChange={(e) =>
+                      setEditingCourse({ ...editingCourse, price: e.target.value })
                     }
-                    onChange={(
-                      event
-                    ) =>
-                      setEditingCourse(
-                        {
-                          ...editingCourse,
-                          price:
-                            event
-                              .target
-                              .value,
-                        }
-                      )
-                    }
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-emerald-600"
                   />
                 </div>
 
@@ -1026,33 +628,15 @@ export default function CourseManagementTable() {
                   <label className="mb-1.5 block text-xs font-bold text-slate-600">
                     Status
                   </label>
-
                   <select
-                    value={
-                      editingCourse.status
+                    value={editingCourse.status}
+                    onChange={(e) =>
+                      setEditingCourse({ ...editingCourse, status: e.target.value })
                     }
-                    onChange={(
-                      event
-                    ) =>
-                      setEditingCourse(
-                        {
-                          ...editingCourse,
-                          status:
-                            event
-                              .target
-                              .value,
-                        }
-                      )
-                    }
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-600"
                   >
-                    <option value="draft">
-                      Draft
-                    </option>
-
-                    <option value="published">
-                      Published
-                    </option>
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
                   </select>
                 </div>
               </div>
@@ -1061,48 +645,22 @@ export default function CourseManagementTable() {
                 <label className="mb-1.5 block text-xs font-bold text-slate-600">
                   Thumbnail Color
                 </label>
-
                 <div className="flex items-center gap-3">
                   <input
                     type="color"
-                    value={
-                      editingCourse.thumbnailColor
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setEditingCourse(
-                        {
-                          ...editingCourse,
-                          thumbnailColor:
-                            event
-                              .target
-                              .value,
-                        }
-                      )
+                    value={editingCourse.thumbnailColor}
+                    onChange={(e) =>
+                      setEditingCourse({ ...editingCourse, thumbnailColor: e.target.value })
                     }
                     className="h-10 w-16 cursor-pointer rounded border border-slate-200"
                   />
-
                   <input
                     type="text"
-                    value={
-                      editingCourse.thumbnailColor
+                    value={editingCourse.thumbnailColor}
+                    onChange={(e) =>
+                      setEditingCourse({ ...editingCourse, thumbnailColor: e.target.value })
                     }
-                    onChange={(
-                      event
-                    ) =>
-                      setEditingCourse(
-                        {
-                          ...editingCourse,
-                          thumbnailColor:
-                            event
-                              .target
-                              .value,
-                        }
-                      )
-                    }
-                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-primary"
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-600"
                   />
                 </div>
               </div>
@@ -1110,11 +668,7 @@ export default function CourseManagementTable() {
               <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
                 <button
                   type="button"
-                  onClick={() =>
-                    setEditingCourse(
-                      null
-                    )
-                  }
+                  onClick={() => setEditingCourse(null)}
                   className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50"
                 >
                   Cancel
@@ -1122,20 +676,11 @@ export default function CourseManagementTable() {
 
                 <button
                   type="submit"
-                  disabled={
-                    saving
-                  }
-                  className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={saving}
+                  className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Save
-                    size={
-                      16
-                    }
-                  />
-
-                  {saving
-                    ? "Saving..."
-                    : "Save Changes"}
+                  <Save size={16} />
+                  {saving ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </form>

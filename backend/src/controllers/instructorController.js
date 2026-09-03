@@ -149,18 +149,21 @@ const instructorController = {
         const date = new Date();
 
         date.setHours(0, 0, 0, 0);
+
         date.setDate(
           date.getDate() - i
         );
 
-        const dateKey = formatDateKey(date);
+        const dateKey =
+          formatDateKey(date);
 
-        const day = date.toLocaleDateString(
-          "en-US",
-          {
-            weekday: "short",
-          }
-        );
+        const day =
+          date.toLocaleDateString(
+            "en-US",
+            {
+              weekday: "short",
+            }
+          );
 
         enrollmentActivity.push({
           date: dateKey,
@@ -235,229 +238,585 @@ const instructorController = {
       });
     }
   },
+
   // =====================================================
-// INSTRUCTOR ANALYTICS
-// =====================================================
-async getAnalytics(req, res) {
-  try {
-    const instructorId = req.user.id;
+  // GET STUDENT COURSE PROGRESS
+  // =====================================================
 
-    // =====================================================
-    // COURSE PERFORMANCE
-    // =====================================================
-    const [coursePerformance] = await pool.execute(
-      `
-      SELECT
-        c.id,
-        c.title,
-        c.status,
-        c.price,
-        cat.name AS category_name,
+  async getStudentProgress(req, res) {
+    try {
+      const instructorId = req.user.id;
 
-        COUNT(DISTINCT e.user_id) AS students
+      const [rows] = await pool.execute(
+        `
+        SELECT
+          u.id AS student_id,
 
-      FROM courses c
+          CONCAT(
+            COALESCE(u.first_name, ''),
+            ' ',
+            COALESCE(u.last_name, '')
+          ) AS student_name,
 
-      LEFT JOIN categories cat
-        ON c.category_id = cat.id
+          u.email AS student_email,
 
-      LEFT JOIN enrollments e
-        ON c.id = e.course_id
+          c.id AS course_id,
+          c.title AS course_title,
 
-      WHERE c.instructor_id = ?
+          COUNT(DISTINCT l.id) AS total_lessons,
 
-      GROUP BY
-        c.id,
-        c.title,
-        c.status,
-        c.price,
-        cat.name
-
-      ORDER BY c.created_at DESC
-      `,
-      [instructorId]
-    );
-
-    // =====================================================
-    // COURSE SUMMARY
-    // =====================================================
-    const [courseSummary] = await pool.execute(
-      `
-      SELECT
-        COUNT(*) AS total_courses,
-
-        COALESCE(
-          SUM(
-            CASE
-              WHEN status = 'published'
-              THEN 1
-              ELSE 0
+          COUNT(
+            DISTINCT CASE
+              WHEN lp.completed = 1
+              THEN l.id
             END
-          ),
-          0
-        ) AS published_courses,
+          ) AS completed_lessons
 
-        COALESCE(
-          SUM(
-            CASE
-              WHEN status = 'draft'
-              THEN 1
-              ELSE 0
-            END
-          ),
-          0
-        ) AS draft_courses
+        FROM enrollments e
 
-      FROM courses
+        INNER JOIN users u
+          ON e.user_id = u.id
 
-      WHERE instructor_id = ?
-      `,
-      [instructorId]
-    );
+        INNER JOIN courses c
+          ON e.course_id = c.id
 
-    // =====================================================
-    // TOTAL STUDENTS
-    // =====================================================
-    const [studentSummary] = await pool.execute(
-      `
-      SELECT
-        COUNT(DISTINCT e.user_id) AS total_students
+        LEFT JOIN course_sections cs
+          ON cs.course_id = c.id
 
-      FROM enrollments e
+        LEFT JOIN lessons l
+          ON l.section_id = cs.id
 
-      INNER JOIN courses c
-        ON e.course_id = c.id
+        LEFT JOIN lesson_progress lp
+          ON lp.lesson_id = l.id
+          AND lp.user_id = u.id
 
-      WHERE c.instructor_id = ?
-      `,
-      [instructorId]
-    );
+        WHERE
+          c.instructor_id = ?
+          AND u.role = 'student'
 
-    // =====================================================
-    // LAST 7 DAYS ENROLLMENTS
-    // =====================================================
-    const [enrollmentRows] = await pool.execute(
-      `
-      SELECT
-        DATE(e.enrolled_at) AS enrollment_date,
-        COUNT(*) AS enrollments
+        GROUP BY
+          u.id,
+          u.first_name,
+          u.last_name,
+          u.email,
+          c.id,
+          c.title
 
-      FROM enrollments e
-
-      INNER JOIN courses c
-        ON e.course_id = c.id
-
-      WHERE
-        c.instructor_id = ?
-        AND e.enrolled_at >= CURDATE() - INTERVAL 6 DAY
-
-      GROUP BY DATE(e.enrolled_at)
-
-      ORDER BY enrollment_date ASC
-      `,
-      [instructorId]
-    );
-
-    // =====================================================
-    // BUILD ENROLLMENT MAP
-    // =====================================================
-    const enrollmentMap = {};
-
-    enrollmentRows.forEach((row) => {
-      const dateKey = formatDateKey(
-        row.enrollment_date
+        ORDER BY
+          u.first_name ASC,
+          c.title ASC
+        `,
+        [instructorId]
       );
 
-      enrollmentMap[dateKey] =
-        Number(row.enrollments) || 0;
-    });
+      const progress = rows.map((row) => {
+        const totalLessons =
+          Number(row.total_lessons) || 0;
 
-    // =====================================================
-    // BUILD EXACTLY 7 DAYS
-    // =====================================================
-    const enrollmentActivity = [];
+        const completedLessons =
+          Number(row.completed_lessons) || 0;
 
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
+        const percentage =
+          totalLessons > 0
+            ? Math.round(
+                (completedLessons /
+                  totalLessons) *
+                  100
+              )
+            : 0;
 
-      date.setHours(0, 0, 0, 0);
-      date.setDate(
-        date.getDate() - i
+        return {
+          studentId:
+            row.student_id,
+
+          studentName:
+            row.student_name?.trim() ||
+            "Unknown Student",
+
+          studentEmail:
+            row.student_email || "",
+
+          courseId:
+            row.course_id,
+
+          courseTitle:
+            row.course_title,
+
+          totalLessons,
+
+          completedLessons,
+
+          progress:
+            percentage,
+        };
+      });
+
+      return res.status(200).json(
+        progress
+      );
+    } catch (error) {
+      console.error(
+        "Get instructor student progress error:",
+        error
       );
 
-      const dateKey =
-        formatDateKey(date);
-
-      const day =
-        date.toLocaleDateString(
-          "en-US",
-          {
-            weekday: "short",
-          }
-        );
-
-      enrollmentActivity.push({
-        date: dateKey,
-        day,
-        enrollments:
-          enrollmentMap[dateKey] || 0,
+      return res.status(500).json({
+        message:
+          "Failed to fetch student progress",
       });
     }
+  },
 
-    // =====================================================
-    // RESPONSE
-    // =====================================================
-    return res.status(200).json({
-      summary: {
-        totalCourses:
-          Number(
-            courseSummary[0]?.total_courses
-          ) || 0,
+  // =====================================================
+  // GRADE ASSIGNMENT SUBMISSION
+  // =====================================================
 
-        publishedCourses:
-          Number(
-            courseSummary[0]?.published_courses
-          ) || 0,
+  async gradeSubmission(req, res) {
+    try {
+      const instructorId = req.user.id;
 
-        draftCourses:
-          Number(
-            courseSummary[0]?.draft_courses
-          ) || 0,
+      const { submissionId } =
+        req.params;
 
-        totalStudents:
-          Number(
-            studentSummary[0]?.total_students
-          ) || 0,
-      },
+      const {
+        score,
+        instructorComment,
+      } = req.body;
 
-      coursePerformance:
-        coursePerformance.map((course) => ({
-          id: course.id,
-          title: course.title,
-          status: course.status,
-          price:
-            Number(course.price) || 0,
-          category_name:
-            course.category_name ||
-            "Uncategorized",
-          students:
-            Number(course.students) || 0,
-        })),
+      // =====================================================
+      // VALIDATE SCORE
+      // =====================================================
 
-      enrollmentActivity,
-    });
-  } catch (error) {
-    console.error(
-      "Instructor analytics error:",
-      error
-    );
+      if (
+        score === undefined ||
+        score === null ||
+        score === ""
+      ) {
+        return res.status(400).json({
+          message:
+            "Score is required",
+        });
+      }
 
-    return res.status(500).json({
-      message:
-        "Failed to fetch instructor analytics",
-    });
-  }
-},
+      const numericScore =
+        Number(score);
+
+      if (
+        Number.isNaN(numericScore) ||
+        numericScore < 0
+      ) {
+        return res.status(400).json({
+          message:
+            "Invalid score",
+        });
+      }
+
+      // =====================================================
+      // VERIFY SUBMISSION BELONGS TO INSTRUCTOR
+      // =====================================================
+
+      const [submissionRows] =
+        await pool.execute(
+          `
+          SELECT
+            s.id,
+            a.points
+
+          FROM submissions s
+
+          INNER JOIN assignments a
+            ON s.assignment_id = a.id
+
+          INNER JOIN courses c
+            ON a.course_id = c.id
+
+          WHERE
+            s.id = ?
+            AND c.instructor_id = ?
+
+          LIMIT 1
+          `,
+          [
+            submissionId,
+            instructorId,
+          ]
+        );
+
+      if (
+        submissionRows.length === 0
+      ) {
+        return res.status(404).json({
+          message:
+            "Submission not found",
+        });
+      }
+
+      const maxScore =
+        Number(
+          submissionRows[0].points
+        ) || 0;
+
+      // =====================================================
+      // SCORE CANNOT EXCEED ASSIGNMENT POINTS
+      // =====================================================
+
+      if (
+        numericScore > maxScore
+      ) {
+        return res.status(400).json({
+          message:
+            `Score cannot exceed ${maxScore}`,
+        });
+      }
+
+      // =====================================================
+      // UPDATE SUBMISSION
+      // =====================================================
+
+      await pool.execute(
+        `
+        UPDATE submissions
+
+        SET
+          score = ?,
+          instructor_comment = ?,
+          status = 'graded',
+          graded_at = NOW()
+
+        WHERE id = ?
+        `,
+        [
+          numericScore,
+          instructorComment || null,
+          submissionId,
+        ]
+      );
+
+      // =====================================================
+      // RETURN UPDATED SUBMISSION
+      // =====================================================
+
+      const [updatedRows] =
+        await pool.execute(
+          `
+          SELECT
+            s.id,
+            s.assignment_id,
+            s.user_id,
+            s.comment,
+            s.submitted_at,
+            s.score,
+            s.instructor_comment,
+            s.graded_at,
+            s.status
+
+          FROM submissions s
+
+          WHERE s.id = ?
+
+          LIMIT 1
+          `,
+          [submissionId]
+        );
+
+      return res.status(200).json({
+        message:
+          "Submission graded successfully",
+
+        submission:
+          updatedRows[0],
+      });
+    } catch (error) {
+      console.error(
+        "Grade submission error:",
+        error
+      );
+
+      return res.status(500).json({
+        message:
+          "Failed to grade submission",
+      });
+    }
+  },
+
+  // =====================================================
+  // INSTRUCTOR ANALYTICS
+  // =====================================================
+
+  async getAnalytics(req, res) {
+    try {
+      const instructorId = req.user.id;
+
+      // =====================================================
+      // COURSE PERFORMANCE
+      // =====================================================
+
+      const [coursePerformance] =
+        await pool.execute(
+          `
+          SELECT
+            c.id,
+            c.title,
+            c.status,
+            c.price,
+            cat.name AS category_name,
+
+            COUNT(
+              DISTINCT e.user_id
+            ) AS students
+
+          FROM courses c
+
+          LEFT JOIN categories cat
+            ON c.category_id = cat.id
+
+          LEFT JOIN enrollments e
+            ON c.id = e.course_id
+
+          WHERE c.instructor_id = ?
+
+          GROUP BY
+            c.id,
+            c.title,
+            c.status,
+            c.price,
+            cat.name
+
+          ORDER BY
+            c.created_at DESC
+          `,
+          [instructorId]
+        );
+
+      // =====================================================
+      // COURSE SUMMARY
+      // =====================================================
+
+      const [courseSummary] =
+        await pool.execute(
+          `
+          SELECT
+            COUNT(*) AS total_courses,
+
+            COALESCE(
+              SUM(
+                CASE
+                  WHEN status = 'published'
+                  THEN 1
+                  ELSE 0
+                END
+              ),
+              0
+            ) AS published_courses,
+
+            COALESCE(
+              SUM(
+                CASE
+                  WHEN status = 'draft'
+                  THEN 1
+                  ELSE 0
+                END
+              ),
+              0
+            ) AS draft_courses
+
+          FROM courses
+
+          WHERE instructor_id = ?
+          `,
+          [instructorId]
+        );
+
+      // =====================================================
+      // TOTAL STUDENTS
+      // =====================================================
+
+      const [studentSummary] =
+        await pool.execute(
+          `
+          SELECT
+            COUNT(
+              DISTINCT e.user_id
+            ) AS total_students
+
+          FROM enrollments e
+
+          INNER JOIN courses c
+            ON e.course_id = c.id
+
+          WHERE c.instructor_id = ?
+          `,
+          [instructorId]
+        );
+
+      // =====================================================
+      // LAST 7 DAYS ENROLLMENTS
+      // =====================================================
+
+      const [enrollmentRows] =
+        await pool.execute(
+          `
+          SELECT
+            DATE(e.enrolled_at)
+              AS enrollment_date,
+
+            COUNT(*) AS enrollments
+
+          FROM enrollments e
+
+          INNER JOIN courses c
+            ON e.course_id = c.id
+
+          WHERE
+            c.instructor_id = ?
+            AND e.enrolled_at >=
+              CURDATE() - INTERVAL 6 DAY
+
+          GROUP BY
+            DATE(e.enrolled_at)
+
+          ORDER BY
+            enrollment_date ASC
+          `,
+          [instructorId]
+        );
+
+      // =====================================================
+      // BUILD ENROLLMENT MAP
+      // =====================================================
+
+      const enrollmentMap = {};
+
+      enrollmentRows.forEach(
+        (row) => {
+          const dateKey =
+            formatDateKey(
+              row.enrollment_date
+            );
+
+          enrollmentMap[dateKey] =
+            Number(
+              row.enrollments
+            ) || 0;
+        }
+      );
+
+      // =====================================================
+      // BUILD EXACTLY 7 DAYS
+      // =====================================================
+
+      const enrollmentActivity = [];
+
+      for (
+        let i = 6;
+        i >= 0;
+        i--
+      ) {
+        const date = new Date();
+
+        date.setHours(
+          0,
+          0,
+          0,
+          0
+        );
+
+        date.setDate(
+          date.getDate() - i
+        );
+
+        const dateKey =
+          formatDateKey(date);
+
+        const day =
+          date.toLocaleDateString(
+            "en-US",
+            {
+              weekday: "short",
+            }
+          );
+
+        enrollmentActivity.push({
+          date: dateKey,
+          day,
+          enrollments:
+            enrollmentMap[
+              dateKey
+            ] || 0,
+        });
+      }
+
+      // =====================================================
+      // RESPONSE
+      // =====================================================
+
+      return res.status(200).json({
+        summary: {
+          totalCourses:
+            Number(
+              courseSummary[0]
+                ?.total_courses
+            ) || 0,
+
+          publishedCourses:
+            Number(
+              courseSummary[0]
+                ?.published_courses
+            ) || 0,
+
+          draftCourses:
+            Number(
+              courseSummary[0]
+                ?.draft_courses
+            ) || 0,
+
+          totalStudents:
+            Number(
+              studentSummary[0]
+                ?.total_students
+            ) || 0,
+        },
+
+        coursePerformance:
+          coursePerformance.map(
+            (course) => ({
+              id: course.id,
+
+              title: course.title,
+
+              status:
+                course.status,
+
+              price:
+                Number(
+                  course.price
+                ) || 0,
+
+              category_name:
+                course.category_name ||
+                "Uncategorized",
+
+              students:
+                Number(
+                  course.students
+                ) || 0,
+            })
+          ),
+
+        enrollmentActivity,
+      });
+    } catch (error) {
+      console.error(
+        "Instructor analytics error:",
+        error
+      );
+
+      return res.status(500).json({
+        message:
+          "Failed to fetch instructor analytics",
+      });
+    }
+  },
 
   // =====================================================
   // GET ALL INSTRUCTOR SUBMISSIONS
@@ -467,49 +826,51 @@ async getAnalytics(req, res) {
     try {
       const instructorId = req.user.id;
 
-      const [submissions] = await pool.execute(
-        `
-        SELECT
-          s.id,
-          s.assignment_id,
-          s.user_id,
-          s.comment,
-          s.submitted_at,
-          s.score,
-          s.instructor_comment,
-          s.graded_at,
-          s.status,
+      const [submissions] =
+        await pool.execute(
+          `
+          SELECT
+            s.id,
+            s.assignment_id,
+            s.user_id,
+            s.comment,
+            s.submitted_at,
+            s.score,
+            s.instructor_comment,
+            s.graded_at,
+            s.status,
 
-          a.title AS assignment_title,
+            a.title AS assignment_title,
 
-          c.id AS course_id,
-          c.title AS course_title,
+            c.id AS course_id,
+            c.title AS course_title,
 
-          CONCAT(
-            COALESCE(u.first_name, ''),
-            ' ',
-            COALESCE(u.last_name, '')
-          ) AS student_name,
+            CONCAT(
+              COALESCE(u.first_name, ''),
+              ' ',
+              COALESCE(u.last_name, '')
+            ) AS student_name,
 
-          u.email AS student_email
+            u.email AS student_email
 
-        FROM submissions s
+          FROM submissions s
 
-        INNER JOIN assignments a
-          ON s.assignment_id = a.id
+          INNER JOIN assignments a
+            ON s.assignment_id = a.id
 
-        INNER JOIN courses c
-          ON a.course_id = c.id
+          INNER JOIN courses c
+            ON a.course_id = c.id
 
-        INNER JOIN users u
-          ON s.user_id = u.id
+          INNER JOIN users u
+            ON s.user_id = u.id
 
-        WHERE c.instructor_id = ?
+          WHERE c.instructor_id = ?
 
-        ORDER BY s.submitted_at DESC
-        `,
-        [instructorId]
-      );
+          ORDER BY
+            s.submitted_at DESC
+          `,
+          [instructorId]
+        );
 
       return res.status(200).json(
         submissions
@@ -535,84 +896,83 @@ async getAnalytics(req, res) {
     try {
       const instructorId = req.user.id;
 
-      // =====================================================
-      // FIND STUDENTS ENROLLED IN INSTRUCTOR COURSES
-      // =====================================================
+      const [rows] =
+        await pool.execute(
+          `
+          SELECT
+            u.id AS student_id,
 
-      const [rows] = await pool.execute(
-        `
-        SELECT
-          u.id AS student_id,
+            CONCAT(
+              COALESCE(u.first_name, ''),
+              ' ',
+              COALESCE(u.last_name, '')
+            ) AS student_name,
 
-          CONCAT(
-            COALESCE(u.first_name, ''),
-            ' ',
-            COALESCE(u.last_name, '')
-          ) AS student_name,
+            u.email AS student_email,
 
-          u.email AS student_email,
+            COUNT(
+              DISTINCT e.course_id
+            ) AS course_count,
 
-          COUNT(DISTINCT e.course_id) AS course_count,
+            GROUP_CONCAT(
+              DISTINCT c.title
+              ORDER BY c.title ASC
+              SEPARATOR '|||'
+            ) AS course_names,
 
-          GROUP_CONCAT(
-            DISTINCT c.title
-            ORDER BY c.title ASC
-            SEPARATOR '|||'
-          ) AS course_names,
+            MAX(e.enrolled_at)
+              AS last_enrollment
 
-          MAX(e.enrolled_at) AS last_enrollment
+          FROM enrollments e
 
-        FROM enrollments e
+          INNER JOIN courses c
+            ON e.course_id = c.id
 
-        INNER JOIN courses c
-          ON e.course_id = c.id
+          INNER JOIN users u
+            ON e.user_id = u.id
 
-        INNER JOIN users u
-          ON e.user_id = u.id
+          WHERE
+            c.instructor_id = ?
+            AND u.role = 'student'
 
-        WHERE
-          c.instructor_id = ?
-          AND u.role = 'student'
+          GROUP BY
+            u.id,
+            u.first_name,
+            u.last_name,
+            u.email
 
-        GROUP BY
-          u.id,
-          u.first_name,
-          u.last_name,
-          u.email
+          ORDER BY
+            last_enrollment DESC
+          `,
+          [instructorId]
+        );
 
-        ORDER BY
-          last_enrollment DESC
-        `,
-        [instructorId]
-      );
+      const students =
+        rows.map((row) => ({
+          id: row.student_id,
 
-      // =====================================================
-      // FORMAT RESPONSE FOR FRONTEND
-      // =====================================================
+          name:
+            row.student_name?.trim() ||
+            "Unknown Student",
 
-      const students = rows.map((row) => ({
-        id: row.student_id,
+          email:
+            row.student_email || "",
 
-        name:
-          row.student_name?.trim() ||
-          "Unknown Student",
+          courseCount:
+            Number(
+              row.course_count
+            ) || 0,
 
-        email:
-          row.student_email || "",
+          courses:
+            row.course_names
+              ? row.course_names
+                  .split("|||")
+                  .filter(Boolean)
+              : [],
 
-        courseCount:
-          Number(row.course_count) || 0,
-
-        courses:
-          row.course_names
-            ? row.course_names
-                .split("|||")
-                .filter(Boolean)
-            : [],
-
-        lastEnrollment:
-          row.last_enrollment,
-      }));
+          lastEnrollment:
+            row.last_enrollment,
+        }));
 
       return res.status(200).json(
         students
@@ -640,20 +1000,24 @@ function formatDateKey(dateValue) {
     return "";
   }
 
-  if (typeof dateValue === "string") {
+  if (
+    typeof dateValue === "string"
+  ) {
     return dateValue.slice(0, 10);
   }
 
   const year =
     dateValue.getFullYear();
 
-  const month = String(
-    dateValue.getMonth() + 1
-  ).padStart(2, "0");
+  const month =
+    String(
+      dateValue.getMonth() + 1
+    ).padStart(2, "0");
 
-  const day = String(
-    dateValue.getDate()
-  ).padStart(2, "0");
+  const day =
+    String(
+      dateValue.getDate()
+    ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
@@ -681,7 +1045,8 @@ function formatTimeAgo(dateValue) {
 
   const diffMinutes =
     Math.floor(
-      diffMs / (1000 * 60)
+      diffMs /
+        (1000 * 60)
     );
 
   if (diffMinutes < 1) {

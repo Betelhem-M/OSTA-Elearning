@@ -31,7 +31,7 @@ export const testimonials = [
 
 export const platformHighlights = [
   { icon: 'BookOpen', title: 'Free Courses', description: 'Full access to every course, at no cost, forever.' },
-  { icon: 'Trophy', title: 'Competitions', description: 'Hackathons and challenges with real prizes and mentorship.' },
+  { icon: 'Trophy', title: 'Competitions', description: 'competitions and challenges with real prizes and mentorship.' },
   { icon: 'FlaskConical', title: 'Research Portal', description: 'Publish and discover research from across the region.' },
   { icon: 'Users', title: 'Community', description: 'Ask questions and learn alongside thousands of peers.' },
 ]

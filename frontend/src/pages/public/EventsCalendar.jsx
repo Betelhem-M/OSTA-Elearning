@@ -121,11 +121,11 @@ function normalizeEvent(event) {
 
     time:
       formatTime(
-        event.event_time
+        event.start_time
       ),
 
     location:
-      event.location ||
+      event.location_or_link || event.location ||
       "Location to be announced",
 
     category:

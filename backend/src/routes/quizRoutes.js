@@ -1,101 +1,76 @@
 const express = require("express");
 
-const quizController =
-  require("../controllers/quizController");
+const {
+  createQuiz,
+  getAllQuizzes,
+  getQuizById,
+  getQuizzesByCourse,
+  updateQuiz,
+  updateQuizStatus,
+  deleteQuiz,
+  publishQuiz,
+} = require("../controllers/quizController");
 
-const authMiddleware =
-  require("../middleware/authMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
 // =====================================================
-// GET MY QUIZ ATTEMPTS
-// MUST COME BEFORE /:id
+// PUBLIC ROUTES
 // =====================================================
 
 router.get(
-  "/my/attempts",
-  authMiddleware,
-  quizController.getMyAttempts
+  "/",
+  getAllQuizzes
 );
-
-// =====================================================
-// GET QUIZ ATTEMPT
-// =====================================================
-
-router.get(
-  "/attempts/:attemptId",
-  authMiddleware,
-  quizController.getAttempt
-);
-
-// =====================================================
-// SAVE ANSWER
-// =====================================================
-
-router.post(
-  "/attempts/:attemptId/answers",
-  authMiddleware,
-  quizController.saveAnswer
-);
-
-// =====================================================
-// SUBMIT ATTEMPT
-// =====================================================
-
-router.post(
-  "/attempts/:attemptId/submit",
-  authMiddleware,
-  quizController.submitAttempt
-);
-
-// =====================================================
-// START ATTEMPT
-// =====================================================
-
-router.post(
-  "/:quizId/attempts",
-  authMiddleware,
-  quizController.startAttempt
-);
-
-// =====================================================
-// GET QUIZZES BY COURSE
-// MUST COME BEFORE /:id
-// =====================================================
 
 router.get(
   "/course/:courseId",
-  quizController.getByCourse
+  getQuizzesByCourse
 );
-
-// =====================================================
-// GET QUIZ BY ID
-// =====================================================
 
 router.get(
   "/:id",
-  quizController.getById
+  getQuizById
 );
 
 // =====================================================
-// CREATE QUIZ
+// PROTECTED ROUTES
 // =====================================================
 
+// Create quiz
 router.post(
   "/",
   authMiddleware,
-  quizController.create
+  createQuiz
 );
 
-// =====================================================
-// ADD QUESTION
-// =====================================================
-
-router.post(
-  "/:quizId/questions",
+// Update quiz
+router.patch(
+  "/:id",
   authMiddleware,
-  quizController.addQuestion
+  updateQuiz
+);
+
+// Publish quiz
+router.patch(
+  "/:id/publish",
+  authMiddleware,
+  publishQuiz
+);
+
+// Update quiz status
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  updateQuizStatus
+);
+
+// Delete quiz
+router.delete(
+  "/:id",
+  authMiddleware,
+  deleteQuiz
 );
 
 module.exports = router;

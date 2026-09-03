@@ -1,265 +1,872 @@
 const pool = require("../config/database");
+// ============================================================
+// QUIZ ATTEMPT MODEL
+// ============================================================
 
 const QuizAttempt = {
-  async findById(id) {
-    const [rows] = await pool.execute(
-      `
-      SELECT
-        qa.id,
-        qa.quiz_id,
-        qa.user_id,
-        qa.started_at,
-        qa.submitted_at,
-        qa.score,
-        qa.percentage,
-        qa.passed,
-        qa.status,
-        q.title AS quiz_title,
-        q.total_questions,
-        q.pass_percent
-      FROM quiz_attempts qa
-      JOIN quizzes q ON qa.quiz_id = q.id
-      WHERE qa.id = ?
-      LIMIT 1
-      `,
-      [id]
-    );
 
-    if (!rows[0]) {
-      return null;
-    }
+  // ==========================================================
+  // START ATTEMPT
+  // ==========================================================
+  //
+  // Creates a new attempt for a student.
+  //
+  // Rules:
+  // - Quiz must exist
+  // - Quiz must be published
+  // - Student cannot have another active attempt
+  //
+  // ==========================================================
 
-    const [answers] = await pool.execute(
-      `
-      SELECT
-        a.id,
-        a.attempt_id,
-        a.question_id,
-        a.selected_option_id,
-        a.is_correct,
-        a.points_earned,
-        qo.option_key AS selected_option_key
-      FROM quiz_answers a
-      LEFT JOIN question_options qo
-        ON a.selected_option_id = qo.id
-      WHERE a.attempt_id = ?
-      ORDER BY a.id ASC
-      `,
-      [id]
-    );
+  async startAttempt(quizId, userId) {
+    const connection = await pool.getConnection();
 
-    return {
-      ...rows[0],
-      answers,
-    };
-  },
+    try {
+      await connection.beginTransaction();
 
-  async findByUser(userId) {
-    const [rows] = await pool.execute(
-      `
-      SELECT
-        qa.id,
-        qa.quiz_id,
-        qa.user_id,
-        qa.started_at,
-        qa.submitted_at,
-        qa.score,
-        qa.percentage,
-        qa.passed,
-        qa.status,
-        q.title AS quiz_title
-      FROM quiz_attempts qa
-      JOIN quizzes q ON qa.quiz_id = q.id
-      WHERE qa.user_id = ?
-      ORDER BY qa.started_at DESC
-      `,
-      [userId]
-    );
+      // ------------------------------------------------------
+      // GET QUIZ
+      // ------------------------------------------------------
 
-    return rows;
-  },
+      const [quizRows] = await connection.execute(
+        `
+        SELECT
+          id,
+          course_id,
+          title,
+          time_limit_minutes,
+          pass_percent,
+          status
+        FROM quizzes
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [quizId]
+      );
 
-  async findByUserAndQuiz(userId, quizId) {
-    const [rows] = await pool.execute(
-      `
-      SELECT
-        id,
-        quiz_id,
-        user_id,
-        started_at,
-        submitted_at,
-        score,
-        percentage,
-        passed,
-        status
-      FROM quiz_attempts
-      WHERE user_id = ? AND quiz_id = ?
-      ORDER BY started_at DESC
-      `,
-      [userId, quizId]
-    );
+      if (quizRows.length === 0) {
+        throw new Error("Quiz not found");
+      }
 
-    return rows;
-  },
+      const quiz = quizRows[0];
 
-  async start(userId, quizId) {
-    const [result] = await pool.execute(
-      `
-      INSERT INTO quiz_attempts
-      (
-        quiz_id,
-        user_id,
-        status
-      )
-      VALUES (?, ?, 'in_progress')
-      `,
-      [quizId, userId]
-    );
+      // ------------------------------------------------------
+      // QUIZ MUST BE PUBLISHED
+      // ------------------------------------------------------
 
-    return result.insertId;
-  },
+      if (quiz.status !== "published") {
+        throw new Error(
+          "This quiz is not available for students"
+        );
+      }
 
-  async saveAnswer({
-    attemptId,
-    questionId,
-    selectedOptionId,
-  }) {
-    const [optionRows] = await pool.execute(
-      `
-      SELECT
-        id,
-        is_correct
-      FROM question_options
-      WHERE id = ?
-      LIMIT 1
-      `,
-      [selectedOptionId]
-    );
+      // ------------------------------------------------------
+      // CHECK ACTIVE ATTEMPT
+      // ------------------------------------------------------
 
-    let isCorrect = false;
-    let pointsEarned = 0;
-
-    if (optionRows[0]) {
-      isCorrect = Boolean(optionRows[0].is_correct);
-
-      if (isCorrect) {
-        const [questionRows] = await pool.execute(
+      const [activeAttempts] =
+        await connection.execute(
           `
-          SELECT points
-          FROM questions
+          SELECT
+            id,
+            quiz_id,
+            user_id,
+            started_at,
+            status
+          FROM quiz_attempts
+          WHERE quiz_id = ?
+            AND user_id = ?
+            AND status = 'in_progress'
+          ORDER BY started_at DESC
+          LIMIT 1
+          `,
+          [quizId, userId]
+        );
+
+      // ------------------------------------------------------
+      // RETURN EXISTING ACTIVE ATTEMPT
+      // ------------------------------------------------------
+
+      if (activeAttempts.length > 0) {
+        await connection.commit();
+
+        return {
+          attempt: activeAttempts[0],
+          quiz,
+          resumed: true,
+        };
+      }
+
+      // ------------------------------------------------------
+      // CREATE NEW ATTEMPT
+      // ------------------------------------------------------
+
+      const [result] =
+        await connection.execute(
+          `
+          INSERT INTO quiz_attempts (
+            quiz_id,
+            user_id,
+            started_at,
+            status
+          )
+          VALUES (?, ?, NOW(), 'in_progress')
+          `,
+          [quizId, userId]
+        );
+
+      const attemptId = result.insertId;
+
+      // ------------------------------------------------------
+      // GET CREATED ATTEMPT
+      // ------------------------------------------------------
+
+      const [attemptRows] =
+        await connection.execute(
+          `
+          SELECT
+            id,
+            quiz_id,
+            user_id,
+            started_at,
+            submitted_at,
+            score,
+            percentage,
+            passed,
+            status
+          FROM quiz_attempts
           WHERE id = ?
           LIMIT 1
           `,
-          [questionId]
+          [attemptId]
         );
 
-        pointsEarned = questionRows[0]?.points || 0;
-      }
-    }
+      await connection.commit();
 
-    await pool.execute(
+      return {
+        attempt: attemptRows[0],
+        quiz,
+        resumed: false,
+      };
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  },
+
+  // ==========================================================
+  // FIND ATTEMPT BY ID
+  // ==========================================================
+
+  async findById(attemptId) {
+    const [rows] = await pool.execute(
       `
-      INSERT INTO quiz_answers
-      (
+      SELECT
+        qa.id,
+        qa.quiz_id,
+        qa.user_id,
+        qa.started_at,
+        qa.submitted_at,
+        qa.score,
+        qa.percentage,
+        qa.passed,
+        qa.status,
+
+        q.title AS quiz_title,
+        q.time_limit_minutes,
+        q.pass_percent
+
+      FROM quiz_attempts qa
+
+      INNER JOIN quizzes q
+        ON q.id = qa.quiz_id
+
+      WHERE qa.id = ?
+
+      LIMIT 1
+      `,
+      [attemptId]
+    );
+
+    return rows.length > 0
+      ? rows[0]
+      : null;
+  },
+
+  // ==========================================================
+  // FIND STUDENT ATTEMPT
+  // ==========================================================
+
+  async findByIdForUser(attemptId, userId) {
+    const [rows] = await pool.execute(
+      `
+      SELECT
+        qa.id,
+        qa.quiz_id,
+        qa.user_id,
+        qa.started_at,
+        qa.submitted_at,
+        qa.score,
+        qa.percentage,
+        qa.passed,
+        qa.status,
+
+        q.title AS quiz_title,
+        q.time_limit_minutes,
+        q.pass_percent
+
+      FROM quiz_attempts qa
+
+      INNER JOIN quizzes q
+        ON q.id = qa.quiz_id
+
+      WHERE qa.id = ?
+        AND qa.user_id = ?
+
+      LIMIT 1
+      `,
+      [attemptId, userId]
+    );
+
+    return rows.length > 0
+      ? rows[0]
+      : null;
+  },
+
+  // ==========================================================
+  // GET ANSWERS
+  // ==========================================================
+
+  async getAnswers(attemptId) {
+    const [rows] = await pool.execute(
+      `
+      SELECT
+        id,
         attempt_id,
         question_id,
         selected_option_id,
         is_correct,
         points_earned
-      )
-      VALUES (?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        selected_option_id = VALUES(selected_option_id),
-        is_correct = VALUES(is_correct),
-        points_earned = VALUES(points_earned)
+      FROM quiz_answers
+      WHERE attempt_id = ?
+      ORDER BY question_id ASC
       `,
-      [
-        attemptId,
-        questionId,
-        selectedOptionId || null,
-        isCorrect ? 1 : 0,
-        pointsEarned,
-      ]
+      [attemptId]
     );
 
-    return {
-      isCorrect,
-      pointsEarned,
-    };
+    return rows;
   },
 
-  async submit(attemptId) {
-    const [attemptRows] = await pool.execute(
+  // ==========================================================
+  // GET SINGLE ANSWER
+  // ==========================================================
+
+  async getAnswer(
+    attemptId,
+    questionId
+  ) {
+    const [rows] = await pool.execute(
       `
       SELECT
-        qa.quiz_id,
-        q.pass_percent
+        id,
+        attempt_id,
+        question_id,
+        selected_option_id,
+        is_correct,
+        points_earned
+      FROM quiz_answers
+      WHERE attempt_id = ?
+        AND question_id = ?
+      LIMIT 1
+      `,
+      [attemptId, questionId]
+    );
+
+    return rows.length > 0
+      ? rows[0]
+      : null;
+  },
+
+  // ==========================================================
+  // SAVE ANSWER
+  // ==========================================================
+  //
+  // The correct answer is determined on the backend.
+  //
+  // We NEVER trust the frontend to tell us:
+  //
+  // is_correct = true
+  //
+  // or:
+  //
+  // points_earned = 10
+  //
+  // The server calculates these values.
+  //
+  // ==========================================================
+
+  async saveAnswer(
+    attemptId,
+    questionId,
+    selectedOptionId
+  ) {
+    const connection = await pool.getConnection();
+
+    try {
+      await connection.beginTransaction();
+
+      // ------------------------------------------------------
+      // GET ATTEMPT
+      // ------------------------------------------------------
+
+      const [attemptRows] =
+        await connection.execute(
+          `
+          SELECT
+            id,
+            quiz_id,
+            user_id,
+            started_at,
+            status
+          FROM quiz_attempts
+          WHERE id = ?
+          LIMIT 1
+          `,
+          [attemptId]
+        );
+
+      if (attemptRows.length === 0) {
+        throw new Error(
+          "Quiz attempt not found"
+        );
+      }
+
+      const attempt = attemptRows[0];
+
+      // ------------------------------------------------------
+      // ATTEMPT MUST BE ACTIVE
+      // ------------------------------------------------------
+
+      if (
+        attempt.status !==
+        "in_progress"
+      ) {
+        throw new Error(
+          "This quiz attempt is no longer active"
+        );
+      }
+
+      // ------------------------------------------------------
+      // GET QUESTION
+      // ------------------------------------------------------
+
+      const [questionRows] =
+        await connection.execute(
+          `
+          SELECT
+            id,
+            quiz_id,
+            points,
+            question_type
+          FROM questions
+          WHERE id = ?
+            AND quiz_id = ?
+          LIMIT 1
+          `,
+          [
+            questionId,
+            attempt.quiz_id,
+          ]
+        );
+
+      if (questionRows.length === 0) {
+        throw new Error(
+          "Question does not belong to this quiz"
+        );
+      }
+
+      const question =
+        questionRows[0];
+
+      // ------------------------------------------------------
+      // GET SELECTED OPTION
+      // ------------------------------------------------------
+
+      const [optionRows] =
+        await connection.execute(
+          `
+          SELECT
+            id,
+            question_id,
+            is_correct
+          FROM question_options
+          WHERE id = ?
+            AND question_id = ?
+          LIMIT 1
+          `,
+          [
+            selectedOptionId,
+            questionId,
+          ]
+        );
+
+      if (optionRows.length === 0) {
+        throw new Error(
+          "Selected option does not belong to this question"
+        );
+      }
+
+      const selectedOption =
+        optionRows[0];
+
+      // ------------------------------------------------------
+      // CALCULATE RESULT
+      // ------------------------------------------------------
+
+      const isCorrect =
+        Number(
+          selectedOption.is_correct
+        ) === 1;
+
+      const pointsEarned =
+        isCorrect
+          ? Number(question.points)
+          : 0;
+
+      // ------------------------------------------------------
+      // CHECK EXISTING ANSWER
+      // ------------------------------------------------------
+
+      const [existingRows] =
+        await connection.execute(
+          `
+          SELECT id
+          FROM quiz_answers
+          WHERE attempt_id = ?
+            AND question_id = ?
+          LIMIT 1
+          `,
+          [
+            attemptId,
+            questionId,
+          ]
+        );
+
+      // ------------------------------------------------------
+      // UPDATE EXISTING ANSWER
+      // ------------------------------------------------------
+
+      if (existingRows.length > 0) {
+        await connection.execute(
+          `
+          UPDATE quiz_answers
+          SET
+            selected_option_id = ?,
+            is_correct = ?,
+            points_earned = ?
+          WHERE id = ?
+          `,
+          [
+            selectedOptionId,
+            isCorrect ? 1 : 0,
+            pointsEarned,
+            existingRows[0].id,
+          ]
+        );
+      }
+
+      // ------------------------------------------------------
+      // INSERT NEW ANSWER
+      // ------------------------------------------------------
+
+      else {
+        await connection.execute(
+          `
+          INSERT INTO quiz_answers (
+            attempt_id,
+            question_id,
+            selected_option_id,
+            is_correct,
+            points_earned
+          )
+          VALUES (?, ?, ?, ?, ?)
+          `,
+          [
+            attemptId,
+            questionId,
+            selectedOptionId,
+            isCorrect ? 1 : 0,
+            pointsEarned,
+          ]
+        );
+      }
+
+      await connection.commit();
+
+      return {
+        attemptId,
+        questionId,
+        selectedOptionId,
+        isCorrect,
+        pointsEarned,
+      };
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  },
+
+  // ==========================================================
+  // CHECK TIME LIMIT
+  // ==========================================================
+
+  async isExpired(attemptId) {
+    const [rows] = await pool.execute(
+      `
+      SELECT
+        qa.started_at,
+        q.time_limit_minutes
       FROM quiz_attempts qa
-      JOIN quizzes q ON qa.quiz_id = q.id
+
+      INNER JOIN quizzes q
+        ON q.id = qa.quiz_id
+
       WHERE qa.id = ?
+
       LIMIT 1
       `,
       [attemptId]
     );
 
-    if (!attemptRows[0]) {
-      return null;
+    if (rows.length === 0) {
+      return true;
     }
 
-    const { quiz_id: quizId, pass_percent: passPercent } = attemptRows[0];
+    const attempt =
+      rows[0];
 
-    const [scoreRows] = await pool.execute(
-      `
-      SELECT
-        COALESCE(SUM(qa.points_earned), 0) AS score,
-        COUNT(q.id) AS total_questions,
-        COALESCE(SUM(q.points), 0) AS max_score
-      FROM quiz_answers qa
-      JOIN questions q ON qa.question_id = q.id
-      WHERE qa.attempt_id = ?
-      `,
-      [attemptId]
+    // --------------------------------------------------------
+    // NO TIME LIMIT
+    // --------------------------------------------------------
+
+    if (
+      attempt.time_limit_minutes ===
+        null ||
+      attempt.time_limit_minutes ===
+        undefined
+    ) {
+      return false;
+    }
+
+    const startedAt =
+      new Date(
+        attempt.started_at
+      );
+
+    const now = new Date();
+
+    const elapsedMinutes =
+      (now - startedAt) /
+      (1000 * 60);
+
+    return (
+      elapsedMinutes >=
+      Number(
+        attempt.time_limit_minutes
+      )
     );
+  },
 
-    const scoreData = scoreRows[0];
+  // ==========================================================
+  // SUBMIT ATTEMPT
+  // ==========================================================
 
-    const score = Number(scoreData.score || 0);
-    const maxScore = Number(scoreData.max_score || 0);
+  async submitAttempt(attemptId) {
+    const connection =
+      await pool.getConnection();
 
-    const percentage =
-      maxScore > 0
-        ? Number(((score / maxScore) * 100).toFixed(2))
-        : 0;
+    try {
+      await connection.beginTransaction();
 
-    const passed = percentage >= Number(passPercent);
+      // ------------------------------------------------------
+      // GET ATTEMPT + QUIZ
+      // ------------------------------------------------------
 
-    await pool.execute(
-      `
-      UPDATE quiz_attempts
-      SET
-        submitted_at = CURRENT_TIMESTAMP,
-        score = ?,
-        percentage = ?,
-        passed = ?,
-        status = 'submitted'
-      WHERE id = ?
-      `,
-      [
+      const [attemptRows] =
+        await connection.execute(
+          `
+          SELECT
+            qa.id,
+            qa.quiz_id,
+            qa.user_id,
+            qa.status,
+
+            q.pass_percent
+
+          FROM quiz_attempts qa
+
+          INNER JOIN quizzes q
+            ON q.id = qa.quiz_id
+
+          WHERE qa.id = ?
+
+          LIMIT 1
+          `,
+          [attemptId]
+        );
+
+      if (attemptRows.length === 0) {
+        throw new Error(
+          "Quiz attempt not found"
+        );
+      }
+
+      const attempt =
+        attemptRows[0];
+
+      // ------------------------------------------------------
+      // ALREADY SUBMITTED
+      // ------------------------------------------------------
+
+      if (
+        attempt.status ===
+        "submitted"
+      ) {
+        throw new Error(
+          "Quiz attempt has already been submitted"
+        );
+      }
+
+      // ------------------------------------------------------
+      // GET ANSWERS
+      // ------------------------------------------------------
+
+      const [answerRows] =
+        await connection.execute(
+          `
+          SELECT
+            points_earned
+          FROM quiz_answers
+          WHERE attempt_id = ?
+          `,
+          [attemptId]
+        );
+
+      // ------------------------------------------------------
+      // CALCULATE SCORE
+      // ------------------------------------------------------
+
+      const score =
+        answerRows.reduce(
+          (
+            total,
+            answer
+          ) =>
+            total +
+            Number(
+              answer.points_earned ||
+                0
+            ),
+          0
+        );
+
+      // ------------------------------------------------------
+      // GET TOTAL POSSIBLE POINTS
+      // ------------------------------------------------------
+
+      const [totalRows] =
+        await connection.execute(
+          `
+          SELECT
+            COALESCE(
+              SUM(points),
+              0
+            ) AS total_points
+          FROM questions
+          WHERE quiz_id = ?
+          `,
+          [attempt.quiz_id]
+        );
+
+      const totalPoints =
+        Number(
+          totalRows[0]
+            .total_points
+        );
+
+      // ------------------------------------------------------
+      // CALCULATE PERCENTAGE
+      // ------------------------------------------------------
+
+      const percentage =
+        totalPoints > 0
+          ? (score /
+              totalPoints) *
+            100
+          : 0;
+
+      // ------------------------------------------------------
+      // PASS / FAIL
+      // ------------------------------------------------------
+
+      const passed =
+        percentage >=
+        Number(
+          attempt.pass_percent
+        )
+          ? 1
+          : 0;
+
+      // ------------------------------------------------------
+      // UPDATE ATTEMPT
+      // ------------------------------------------------------
+
+      await connection.execute(
+        `
+        UPDATE quiz_attempts
+        SET
+          submitted_at = NOW(),
+          score = ?,
+          percentage = ?,
+          passed = ?,
+          status = 'submitted'
+        WHERE id = ?
+        `,
+        [
+          score,
+          percentage,
+          passed,
+          attemptId,
+        ]
+      );
+
+      // ------------------------------------------------------
+      // GET FINAL RESULT
+      // ------------------------------------------------------
+
+      const [resultRows] =
+        await connection.execute(
+          `
+          SELECT
+            id,
+            quiz_id,
+            user_id,
+            started_at,
+            submitted_at,
+            score,
+            percentage,
+            passed,
+            status
+          FROM quiz_attempts
+          WHERE id = ?
+          LIMIT 1
+          `,
+          [attemptId]
+        );
+
+      await connection.commit();
+
+      return {
+        attempt:
+          resultRows[0],
         score,
+        totalPoints,
         percentage,
-        passed ? 1 : 0,
-        attemptId,
-      ]
-    );
+        passed:
+          Boolean(passed),
+      };
 
-    return {
-      attemptId,
-      quizId,
-      score,
-      maxScore,
-      percentage,
-      passed,
-    };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  },
+
+  // ==========================================================
+  // GET STUDENT ATTEMPTS
+  // ==========================================================
+
+  async getUserAttempts(
+    userId,
+    quizId
+  ) {
+    const [rows] =
+      await pool.execute(
+        `
+        SELECT
+          id,
+          quiz_id,
+          user_id,
+          started_at,
+          submitted_at,
+          score,
+          percentage,
+          passed,
+          status
+        FROM quiz_attempts
+        WHERE user_id = ?
+          AND quiz_id = ?
+        ORDER BY started_at DESC
+        `,
+        [
+          userId,
+          quizId,
+        ]
+      );
+
+    return rows;
+  },
+
+  // ==========================================================
+  // GET ALL ATTEMPTS FOR QUIZ
+  // ==========================================================
+  //
+  // Used by instructor/admin.
+  //
+  // ==========================================================
+
+  async getQuizAttempts(
+    quizId
+  ) {
+    const [rows] =
+      await pool.execute(
+        `
+        SELECT
+          qa.id,
+          qa.quiz_id,
+          qa.user_id,
+          qa.started_at,
+          qa.submitted_at,
+          qa.score,
+          qa.percentage,
+          qa.passed,
+          qa.status,
+
+          u.name,
+          u.email
+
+        FROM quiz_attempts qa
+
+        INNER JOIN users u
+          ON u.id = qa.user_id
+
+        WHERE qa.quiz_id = ?
+
+        ORDER BY
+          qa.started_at DESC
+        `,
+        [quizId]
+      );
+
+    return rows;
   },
 };
 

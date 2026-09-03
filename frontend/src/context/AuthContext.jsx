@@ -263,38 +263,7 @@ export function AuthProvider({
     // VALIDATE RESPONSE
     // =================================================
 
-    if (
-      !data.token ||
-      !data.user
-    ) {
-      throw new Error(
-        "Registration response is missing user or token."
-      );
-    }
-
-    // =================================================
-    // UPDATE STATE
-    // =================================================
-
-    setUser(data.user);
-    setToken(data.token);
-
-    // =================================================
-    // PERSIST IMMEDIATELY
-    // =================================================
-
-    localStorage.setItem(
-      "osta_user",
-      JSON.stringify(
-        data.user
-      )
-    );
-
-    localStorage.setItem(
-      "osta_token",
-      data.token
-    );
-
+    if (!data.user) { throw new Error("Registration response is missing user."); }
     return data.user;
   }
 

@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 
 import Sidebar from "@components/layout/Sidebar";
+import LanguageSwitcher from "@components/ui/LanguageSwitcher";
+import ThemeToggle from "@components/ui/ThemeToggle";
 
 import {
   INSTRUCTOR_SIDEBAR_NAV,
@@ -91,7 +93,7 @@ export default function InstructorLayout() {
 
         <div className="hidden lg:block" />
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3"><ThemeToggle /><LanguageSwitcher />
           {/* NOTIFICATIONS */}
 
           <Link

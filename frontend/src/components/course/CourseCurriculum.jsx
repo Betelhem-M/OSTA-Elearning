@@ -1,7 +1,10 @@
 import { useState } from 'react'
-import { ChevronDown, CheckCircle2, Circle } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ChevronDown, CheckCircle2, Circle, PlayCircle } from 'lucide-react'
 
 export default function CourseCurriculum({ sections = [] }) {
+  const navigate = useNavigate()
+
   const [openSections, setOpenSections] = useState(
     new Set(sections.length > 0 ? [sections[0].id] : [])
   )
@@ -22,6 +25,10 @@ export default function CourseCurriculum({ sections = [] }) {
 
   function expandAll() {
     setOpenSections(new Set(sections.map((section) => section.id)))
+  }
+
+  function openLesson(lessonId) {
+    navigate(`/learn/${lessonId}`)
   }
 
   const allOpen =
@@ -46,7 +53,7 @@ export default function CourseCurriculum({ sections = [] }) {
                 ? () => setOpenSections(new Set())
                 : expandAll
             }
-            className="text-xs font-bold text-primary hover:underline"
+            className="text-xs font-bold text-primary transition hover:underline"
           >
             {allOpen ? 'Collapse all' : 'Expand all'}
           </button>
@@ -54,11 +61,11 @@ export default function CourseCurriculum({ sections = [] }) {
       </div>
 
       {sections.length === 0 ? (
-        <div className="rounded-xl border border-slate-100 bg-slate-50 px-5 py-6 text-center text-sm text-slate-400">
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-5 py-8 text-center text-sm text-slate-400">
           No course sections have been published yet.
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-100">
+        <div className="space-y-2">
           {sections.map((section) => {
             const isOpen = openSections.has(section.id)
             const lessons = section.lessons || []
@@ -66,21 +73,21 @@ export default function CourseCurriculum({ sections = [] }) {
             return (
               <div
                 key={section.id}
-                className="mb-2 overflow-hidden rounded-xl border border-slate-100 last:mb-0"
+                className="overflow-hidden rounded-xl border border-slate-200/80 shadow-sm"
               >
                 <button
                   type="button"
                   onClick={() => toggleSection(section.id)}
                   aria-expanded={isOpen}
-                  className={`flex w-full items-center gap-3 px-4 py-4 text-left transition-colors ${
+                  className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${
                     isOpen
                       ? 'bg-primary text-white'
-                      : 'bg-white text-slate-700 hover:bg-primary-light'
+                      : 'bg-white text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <ChevronDown
                     size={17}
-                    className={`shrink-0 transition-transform ${
+                    className={`shrink-0 transition-transform duration-200 ${
                       isOpen ? 'rotate-180' : ''
                     }`}
                   />
@@ -90,7 +97,7 @@ export default function CourseCurriculum({ sections = [] }) {
                   </span>
 
                   <span
-                    className={`text-xs ${
+                    className={`text-xs font-semibold ${
                       isOpen
                         ? 'text-white/80'
                         : 'text-slate-400'
@@ -123,23 +130,25 @@ export default function CourseCurriculum({ sections = [] }) {
                               : '')
 
                           return (
-                            <div
+                            <button
+                              type="button"
                               key={lesson.id}
-                              className="flex items-center gap-3 px-4 py-3"
+                              onClick={() => openLesson(lesson.id)}
+                              className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-primary-light/40 focus:outline-none focus-visible:bg-primary-light/40"
                             >
                               {completed ? (
                                 <CheckCircle2
-                                  size={16}
+                                  size={17}
                                   className="shrink-0 text-primary"
                                 />
                               ) : (
                                 <Circle
-                                  size={16}
-                                  className="shrink-0 text-slate-300"
+                                  size={17}
+                                  className="shrink-0 text-slate-300 group-hover:text-primary/50"
                                 />
                               )}
 
-                              <span className="flex-1 text-sm text-slate-700">
+                              <span className="flex-1 truncate text-sm font-medium text-slate-700 group-hover:text-ink">
                                 {lesson.title}
                               </span>
 
@@ -148,7 +157,12 @@ export default function CourseCurriculum({ sections = [] }) {
                                   {duration}
                                 </span>
                               )}
-                            </div>
+
+                              <PlayCircle
+                                size={16}
+                                className="shrink-0 text-slate-300 opacity-0 transition group-hover:text-primary group-hover:opacity-100"
+                              />
+                            </button>
                           )
                         })}
                       </div>

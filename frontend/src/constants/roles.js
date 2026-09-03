@@ -2,8 +2,8 @@ const DASHBOARD_PATHS = {
   student: "/dashboard",
   instructor: "/instructor/dashboard",
   admin: "/admin/dashboard",
-  researcher: "/research",
-  entrepreneur: "/innovation-hub",
+  researcher: "/researcher/dashboard",
+  entrepreneur: "/entrepreneur/dashboard",
 };
 
 export function getDashboardPath(role, accountType) {

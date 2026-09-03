@@ -1,0 +1,25 @@
+const pool = require("../config/database");
+const { Bookmark, PrivateQuestion } = require("../models/FeatureModels");
+const Notification = require("../models/Notification");
+
+const featureController = {
+  async search(req,res){
+    try{
+      const q=String(req.query.q||'').trim(); const type=String(req.query.type||'all').toLowerCase(); const limit=Math.min(Math.max(Number(req.query.limit)||30,1),100);
+      if(!q) return res.json({success:true,data:[]});
+      const like=`%${q}%`; const out=[];
+      if(type==='all'||type==='courses'){ const [r]=await pool.execute(`SELECT id,title,description,'course' content_type FROM courses WHERE title LIKE ? OR description LIKE ? ORDER BY created_at DESC LIMIT ${limit}`,[like,like]); out.push(...r); }
+      if(type==='all'||type==='students'){ const [r]=await pool.execute(`SELECT id,CONCAT(first_name,' ',last_name) title,email,role content_type FROM users WHERE role='student' AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?) ORDER BY created_at DESC LIMIT ${limit}`,[like,like,like]); out.push(...r); }
+      if(type==='all'||type==='events'){ const [r]=await pool.execute(`SELECT id,title,description,'event' content_type FROM events WHERE title LIKE ? OR description LIKE ? OR category LIKE ? ORDER BY event_date DESC LIMIT ${limit}`,[like,like,like]); out.push(...r); }
+      return res.json({success:true,data:out});
+    }catch(e){console.error('Search error',e);return res.status(500).json({success:false,message:'Search failed'});}
+  },
+  async listBookmarks(req,res){try{return res.json({success:true,data:await Bookmark.list(req.user.id,{type:req.query.type,q:req.query.q})});}catch(e){console.error(e);return res.status(500).json({success:false,message:'Failed to load bookmarks'});}},
+  async addBookmark(req,res){try{const {contentType,contentId}=req.body;if(!['course','event','book','resource'].includes(contentType)||!Number.isInteger(Number(contentId)))return res.status(400).json({success:false,message:'Invalid bookmark'});if(await Bookmark.exists(req.user.id,contentType,Number(contentId)))return res.status(200).json({success:true,message:'Already bookmarked'});const id=await Bookmark.add(req.user.id,contentType,Number(contentId));return res.status(201).json({success:true,id});}catch(e){if(e.code==='ER_DUP_ENTRY')return res.json({success:true,message:'Already bookmarked'});console.error(e);return res.status(500).json({success:false,message:'Failed to add bookmark'});}},
+  async removeBookmark(req,res){try{const {contentType,contentId}=req.body;const ok=await Bookmark.remove(req.user.id,contentType,Number(contentId));return res.json({success:true,removed:ok});}catch(e){return res.status(500).json({success:false,message:'Failed to remove bookmark'});}},
+  async studentQuestions(req,res){try{return res.json({success:true,data:await PrivateQuestion.listForStudent(req.user.id)});}catch(e){console.error(e);return res.status(500).json({success:false,message:'Failed to load private questions'});}},
+  async instructorQuestions(req,res){try{return res.json({success:true,data:await PrivateQuestion.listForInstructor(req.user.id)});}catch(e){console.error(e);return res.status(500).json({success:false,message:'Failed to load student questions'});}},
+  async createQuestion(req,res){try{const courseId=Number(req.body.courseId);const body=String(req.body.body||'').trim();if(!Number.isInteger(courseId)||!body)return res.status(400).json({success:false,message:'Course and question are required'});const created=await PrivateQuestion.create({studentId:req.user.id,courseId,body});if(!created)return res.status(404).json({success:false,message:'Course or instructor not found'});await Notification.create({userId:created.instructorId,title:'New private student question',message:`A student asked a question in ${created.courseTitle}.`,category:'Questions',entityType:'private_question',entityId:created.id,targetPath:'/questions'});return res.status(201).json({success:true,message:'Question sent privately',data:{id:created.id}});}catch(e){console.error(e);return res.status(500).json({success:false,message:'Failed to send question'});}},
+  async replyQuestion(req,res){try{const id=Number(req.params.id);const body=String(req.body.body||'').trim();if(!Number.isInteger(id)||!body)return res.status(400).json({success:false,message:'Reply is required'});const q=await PrivateQuestion.getAuthorized(id,req.user.id);if(!q)return res.status(404).json({success:false,message:'Private question not found'});const replyId=await PrivateQuestion.reply(id,req.user.id,body);const recipient=req.user.id===q.student_id?q.instructor_id:q.student_id;await Notification.create({userId:recipient,title:'New private question reply',message:'You received a private reply to your question.',category:'Questions',entityType:'private_question',entityId:id,targetPath:req.user.id===q.student_id?'/instructor/questions':'/questions'});return res.status(201).json({success:true,replyId});}catch(e){console.error(e);return res.status(500).json({success:false,message:'Failed to send reply'});}}
+};
+module.exports=featureController;

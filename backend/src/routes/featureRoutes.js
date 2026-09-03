@@ -1,0 +1,14 @@
+const express=require('express');
+const auth=require('../middleware/authMiddleware');
+const roles=require('../middleware/roleMiddleware');
+const c=require('../controllers/featureController');
+const router=express.Router();
+router.get('/search',c.search);
+router.get('/bookmarks',auth,c.listBookmarks);
+router.post('/bookmarks',auth,c.addBookmark);
+router.delete('/bookmarks',auth,c.removeBookmark);
+router.get('/private-questions',auth,c.studentQuestions);
+router.get('/private-questions/instructor',auth,roles('instructor','admin'),c.instructorQuestions);
+router.post('/private-questions',auth,c.createQuestion);
+router.post('/private-questions/:id/replies',auth,c.replyQuestion);
+module.exports=router;

@@ -109,7 +109,7 @@ export default function Competitions() {
   ] = useState("All");
 
   // =====================================================
-  // LOAD REAL HACKATHONS
+  // LOAD REAL competitions
   // =====================================================
 
   async function loadCompetitions({
@@ -126,21 +126,24 @@ export default function Competitions() {
 
       const data =
         await apiRequest(
-          "/hackathons"
+          "/competitions"
         );
 
-      const normalized =
-        Array.isArray(data)
-          ? data.map(
-              (item) => ({
-                ...item,
-                status:
-                  normalizeStatus(
-                    item
-                  ),
-              })
-            )
-          : [];
+      // The backend wraps the list in { success, count, competitions }.
+      // Support a bare array too, in case that ever changes.
+      const list = Array.isArray(data)
+        ? data
+        : data?.competitions || [];
+
+      const normalized = list.map(
+        (item) => ({
+          ...item,
+          status:
+            normalizeStatus(
+              item
+            ),
+        })
+      );
 
       setCompetitions(
         normalized
@@ -153,7 +156,7 @@ export default function Competitions() {
 
       setError(
         err.message ||
-          "Failed to load hackathons."
+          "Failed to load competitions."
       );
     } finally {
       setLoading(false);
@@ -265,7 +268,7 @@ export default function Competitions() {
           </h1>
 
           <p className="mt-2 text-sm text-slate-500">
-            Finding the latest hackathons and competition opportunities.
+            Finding the latest competitions and competition opportunities.
           </p>
         </div>
       </main>
@@ -295,7 +298,7 @@ export default function Competitions() {
           </div>
 
           <h1 className="mt-5 max-w-3xl text-2xl font-extrabold sm:text-3xl">
-            Discover hackathons and competition opportunities
+            Discover competitions and competition opportunities
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
@@ -517,7 +520,7 @@ export default function Competitions() {
             </h3>
 
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-              Published OSTA and external hackathons will appear
+              Published OSTA and external competitions will appear
               here when they are added to the platform.
             </p>
           </div>

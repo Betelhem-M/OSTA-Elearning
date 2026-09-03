@@ -112,8 +112,8 @@ export default function InnovationHub() {
   ] = useState([]);
 
   const [
-    hackathons,
-    setHackathons,
+    competitions,
+    setcompetitions,
   ] = useState([]);
 
   const [
@@ -201,7 +201,7 @@ export default function InnovationHub() {
       const [
         ideasResponse,
         startupsResponse,
-        hackathonsResponse,
+        competitionsResponse,
       ] = await Promise.all([
         apiRequest(
           "/innovation/ideas"
@@ -210,7 +210,7 @@ export default function InnovationHub() {
           "/innovation/startups"
         ),
         apiRequest(
-          "/hackathons"
+          "/competitions"
         ),
       ]);
 
@@ -230,11 +230,11 @@ export default function InnovationHub() {
           : []
       );
 
-      setHackathons(
+      setcompetitions(
         Array.isArray(
-          hackathonsResponse
+          competitionsResponse
         )
-          ? hackathonsResponse.filter(
+          ? competitionsResponse.filter(
               (item) =>
                 PUBLIC_HACKATHON_STATUSES.includes(
                   item.status
@@ -311,9 +311,9 @@ export default function InnovationHub() {
     },
     {
       value:
-        hackathons.length,
+        competitions.length,
       label:
-        "Hackathons",
+        "competitions",
       icon:
         Trophy,
     },
@@ -612,7 +612,7 @@ export default function InnovationHub() {
           </h1>
 
           <p className="mt-2 text-sm text-slate-500">
-            Discovering published ideas, startups, and hackathons.
+            Discovering published ideas, startups, and competitions.
           </p>
         </div>
       </main>
@@ -650,7 +650,7 @@ export default function InnovationHub() {
 
             <p className="mt-3 text-sm leading-6 text-slate-300">
               Explore published ideas, discover startups, and keep
-              up with hackathons. Become an innovator to submit
+              up with competitions. Become an innovator to submit
               your own ideas and startups.
             </p>
           </div>
@@ -776,14 +776,14 @@ export default function InnovationHub() {
       </section>
 
       {/* =================================================
-          HACKATHONS
+          competitions
       ================================================= */}
 
       <section className="mt-8">
         <div className="flex items-end justify-between">
           <div>
             <h2 className="text-lg font-bold text-ink">
-              Hackathons
+              competitions
             </h2>
 
             <p className="mt-1 text-xs text-slate-400">
@@ -792,7 +792,7 @@ export default function InnovationHub() {
           </div>
         </div>
 
-        {hackathons.length ===
+        {competitions.length ===
         0 ? (
           <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center">
             <Trophy
@@ -801,17 +801,17 @@ export default function InnovationHub() {
             />
 
             <h3 className="mt-3 text-sm font-bold text-ink">
-              No public hackathons yet
+              No public competitions yet
             </h3>
 
             <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-slate-500">
-              Published hackathons will appear here for students,
+              Published competitions will appear here for students,
               researchers, and innovators.
             </p>
           </div>
         ) : (
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {hackathons.map(
+            {competitions.map(
               (hackathon) => (
                 <HackathonCard
                   key={

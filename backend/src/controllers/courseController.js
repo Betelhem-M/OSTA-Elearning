@@ -87,7 +87,7 @@ const courseController = {
       }
 
       // -------------------------------------------------
-      // CREATE
+      // CREATE (Now auto-creates default section inside model)
       // -------------------------------------------------
       const courseId = await Course.create({
         title,
@@ -109,7 +109,7 @@ const courseController = {
 
       return res.status(201).json({
         message:
-          "Course created successfully",
+          "Course and default section created successfully",
         course,
       });
     } catch (error) {

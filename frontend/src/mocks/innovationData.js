@@ -1,10 +1,10 @@
 export const innovationStats = [
-  { label: 'Active Hackathons', value: '3' },
+  { label: 'Active competitions', value: '3' },
   { label: 'Ideas Submitted', value: '128' },
   { label: 'Startups Launched', value: '14' },
 ]
 
-export const hackathons = [
+export const competitions = [
   { id: 1, title: 'AgriTech Hackathon 2025', deadline: 'July 20, 2025', prize: 'ETB 50,000', teams: 34, status: 'Open' },
   { id: 2, title: 'HealthTech Innovation Challenge', deadline: 'August 5, 2025', prize: 'ETB 75,000', teams: 21, status: 'Open' },
   { id: 3, title: 'EdTech for Rural Schools', deadline: 'June 30, 2025', prize: 'ETB 40,000', teams: 45, status: 'Closed' },

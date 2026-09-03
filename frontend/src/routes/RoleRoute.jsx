@@ -7,20 +7,42 @@ import {
   useAuth,
 } from "@context/AuthContext";
 
+
 export default function RoleRoute({
   role,
   children,
 }) {
+
   const {
     user,
     isAuthenticated,
+    loading,
   } = useAuth();
 
-  const location =
-    useLocation();
+  const location = useLocation();
+
 
   // =====================================================
-  // NOT LOGGED IN
+  // WAIT FOR AUTHENTICATION RESTORATION
+  // =====================================================
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto" />
+
+          <p className="mt-4 text-sm text-gray-500">
+            Loading your account...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+
+  // =====================================================
+  // NOT AUTHENTICATED
   // =====================================================
 
   if (
@@ -32,91 +54,84 @@ export default function RoleRoute({
         to="/login"
         replace
         state={{
-          from:
-            location.pathname,
+          from: location.pathname,
         }}
       />
     );
   }
 
+
   // =====================================================
   // NORMALIZE ROLE
   // =====================================================
 
-  const currentRole =
-    String(
-      user.role || ""
-    )
-      .trim()
-      .toLowerCase();
+  const currentRole = String(
+    user.role || ""
+  )
+    .trim()
+    .toLowerCase();
 
-  const requiredRole =
-    String(
-      role || ""
-    )
-      .trim()
-      .toLowerCase();
+  const requiredRole = String(
+    role || ""
+  )
+    .trim()
+    .toLowerCase();
+
 
   // =====================================================
-  // ROLE MATCH
+  // CORRECT ROLE
   // =====================================================
 
   if (
-    currentRole ===
-    requiredRole
+    currentRole === requiredRole
   ) {
     return children;
   }
 
+
   // =====================================================
   // WRONG ROLE
-  // DO NOT LOG OUT
   // =====================================================
 
-  if (
-    currentRole ===
-    "admin"
-  ) {
-    return (
-      <Navigate
-        to="/admin/dashboard"
-        replace
-      />
-    );
+  switch (currentRole) {
+
+    case "admin":
+
+      return (
+        <Navigate
+          to="/admin/dashboard"
+          replace
+        />
+      );
+
+
+    case "instructor":
+
+      return (
+        <Navigate
+          to="/instructor/dashboard"
+          replace
+        />
+      );
+
+
+    case "student":
+
+      return (
+        <Navigate
+          to="/dashboard"
+          replace
+        />
+      );
+
+
+    default:
+
+      return (
+        <Navigate
+          to="/"
+          replace
+        />
+      );
   }
-
-  if (
-    currentRole ===
-    "instructor"
-  ) {
-    return (
-      <Navigate
-        to="/instructor/dashboard"
-        replace
-      />
-    );
-  }
-
-  if (
-    currentRole ===
-    "student"
-  ) {
-    return (
-      <Navigate
-        to="/dashboard"
-        replace
-      />
-    );
-  }
-
-  // =====================================================
-  // UNKNOWN ROLE
-  // =====================================================
-
-  return (
-    <Navigate
-      to="/"
-      replace
-    />
-  );
 }

@@ -1,15 +1,18 @@
 const express = require("express");
 
-const adminController =
-  require("../controllers/adminController");
-
-const authMiddleware =
-  require("../middleware/authMiddleware");
-
-const roleMiddleware =
-  require("../middleware/roleMiddleware");
+const adminController = require("../controllers/adminController");
+const authMiddleware = require("../middleware/authMiddleware");
+const roleMiddleware = require("../middleware/roleMiddleware");
 
 const router = express.Router();
+
+// Safety checks to prevent server crashes if middleware or controllers are missing
+if (typeof authMiddleware !== "function") {
+  console.error("WARNING: authMiddleware is not a valid function");
+}
+if (typeof roleMiddleware !== "function") {
+  console.error("WARNING: roleMiddleware is not a valid function");
+}
 
 // =====================================================
 // ADMIN DASHBOARD
@@ -88,5 +91,4 @@ router.get(
   adminController.getSystemHealth
 );
 
-module.exports =
-  router;
+module.exports = router;

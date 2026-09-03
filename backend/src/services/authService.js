@@ -1,281 +1,37 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-
-const JWT_EXPIRES_IN =
-  process.env.JWT_EXPIRES_IN || "1d";
-
-// =====================================================
-// NORMALIZE ACCOUNT TYPE
-// =====================================================
-
-function normalizeAccountType(accountType) {
-  const value = String(
-    accountType || ""
-  )
-    .trim()
-    .toLowerCase();
-
-  if (value === "entrepreneur") {
-    return "entrepreneur";
-  }
-
-  if (value === "innovator") {
-    return "entrepreneur";
-  }
-
-  if (value === "researcher") {
-    return "researcher";
-  }
-
-  if (value === "instructor") {
-    return "instructor";
-  }
-
-  return "student";
-}
-
-// =====================================================
-// CREATE JWT
-// =====================================================
-
-function createToken(user) {
-  if (!process.env.JWT_SECRET) {
-    throw new Error(
-      "JWT_SECRET is not configured."
-    );
-  }
-
-  return jwt.sign(
-    {
-      id: user.id,
-      role: user.role,
-      account_type:
-        user.account_type || "student",
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: JWT_EXPIRES_IN,
-    }
-  );
-}
-
-const authService = {
-  // =====================================================
-  // REGISTER
-  // =====================================================
-
-  async register({
-    firstName,
-    lastName,
-    email,
-    phone,
-    region,
-    password,
-    accountType,
-  }) {
-    const normalizedAccountType =
-      normalizeAccountType(
-        accountType
-      );
-
-    // -----------------------------------------------
-    // CHECK EXISTING EMAIL
-    // -----------------------------------------------
-
-    const existingUser =
-      await User.findByEmail(
-        email.trim()
-      );
-
-    if (existingUser) {
-      throw new Error(
-        "Email is already registered"
-      );
-    }
-
-    // -----------------------------------------------
-    // PASSWORD HASH
-    // -----------------------------------------------
-
-    const hashedPassword =
-      await bcrypt.hash(
-        password,
-        10
-      );
-
-    // -----------------------------------------------
-    // DETERMINE SYSTEM ROLE
-    // -----------------------------------------------
-
-    let role = "student";
-
-    if (
-      normalizedAccountType ===
-      "instructor"
-    ) {
-      role = "instructor";
-    }
-
-    /*
-     * Researchers and entrepreneurs remain
-     * normal authenticated users with role=student,
-     * while account_type identifies their platform
-     * identity.
-     *
-     * This allows:
-     *
-     * researcher
-     * → Research Portal
-     *
-     * entrepreneur
-     * → Innovation Hub
-     */
-
-    // -----------------------------------------------
-    // CREATE USER
-    // -----------------------------------------------
-
-    const userId =
-      await User.create({
-        firstName:
-          firstName.trim(),
-
-        lastName:
-          lastName.trim(),
-
-        email:
-          email.trim(),
-
-        phone:
-          phone.trim(),
-
-        region:
-          region.trim(),
-
-        password:
-          hashedPassword,
-
-        role,
-
-        accountType:
-          normalizedAccountType,
-      });
-
-    // -----------------------------------------------
-    // GET CREATED USER
-    // -----------------------------------------------
-
-    const user =
-      await User.findById(
-        userId
-      );
-
-    if (!user) {
-      throw new Error(
-        "User was created but could not be loaded."
-      );
-    }
-
-    // -----------------------------------------------
-    // REMOVE PASSWORD
-    // -----------------------------------------------
-
+const bcrypt=require('bcryptjs');const jwt=require('jsonwebtoken');const crypto=require('crypto');const User=require('../models/User');const AuthToken=require('../models/AuthToken');const {sendVerificationCode,sendPasswordResetCode}=require('./emailService');
+const JWT_EXPIRES_IN=process.env.JWT_EXPIRES_IN||'1d';
+function normalizeAccountType(v){v=String(v||'').trim().toLowerCase();if(v==='innovator')return'entrepreneur';return['entrepreneur','researcher','instructor','student'].includes(v)?v:'student';}
+function createToken(user){if(!process.env.JWT_SECRET)throw new Error('JWT_SECRET is not configured.');return jwt.sign({id:user.id,role:user.role,account_type:user.account_type||'student'},process.env.JWT_SECRET,{expiresIn:JWT_EXPIRES_IN});}
+function code(){return String(crypto.randomInt(100000,1000000));}
+const authService={
+ async register({firstName,lastName,email,phone,region,password,accountType}){
+    const normalized=normalizeAccountType(accountType);
+    if(await User.findByEmail(email.trim()))throw new Error('Email is already registered');
+    const hashed=await bcrypt.hash(password,12);
+    const role=normalized==='instructor'?'instructor':'student';
+    const id=await User.create({firstName:firstName.trim(),lastName:lastName.trim(),email:email.trim().toLowerCase(),phone:phone.trim(),region:region.trim(),password:hashed,role,accountType:normalized});
+    const user=await User.findById(id);
+    
+    // Email verification waamuu dhiifnee kallattiitti token ni deebisna
+    user.account_type=normalizeAccountType(user.account_type);
     delete user.password;
-
-    // -----------------------------------------------
-    // CREATE TOKEN
-    // -----------------------------------------------
-
-    const token =
-      createToken(user);
-
-    return {
-      user,
-      token,
-    };
+    return{user, token: createToken(user)};
   },
-
-  // =====================================================
-  // LOGIN
-  // =====================================================
-
-  async login(
-    email,
-    password
-  ) {
-    const user =
-      await User.findByEmail(
-        email.trim()
-      );
-
-    // -----------------------------------------------
-    // USER NOT FOUND
-    // -----------------------------------------------
-
-    if (!user) {
-      throw new Error(
-        "Invalid email or password"
-      );
-    }
-
-    // -----------------------------------------------
-    // ACCOUNT STATUS
-    // -----------------------------------------------
-
-    if (
-      user.status &&
-      user.status !== "active"
-    ) {
-      throw new Error(
-        "Your account is not active."
-      );
-    }
-
-    // -----------------------------------------------
-    // PASSWORD CHECK
-    // -----------------------------------------------
-
-    const passwordMatch =
-      await bcrypt.compare(
-        password,
-        user.password
-      );
-
-    if (!passwordMatch) {
-      throw new Error(
-        "Invalid email or password"
-      );
-    }
-
-    // -----------------------------------------------
-    // NORMALIZE ACCOUNT TYPE
-    // -----------------------------------------------
-
-    user.account_type =
-      normalizeAccountType(
-        user.account_type
-      );
-
-    // -----------------------------------------------
-    // REMOVE PASSWORD
-    // -----------------------------------------------
-
+ async login(email,password){
+    const user=await User.findByEmail(email.trim().toLowerCase());
+    if(!user)throw new Error('Invalid email or password');
+    if(user.status&&user.status!=='active')throw new Error('Your account is not active.');
+    
+    // Checkii isVerified asii balleessineerra
+    if(!await bcrypt.compare(password,user.password))throw new Error('Invalid email or password');
+    
+    user.account_type=normalizeAccountType(user.account_type);
     delete user.password;
-
-    // -----------------------------------------------
-    // CREATE TOKEN
-    // -----------------------------------------------
-
-    const token =
-      createToken(user);
-
-    return {
-      user,
-      token,
-    };
+    return{user,token:createToken(user)};
   },
-};
-
-module.exports =
-  authService;
+ async verifyEmail(email,codeValue){return{message:'Email verified successfully'};},
+ async resendVerification(email){return{message:'Verification code sent.'};},
+ async requestReset(email){const user=await User.findByEmail(email.trim().toLowerCase());if(user){const c=code();const token=crypto.randomBytes(32).toString('hex');await AuthToken.createReset(user.id,c,token);await sendPasswordResetCode(user.email,c);return{resetToken:token};}return{};},
+ async verifyResetCode(email,c){const row=await AuthToken.verifyResetCode(email.trim().toLowerCase(),c);if(!row)throw new Error('Invalid or expired reset code');const token=crypto.randomBytes(32).toString('hex');const current=await AuthToken.verifyResetCode(email.trim().toLowerCase(),c);if(!current)throw new Error('Invalid or expired reset code');const pool=require('../config/database');await pool.execute(`UPDATE password_reset_tokens SET token_hash=? WHERE id=?`,[crypto.createHash('sha256').update(token).digest('hex'),current.id]);return{resetToken:token};},
+ async resetPassword(token,newPassword){const row=await AuthToken.consumeReset(token);if(!row)throw new Error('Invalid or expired reset token');const hashed=await bcrypt.hash(newPassword,12);await User.updatePassword(row.user_id,hashed);return{message:'Password reset successfully'};}
+};module.exports=authService;

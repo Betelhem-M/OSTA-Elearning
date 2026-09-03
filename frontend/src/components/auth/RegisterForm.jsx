@@ -90,7 +90,7 @@ export default function RegisterForm() {
         accountType: accountType,
       });
 
-      navigate(getDashboardPath(registeredUser.role));
+      navigate(`/verify-email?email=${encodeURIComponent(form.email)}`);
     } catch (error) {
       setErrors((prev) => ({
         ...prev,
@@ -100,9 +100,7 @@ export default function RegisterForm() {
   }
 
   function handleSocialClick(provider) {
-    alert(
-      `Registering with ${provider} isn't available yet — there's no OAuth provider connected.`,
-    );
+    setErrors((prev) => ({ ...prev, form: `${provider} sign-in is not available yet.` }));
   }
 
   return (

@@ -355,22 +355,22 @@ export default function LessonPlayer() {
             )
           : 0;
 
-      await apiRequest(
-        `/progress/lesson/${lesson.id}`,
-        {
-          token,
-          method: "PUT",
-          body: {
-            progressPercent:
-              percentage,
-            lastPositionSeconds:
-              rounded,
-            completed:
-              percentage >= 100 ||
-              completed,
-          },
-        }
-      );
+     const response = await apiRequest(
+  `/progress/lesson/${lesson.id}`,
+  {
+    token,
+    method: "PUT",
+    body: {
+      progressPercent: percentage,
+      lastPositionSeconds: rounded,
+      completed: percentage >= 100 || completed,
+    },
+  }
+);
+
+if (response?.progress) {
+  setProgress(response.progress);
+}
 
       lastSavedTimeRef.current =
         rounded;

@@ -8,25 +8,25 @@ const hackathonController = {
 
   async getAll(req, res) {
     try {
-      const hackathons =
+      const competitions =
         await Hackathon.findAll();
 
       return res.status(200).json(
         Array.isArray(
-          hackathons
+          competitions
         )
-          ? hackathons
+          ? competitions
           : []
       );
     } catch (error) {
       console.error(
-        "Get hackathons error:",
+        "Get competitions error:",
         error
       );
 
       return res.status(500).json({
         message:
-          "Failed to fetch hackathons",
+          "Failed to fetch competitions",
       });
     }
   },
@@ -95,7 +95,7 @@ const hackathonController = {
       ) {
         return res.status(403).json({
           message:
-            "Only instructors and admins can create hackathons",
+            "Only instructors and admins can create competitions",
         });
       }
 

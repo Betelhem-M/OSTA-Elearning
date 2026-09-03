@@ -1,8 +1,8 @@
-const db = require("../config/database");
+const pool = require("../config/database");
 
 const LessonNote = {
   async findByLessonAndUser(lessonId, userId) {
-    const [rows] = await db.query(
+    const [rows] = await pool.query(
       `
       SELECT
         id,
@@ -24,7 +24,7 @@ const LessonNote = {
   },
 
   async findById(id) {
-    const [rows] = await db.query(
+    const [rows] = await pool.query(
       `
       SELECT
         id,
@@ -50,7 +50,7 @@ const LessonNote = {
     timestampSeconds,
     noteText,
   }) {
-    const [result] = await db.query(
+    const [result] = await pool.query(
       `
       INSERT INTO lesson_notes (
         user_id,
@@ -72,7 +72,7 @@ const LessonNote = {
   },
 
   async update(id, noteText) {
-    await db.query(
+    await pool.query(
       `
       UPDATE lesson_notes
       SET note_text = ?
@@ -83,7 +83,7 @@ const LessonNote = {
   },
 
   async delete(id) {
-    await db.query(
+    await pool.query(
       `
       DELETE FROM lesson_notes
       WHERE id = ?

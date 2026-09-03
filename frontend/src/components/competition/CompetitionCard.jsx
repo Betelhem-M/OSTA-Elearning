@@ -1,11 +1,20 @@
 import {
+  useState,
+} from "react";
+
+import {
   ExternalLink,
   Globe,
+  Loader2,
   MapPin,
   Verified,
 } from "lucide-react";
 
 import CountdownTimer from "./CountdownTimer";
+
+import {
+  apiRequest,
+} from "@services/api";
 
 function formatFormat(value) {
   switch (value) {
@@ -67,6 +76,51 @@ export default function CompetitionCard({
   const registrationUrl =
     competition.registration_url ||
     null;
+
+  // =====================================================
+  // JOIN (OSTA-hosted competitions only)
+  // =====================================================
+
+  const [joining, setJoining] =
+    useState(false);
+
+  const [joined, setJoined] =
+    useState(false);
+
+  const [joinError, setJoinError] =
+    useState("");
+
+  async function handleJoin() {
+    try {
+      setJoining(true);
+      setJoinError("");
+
+      await apiRequest(
+        `/competitions/${competition.id}/join`,
+        {
+          method: "POST",
+        }
+      );
+
+      setJoined(true);
+    } catch (error) {
+      if (error.status === 401) {
+        setJoinError(
+          "Please log in to join this competition."
+        );
+      } else if (error.status === 409) {
+        // Already joined — treat as success.
+        setJoined(true);
+      } else {
+        setJoinError(
+          error.message ||
+            "Failed to join competition."
+        );
+      }
+    } finally {
+      setJoining(false);
+    }
+  }
 
   return (
     <article className="rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.07)] transition hover:-translate-y-0.5 hover:shadow-md">
@@ -223,7 +277,7 @@ export default function CompetitionCard({
         </div>
       )}
 
-      {/* REGISTER */}
+      {/* REGISTER / JOIN */}
 
       <div className="mt-5">
         {isClosed ? (
@@ -251,7 +305,7 @@ export default function CompetitionCard({
               size={14}
             />
           </a>
-        ) : (
+        ) : isExternal ? (
           <button
             type="button"
             disabled
@@ -259,6 +313,42 @@ export default function CompetitionCard({
           >
             Registration Details Coming Soon
           </button>
+        ) : joined ? (
+          <button
+            type="button"
+            disabled
+            className="w-full cursor-not-allowed rounded-lg bg-green-50 py-2.5 text-xs font-bold text-green-600"
+          >
+            You've Joined
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={
+              handleJoin
+            }
+            disabled={
+              joining
+            }
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-xs font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {joining && (
+              <Loader2
+                size={14}
+                className="animate-spin"
+              />
+            )}
+
+            {joining
+              ? "Joining..."
+              : "Join Competition"}
+          </button>
+        )}
+
+        {joinError && (
+          <p className="mt-2 text-center text-[11px] font-semibold text-red-500">
+            {joinError}
+          </p>
         )}
       </div>
 
