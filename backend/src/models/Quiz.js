@@ -172,6 +172,18 @@ const Quiz = {
       // CREATE QUIZ
       // =================================================
 
+
+      console.log("========== QUIZ INSERT DEBUG ==========");
+console.log({
+  courseId,
+  lessonId,
+  title,
+  timeLimitMinutes,
+  passPercent,
+  shuffleQuestions,
+  status,
+});
+console.log("========================================");
       const [quizResult] = await connection.execute(
         `
         INSERT INTO quizzes
