@@ -12,9 +12,25 @@
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    outline: 2px solid #2e7d32;
+    outline: 2px solid #1d4ed8;
     outline-offset: 2px;
     border-radius: 4px;
+  }
+
+  [class*="bg-green-"],
+  [class*="bg-emerald-"],
+  [class*="bg-lime-"],
+  [class*="from-green-"],
+  [class*="via-green-"],
+  [class*="to-green-"],
+  [class*="from-emerald-"],
+  [class*="via-emerald-"],
+  [class*="to-emerald-"],
+  [class*="from-lime-"],
+  [class*="via-lime-"],
+  [class*="to-lime-"] {
+    background-color: #edf3ff !important;
+    background-image: none !important;
   }
 }
 

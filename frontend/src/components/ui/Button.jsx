@@ -6,13 +6,14 @@ export default function Button({
   ...props
 }) {
   const base =
-    'inline-flex items-center justify-center gap-2 rounded-lg text-sm font-bold transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-60'
+    'inline-flex items-center justify-center gap-2 rounded-xl text-sm font-bold transition-all duration-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 shadow-sm'
 
   const variants = {
     primary: 'bg-primary text-white px-4 py-2.5 hover:bg-primary-hover',
-    secondary: 'bg-gold text-[#3b2a00] px-4 py-2.5 hover:bg-yellow-300',
-    outline: 'border border-primary text-primary px-4 py-2.5 hover:bg-primary-light',
-    ghost: 'text-primary px-3 py-2 hover:bg-primary-light',
+    secondary: 'bg-accent text-slate-900 px-4 py-2.5 hover:bg-yellow-300',
+    success: 'bg-success text-white px-4 py-2.5 hover:bg-success-hover',
+    outline: 'border border-primary text-primary bg-transparent px-4 py-2.5 hover:bg-primary-light dark:hover:bg-slate-800',
+    ghost: 'text-primary px-3 py-2 hover:bg-primary-light dark:hover:bg-slate-800',
   }
 
   return (

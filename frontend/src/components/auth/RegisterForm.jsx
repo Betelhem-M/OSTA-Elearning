@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, Phone, MapPin, User } from "lucide-react";
 import Button from "@components/ui/Button";
 import { useAuth } from "@context/AuthContext";
+import { useLanguage } from "@context/LanguageContext";
 import { getDashboardPath } from "@constants/roles";
 import {
   validateEmail,
@@ -28,6 +29,7 @@ const REGIONS = [
 export default function RegisterForm() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const [accountType, setAccountType] = useState("Student");
   const [form, setForm] = useState({
@@ -58,11 +60,11 @@ export default function RegisterForm() {
     event.preventDefault();
 
     const nextErrors = {
-      firstName: validateRequired(form.firstName, "Enter your first name."),
-      lastName: validateRequired(form.lastName, "Enter your last name."),
+      firstName: validateRequired(form.firstName, t('Enter your first name.')),
+      lastName: validateRequired(form.lastName, t('Enter your last name.')),
       email: validateEmail(form.email),
       phone: validatePhone(form.phone),
-      region: validateRequired(form.region, "Select your region."),
+      region: validateRequired(form.region, t('Select your region.')),
       password: validatePassword(form.password),
       confirmPassword: validateConfirmPassword(
         form.password,
@@ -70,7 +72,7 @@ export default function RegisterForm() {
       ),
       terms: agreedToTerms
         ? ""
-        : "You must agree to the Terms of Service and Privacy Policy.",
+        : t('You must agree to the Terms of Service and Privacy Policy.'),
       form: "",
     };
 
@@ -94,28 +96,31 @@ export default function RegisterForm() {
     } catch (error) {
       setErrors((prev) => ({
         ...prev,
-        form: error.message || "Registration failed. Please try again.",
+        form: error.message || t('Registration failed. Please try again.'),
       }));
     }
   }
 
   function handleSocialClick(provider) {
-    setErrors((prev) => ({ ...prev, form: `${provider} sign-in is not available yet.` }));
+    const message = provider === 'Google'
+      ? t('Google sign-in is not available yet.')
+      : t('GitHub sign-in is not available yet.');
+    setErrors((prev) => ({ ...prev, form: message }));
   }
 
   return (
     <div className="mx-auto w-full max-w-[520px]">
       <h2 className="text-2xl font-extrabold text-ink">
-        Create Your Account
+        {t('Create Your Account')}
       </h2>
 
       <p className="mt-2 text-sm text-slate-500">
-        Already have an account?{" "}
+        {t('Already have an account?')}{" "}
         <Link
           to="/login"
           className="font-bold text-primary underline decoration-primary-light underline-offset-4 hover:text-primary-dark"
         >
-          Sign in
+          {t('Sign in')}
         </Link>
       </p>
 
@@ -137,7 +142,7 @@ export default function RegisterForm() {
                 : "text-slate-600 hover:bg-white hover:text-ink"
             }`}
           >
-            {type}
+            {t(type)}
           </button>
         ))}
       </div>
@@ -149,7 +154,7 @@ export default function RegisterForm() {
               htmlFor="firstName"
               className="mb-2 block text-sm font-bold text-ink"
             >
-              First Name <em className="not-italic text-primary">*</em>
+              {t('First Name')} <em className="not-italic text-primary">*</em>
             </label>
 
             <div className="relative">
@@ -182,7 +187,7 @@ export default function RegisterForm() {
               htmlFor="lastName"
               className="mb-2 block text-sm font-bold text-ink"
             >
-              Last Name <em className="not-italic text-primary">*</em>
+              {t('Last Name')} <em className="not-italic text-primary">*</em>
             </label>
 
             <input
@@ -209,7 +214,7 @@ export default function RegisterForm() {
             htmlFor="email"
             className="mb-2 block text-sm font-bold text-ink"
           >
-            Email <em className="not-italic text-primary">*</em>
+            {t('Email')} <em className="not-italic text-primary">*</em>
           </label>
 
           <div className="relative">
@@ -242,7 +247,7 @@ export default function RegisterForm() {
             htmlFor="phone"
             className="mb-2 block text-sm font-bold text-ink"
           >
-            Phone <em className="not-italic text-primary">*</em>
+            {t('Phone')} <em className="not-italic text-primary">*</em>
           </label>
 
           <div className="relative">
@@ -275,7 +280,7 @@ export default function RegisterForm() {
             htmlFor="region"
             className="mb-2 block text-sm font-bold text-ink"
           >
-            Region <em className="not-italic text-primary">*</em>
+            {t('Region')} <em className="not-italic text-primary">*</em>
           </label>
 
           <div className="relative">
@@ -292,11 +297,11 @@ export default function RegisterForm() {
                 errors.region ? "border-red-500" : "border-slate-300"
               }`}
             >
-              <option value="">Select your region</option>
+              <option value="">{t('Select your region')}</option>
 
               {REGIONS.map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {t(r)}
                 </option>
               ))}
             </select>
@@ -314,7 +319,7 @@ export default function RegisterForm() {
             htmlFor="password"
             className="mb-2 block text-sm font-bold text-ink"
           >
-            Password <em className="not-italic text-primary">*</em>
+            {t('Password')} <em className="not-italic text-primary">*</em>
           </label>
 
           <div className="relative">
@@ -326,7 +331,7 @@ export default function RegisterForm() {
             <input
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="At least 6 characters"
+              placeholder={t('Enter your password')}
               value={form.password}
               onChange={(e) => updateField("password", e.target.value)}
               className={`h-11 w-full rounded-md border bg-white pl-10 pr-11 text-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${
@@ -337,7 +342,7 @@ export default function RegisterForm() {
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? t('Hide password') : t('Show password')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary"
             >
               {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
@@ -363,9 +368,9 @@ export default function RegisterForm() {
               </div>
 
               <div className="flex justify-between text-[11px] font-bold text-slate-500">
-                <span>Weak</span>
-                <span>Good</span>
-                <span>Strong</span>
+                <span>{t('Weak')}</span>
+                <span>{t('Good')}</span>
+                <span>{t('Strong')}</span>
               </div>
             </div>
           )}
@@ -376,7 +381,7 @@ export default function RegisterForm() {
             htmlFor="confirmPassword"
             className="mb-2 block text-sm font-bold text-ink"
           >
-            Confirm Password <em className="not-italic text-primary">*</em>
+            {t('Confirm Password')} <em className="not-italic text-primary">*</em>
           </label>
 
           <div className="relative">
@@ -388,7 +393,7 @@ export default function RegisterForm() {
             <input
               id="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
-              placeholder="Re-enter your password"
+              placeholder={t('Confirm Password')}
               value={form.confirmPassword}
               onChange={(e) =>
                 updateField("confirmPassword", e.target.value)
@@ -405,8 +410,8 @@ export default function RegisterForm() {
               onClick={() => setShowConfirmPassword((v) => !v)}
               aria-label={
                 showConfirmPassword
-                  ? "Hide confirmation password"
-                  : "Show confirmation password"
+                  ? t('Hide confirmation password')
+                  : t('Show confirmation password')
               }
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary"
             >
@@ -435,19 +440,19 @@ export default function RegisterForm() {
             />
 
             <span>
-              I agree to the{" "}
+              {t('I agree to the terms')} {" "}
               <a
                 href="#terms"
                 className="font-bold text-primary hover:underline"
               >
-                Terms of Service
+                {t('Terms of Service')}
               </a>{" "}
-              and{" "}
+              {t('and')} {" "}
               <a
                 href="#privacy"
                 className="font-bold text-primary hover:underline"
               >
-                Privacy Policy
+                {t('Privacy Policy')}
               </a>
             </span>
           </label>
@@ -467,8 +472,8 @@ export default function RegisterForm() {
             />
 
             <span>
-              Subscribe me to OSTA learning news and opportunities{" "}
-              <span className="text-slate-400">(optional)</span>
+              {t('Subscribe me to OSTA learning news and opportunities')}{" "}
+              <span className="text-slate-400">{t('(optional)')}</span>
             </span>
           </label>
         </div>
@@ -480,7 +485,7 @@ export default function RegisterForm() {
         )}
 
         <Button type="submit" variant="primary" className="h-12 w-full">
-          Create Account
+          {t('Create Account')}
         </Button>
       </form>
 
@@ -488,7 +493,7 @@ export default function RegisterForm() {
         <div className="h-px flex-1 bg-slate-200" />
 
         <span className="text-xs font-semibold text-slate-400">
-          Or register with
+          {t('Or register with')}
         </span>
 
         <div className="h-px flex-1 bg-slate-200" />

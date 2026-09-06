@@ -5,7 +5,6 @@ export default function Login() {
   return (
     <main className="min-h-screen bg-surface font-sans text-ink">
       <div className="grid min-h-screen lg:grid-cols-[60%_40%]">
-        {" "}
         <AuthBrandPanel
           eyebrow="Welcome back"
           title="Continue your learning journey with OSTA"

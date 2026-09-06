@@ -5,63 +5,60 @@ export default {
   theme: {
     extend: {
       colors: {
-        // --- Primary Color: BLUE ---
-        // (Main buttons, navigation, links, active tabs, primary headings)
+        navy: {
+          50: '#eef6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e3a8a',
+          900: '#102a43',
+          950: '#081827',
+        },
         primary: {
-          DEFAULT: '#1D4ED8', // blue-700
-          dark: '#1E40AF',    // blue-800
-          darker: '#172554',  // blue-950
-          light: '#EFF6FF',   // blue-50 (subtle background/active tab)
-          border: '#BFDBFE',  // blue-200
-          hover: '#1E40AF',   // hover state
+          DEFAULT: 'var(--primary)',
+          dark: 'var(--primary-dark)',
+          darker: 'var(--primary-darker)',
+          light: 'var(--primary-light)',
+          border: 'var(--primary-border)',
+          hover: 'var(--primary-hover)',
         },
-
-        // --- Accent Color: YELLOW ---
-        // (Highlights, notifications, alerts - used with restraint)
         accent: {
-          DEFAULT: '#F59E0B', // amber-500
-          dark: '#B45309',    // amber-700 (text readability on light backgrounds)
-          light: '#FEF3C7',   // amber-100 (badge backgrounds)
-          hover: '#D97706',   // amber-600
+          DEFAULT: '#facc15',
+          dark: '#d4a30d',
+          light: '#fef3c7',
+          hover: '#fbbf24',
         },
-        // Kept for backward compatibility if components use 'gold'
         gold: {
-          DEFAULT: '#F59E0B',
-          dark: '#B45309',
-          light: '#FEF3C7',
+          DEFAULT: '#facc15',
+          dark: '#d4a30d',
+          light: '#fef3c7',
         },
-
-        // --- Success Color: GREEN ---
-        // (Success alerts, completed steps, approved badges, passing grades)
         success: {
-          DEFAULT: '#10B981', // emerald-500
-          dark: '#047857',    // emerald-700
-          light: '#D1FAE5',   // emerald-100
-          hover: '#059669',   // emerald-600
+          DEFAULT: '#1d4ed8',
+          dark: '#1e3a8a',
+          light: '#edf3ff',
+          hover: '#2563eb',
         },
-
-        // --- Structure / Dark Elements: BLACK & DEEP SLATE ---
-        // (Sidebars, structural headers, dark surfaces, dark mode shells)
         structure: {
-          DEFAULT: '#0F172A', // slate-900
-          sidebar: '#0B0F19', // deep black sidebar
-          surface: '#1E293B', // dark card background
-          border: '#334155',  // dark border
+          DEFAULT: '#020817',
+          sidebar: '#071426',
+          surface: '#0f172a',
+          border: '#1f2c3d',
         },
-
-        // --- Text & Typography (Ink) ---
         ink: {
-          DEFAULT: '#0F172A', // slate-900 (strong black text)
-          soft: '#475569',    // slate-600 (body & description)
-          faint: '#94A3B8',   // slate-400 (captions & placeholders)
-          white: '#FFFFFF',   // contrast text for dark structural headers
+          DEFAULT: '#0f172a',
+          soft: '#475569',
+          faint: '#94a3b8',
+          white: '#f8fafc',
         },
-
-        // --- Surface & Canvas Backgrounds ---
         surface: {
-          DEFAULT: '#F8FAFC', // slate-50 (page background)
-          card: '#FFFFFF',    // pure white cards
-          muted: '#F1F5F9',   // slate-100
+          DEFAULT: '#f8fafc',
+          card: '#ffffff',
+          muted: '#e2e8f0',
         },
       },
       fontFamily: {
@@ -70,4 +67,4 @@ export default {
     },
   },
   plugins: [],
-}
+};

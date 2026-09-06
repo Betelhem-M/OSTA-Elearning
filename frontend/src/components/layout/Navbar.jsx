@@ -5,9 +5,11 @@ import { PUBLIC_NAV } from '@constants/navigation'
 import Button from '@components/ui/Button'
 import ThemeToggle from '@components/ui/ThemeToggle'
 import LanguageSwitcher from '@components/ui/LanguageSwitcher'
+import { useLanguage } from '@context/LanguageContext'
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { t } = useLanguage()
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md">
@@ -25,17 +27,17 @@ export default function Navbar() {
         <div className="hidden items-center gap-5 xl:flex" id="nav-links">
           {PUBLIC_NAV.map((item) => (
             <Link key={item.href} to={item.href} className="text-sm font-semibold text-slate-700 hover:text-primary">
-              {item.label}
+              {t(item.labelKey || item.label)}
             </Link>
           ))}
         </div>
 
-        <div className="hidden items-center gap-2 sm:flex"><Link to="/search" aria-label="Search" className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"><Search size={18}/></Link><ThemeToggle/><LanguageSwitcher/>
+        <div className="hidden items-center gap-2 sm:flex"><Link to="/search" aria-label={t('Search')} className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"><Search size={18}/></Link><ThemeToggle/><LanguageSwitcher/>
           <Button as={Link} to="/login" variant="ghost">
-            Sign In
+            {t('Sign In')}
           </Button>
           <Button as={Link} to="/register" variant="primary">
-            Get Started
+            {t('Get Started')}
           </Button>
         </div>
 
@@ -54,14 +56,14 @@ export default function Navbar() {
           <div className="flex flex-col gap-3">
             {PUBLIC_NAV.map((item) => (
               <Link key={item.href} to={item.href} className="text-sm font-semibold text-slate-700" onClick={() => setMobileOpen(false)}>
-                {item.label}
+                {t(item.labelKey || item.label)}
               </Link>
             ))}
             <Button as={Link} to="/login" variant="outline" className="mt-2">
-              Sign In
+              {t('Sign In')}
             </Button>
             <Button as={Link} to="/register" variant="primary">
-              Get Started
+              {t('Get Started')}
             </Button>
           </div>
         </div>

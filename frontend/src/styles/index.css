@@ -2,22 +2,87 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --page-bg: #f8fafc;
+  --surface-bg: #ffffff;
+  --surface-muted: #e2e8f0;
+  --card-border: #dfe7f3;
+  --text-primary: #0f172a;
+  --text-muted: #475569;
+  --primary: rgb(0, 10, 61);
+  --primary-hover: rgb(16, 30, 88);
+  --primary-light: #edf3ff;
+  --primary-border: #9bb6ff;
+  --accent: #facc15;
+  --success: #22c55e;
+  --success-hover: #16a34a;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+  background-color: var(--page-bg);
+}
+
+html.dark {
+  color-scheme: dark;
+  --page-bg: rgb(0, 10, 61);
+  --surface-bg: #0b183d;
+  --surface-muted: #10214f;
+  --card-border: #1d3a75;
+  --text-primary: #f8fafc;
+  --text-muted: #cbd5e1;
+  --primary: #123a8a;
+  --primary-hover: #1d4fb7;
+  --primary-light: rgba(18, 58, 138, 0.18);
+  --primary-border: #a8c3ff;
+  --accent: #facc15;
+  --success: #22c55e;
+  --success-hover: #16a34a;
+}
+
 @layer base {
-  html {
-    scroll-behavior: smooth;
-    color-scheme: light;
+  [class*="bg-green-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="bg-emerald-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="bg-lime-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="border-green-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="border-emerald-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="text-green-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="text-emerald-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="text-lime-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="from-green-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="via-green-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="to-green-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="from-emerald-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="via-emerald-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="to-emerald-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="from-lime-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="via-lime-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
+  [class*="to-lime-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]) {
+    background-color: #edf3ff !important;
+    background-image: none !important;
+    border-color: #dfe7f3 !important;
+    color: #0f172a !important;
   }
-  html.dark { color-scheme: dark; }
-  body { @apply bg-surface text-ink dark:bg-slate-950 dark:text-slate-100; }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased transition-colors duration-200;
+    background-color: var(--page-bg);
+    color: var(--text-primary);
+  }
+
+  html.dark body {
+    @apply bg-slate-950 text-slate-100;
+  }
 
   a:focus-visible,
   button:focus-visible,
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    outline: 2px solid #2e7d32;
+    outline: 2px solid #facc15;
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 6px;
   }
 }
 
@@ -26,20 +91,62 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
+
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
 }
-/* Global dark-mode compatibility for legacy components that still use light-only utility classes. */
+
 @layer utilities {
-  html.dark .bg-white { background-color: #0f172a !important; }
-  html.dark .bg-slate-50 { background-color: #111827 !important; }
-  html.dark .bg-slate-100 { background-color: #1e293b !important; }
-  html.dark .text-ink { color: #f8fafc !important; }
-  html.dark .text-slate-700 { color: #cbd5e1 !important; }
-  html.dark .text-slate-600 { color: #cbd5e1 !important; }
-  html.dark .text-slate-500 { color: #94a3b8 !important; }
-  html.dark .border-slate-100 { border-color: #1e293b !important; }
-  html.dark .border-slate-200 { border-color: #334155 !important; }
-  html.dark input, html.dark textarea, html.dark select { background-color: #0f172a; color: #f8fafc; border-color: #334155; }
+  html.dark .bg-white,
+  html.dark .bg-slate-50,
+  html.dark .bg-slate-100,
+  html.dark .bg-surface-card,
+  html.dark .bg-surface,
+  html.dark .bg-slate-900 {
+    background-color: rgb(0, 10, 61) !important;
+  }
+
+  html.dark .bg-slate-200 { background-color: #1e293b !important; }
+  html.dark .bg-primary,
+  html.dark .bg-primary-default,
+  html.dark .bg-primary-hover {
+    background-color: #123a8a !important;
+  }
+
+  html.dark .hover\:bg-primary-hover:hover,
+  html.dark .hover\:bg-primary:hover {
+    background-color: #1d4fb7 !important;
+  }
+
+  html.dark .text-primary,
+  html.dark .text-primary-dark,
+  html.dark .text-primary-hover {
+    color: #123a8a !important;
+  }
+
+  html.dark .text-ink,
+  html.dark .text-slate-900,
+  html.dark .text-slate-800,
+  html.dark .text-slate-700,
+  html.dark .text-slate-600,
+  html.dark .text-slate-500,
+  html.dark .text-slate-400 {
+    color: #f8fafc !important;
+  }
+
+  html.dark .text-slate-300 { color: #cbd5e1 !important; }
+  html.dark .border-slate-100,
+  html.dark .border-slate-200,
+  html.dark .border-slate-300 {
+    border-color: #1f2c3d !important;
+  }
+
+  html.dark input,
+  html.dark textarea,
+  html.dark select {
+    background-color: #0b183d;
+    color: #f8fafc;
+    border-color: #1f2c3d;
+  }
 }

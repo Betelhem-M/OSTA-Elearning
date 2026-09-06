@@ -16,31 +16,32 @@ import { Link } from "react-router-dom";
 
 import Button from "@components/ui/Button";
 import CourseCard from "@components/course/CourseCard";
+import { useLanguage } from "@context/LanguageContext";
 
 import { apiRequest } from "@services/api";
 
 const PLATFORM_FEATURES = [
   {
-    title: "Learn",
-    description:
+    titleKey: "Learn",
+    descriptionKey:
       "Access courses and build practical technology skills through structured learning.",
     icon: GraduationCap,
   },
   {
-    title: "Innovate",
-    description:
+    titleKey: "Innovate",
+    descriptionKey:
       "Turn ideas into practical projects and connect with an ecosystem built for innovation.",
     icon: Lightbulb,
   },
   {
-    title: "Research",
-    description:
+    titleKey: "Research",
+    descriptionKey:
       "Explore research opportunities, publications, and technology-focused work.",
     icon: FlaskConical,
   },
   {
-    title: "Connect",
-    description:
+    titleKey: "Connect",
+    descriptionKey:
       "Take part in discussions, events, competitions, and the wider OSTA community.",
     icon: Users,
   },
@@ -58,6 +59,7 @@ function normalizeCourse(course) {
 }
 
 export default function Landing() {
+  const { t } = useLanguage();
   const [courses, setCourses] =
     useState([]);
 
@@ -215,21 +217,21 @@ export default function Landing() {
     {
       value:
         publishedCourses.length,
-      label: "Published courses",
+      labelKey: "Published courses",
     },
     {
       value:
         browsableCategories.length,
-      label: "Learning categories",
+      labelKey: "Learning categories",
     },
     {
       value: freeCourses,
-      label: "Free courses",
+      labelKey: "Free courses",
     },
     {
       value:
         instructorCount,
-      label: "Course instructors",
+      labelKey: "Course instructors",
     },
   ];
 
@@ -281,18 +283,15 @@ export default function Landing() {
       <section className="bg-gradient-to-br from-primary-dark via-primary-darker to-primary px-5 py-16 text-white sm:px-10 lg:py-24">
         <div className="mx-auto max-w-[1100px] text-center">
           <span className="inline-flex rounded-full bg-gold/15 px-4 py-1.5 text-xs font-black uppercase tracking-wide text-gold">
-            OSTA Learning & Innovation Platform
+            {t('OSTA Learning & Innovation Platform')}
           </span>
 
           <h1 className="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-tight sm:text-5xl">
-            Empowering Oromia through innovation and technology
+            {t('Empowering Oromia through innovation and technology')}
           </h1>
 
           <p className="mx-auto mt-5 max-w-xl text-sm leading-6 text-white/80 sm:text-base">
-            Learn practical technology skills, explore
-            research and innovation opportunities, join
-            competitions, attend events, and connect with
-            a growing community of learners and innovators.
+            {t('Learn practical technology skills, explore research and innovation opportunities, join competitions, attend events, and connect with a growing community of learners and innovators.')}
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -302,7 +301,7 @@ export default function Landing() {
               variant="secondary"
               className="h-12 px-6"
             >
-              Get Started Free
+              {t('Get Started Free')}
             </Button>
 
             <Button
@@ -311,7 +310,7 @@ export default function Landing() {
               variant="outline"
               className="h-12 border-white/40 px-6 text-white hover:bg-white/10"
             >
-              Browse Courses
+              {t('Browse Courses')}
             </Button>
           </div>
 
@@ -321,14 +320,14 @@ export default function Landing() {
             {heroStats.map(
               (stat) => (
                 <div
-                  key={stat.label}
+                  key={stat.labelKey}
                 >
                   <p className="text-2xl font-extrabold sm:text-3xl">
                     {stat.value}
                   </p>
 
                   <p className="mt-1 text-xs text-white/60">
-                    {stat.label}
+                    {t(stat.labelKey)}
                   </p>
                 </div>
               )
@@ -346,7 +345,7 @@ export default function Landing() {
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-amber-100 bg-amber-50 p-4">
             <div>
               <p className="text-sm font-bold text-amber-800">
-                Some platform data couldn't be loaded
+                {t('Some platform data couldn\'t be loaded')}
               </p>
 
               <p className="mt-1 text-xs text-amber-700">
@@ -374,8 +373,8 @@ export default function Landing() {
               />
 
               {refreshing
-                ? "Refreshing..."
-                : "Try Again"}
+                ? t('Refreshing...')
+                : t('Try Again')}
             </button>
           </div>
         </section>
@@ -388,16 +387,15 @@ export default function Landing() {
       <section className="mx-auto max-w-[1100px] px-5 py-14 sm:px-10">
         <div className="mb-6">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-            One platform
+            {t('One platform')}
           </p>
 
           <h2 className="mt-2 text-xl font-extrabold text-ink sm:text-2xl">
-            Learn, innovate, research, and connect
+            {t('Learn, innovate, research, and connect')}
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            OSTA brings the core parts of a technology and
-            innovation ecosystem together in one place.
+            {t('OSTA brings the core parts of a technology and innovation ecosystem together in one place.')}
           </p>
         </div>
 
@@ -410,7 +408,7 @@ export default function Landing() {
               return (
                 <div
                   key={
-                    item.title
+                    item.titleKey
                   }
                   className="rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
                 >
@@ -421,13 +419,11 @@ export default function Landing() {
                   </span>
 
                   <h3 className="mt-4 text-sm font-bold text-ink">
-                    {item.title}
+                    {t(item.titleKey)}
                   </h3>
 
                   <p className="mt-1 text-xs leading-5 text-slate-500">
-                    {
-                      item.description
-                    }
+                    {t(item.descriptionKey)}
                   </p>
                 </div>
               );
@@ -445,15 +441,15 @@ export default function Landing() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-                Explore
+                {t('Explore')}
               </p>
 
               <h2 className="mt-2 text-lg font-bold text-ink">
-                Browse by category
+                {t('Browse by category')}
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-                Explore real course categories available on OSTA.
+                {t('Explore real course categories available on OSTA.')}
               </p>
             </div>
 
@@ -461,7 +457,7 @@ export default function Landing() {
               to="/courses"
               className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
             >
-              View all courses
+              {t('View all courses')}
               <ArrowRight
                 size={13}
               />
@@ -495,7 +491,7 @@ export default function Landing() {
               />
 
               <p className="mt-2 text-sm font-semibold text-slate-500">
-                No course categories are available yet.
+                {t('No course categories are available yet.')}
               </p>
             </div>
           )}
@@ -510,15 +506,15 @@ export default function Landing() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-              Start learning
+              {t('Start learning')}
             </p>
 
             <h2 className="mt-2 text-lg font-bold text-ink sm:text-xl">
-              Featured Courses
+              {t('Featured Courses')}
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Discover courses currently available on the platform.
+              {t('Discover courses currently available on the platform.')}
             </p>
           </div>
 
@@ -526,7 +522,7 @@ export default function Landing() {
             to="/courses"
             className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
           >
-            View all courses
+            {t('View all courses')}
             <ArrowRight
               size={13}
             />
@@ -553,20 +549,18 @@ export default function Landing() {
             />
 
             <h3 className="mt-4 text-base font-bold text-ink">
-              Courses are coming soon
+              {t('Courses are coming soon')}
             </h3>
 
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-              There are no published courses available yet.
-              Once instructors publish courses, they will appear
-              here automatically.
+              {t('There are no published courses available yet. Once instructors publish courses, they will appear here automatically.')}
             </p>
 
             <Link
               to="/courses"
               className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-primary-hover"
             >
-              Open Course Marketplace
+              {t('Open Course Marketplace')}
               <ArrowRight
                 size={14}
               />
@@ -591,15 +585,15 @@ export default function Landing() {
             />
 
             <h3 className="mt-4 text-sm font-bold text-ink">
-              Innovation Hub
+              {t('Innovation Hub')}
             </h3>
 
             <p className="mt-1 text-xs leading-5 text-slate-500">
-              Explore ideas, startups, competitions, and innovation opportunities.
+              {t('Explore ideas, startups, competitions, and innovation opportunities.')}
             </p>
 
             <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary">
-              Explore
+              {t('Explore')}
               <ArrowRight
                 size={13}
                 className="transition group-hover:translate-x-0.5"
@@ -699,12 +693,11 @@ export default function Landing() {
 
             <div>
               <h2 className="text-lg font-bold text-ink">
-                Stay connected with OSTA events
+                {t('Stay connected with OSTA events')}
               </h2>
 
               <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">
-                Find workshops, conferences, training sessions,
-                and other events as they are published.
+                {t('Find workshops, conferences, training sessions, and other events as they are published.')}
               </p>
             </div>
           </div>
@@ -713,7 +706,7 @@ export default function Landing() {
             to="/events"
             className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-5 py-3 text-xs font-bold text-white hover:bg-primary-hover"
           >
-            View Events
+            {t('View Events')}
             <ArrowRight
               size={14}
             />
@@ -728,13 +721,11 @@ export default function Landing() {
       <section className="mx-auto max-w-[1100px] px-5 py-14 sm:px-10">
         <div className="rounded-2xl bg-gradient-to-br from-primary to-primary-hover px-6 py-12 text-center text-white sm:px-12">
           <h2 className="text-2xl font-extrabold">
-            Ready to start learning?
+            {t('Ready to start learning?')}
           </h2>
 
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/80">
-            Join OSTA and access technology learning,
-            research, innovation, competitions, and community
-            opportunities.
+            {t('Join OSTA and access technology learning, research, innovation, competitions, and community opportunities.')}
           </p>
 
           <div className="mt-6 flex flex-wrap justify-center gap-3">
