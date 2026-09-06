@@ -64,6 +64,10 @@ export default {
       fontFamily: {
         sans: ['Inter', 'Arial', 'sans-serif'],
       },
+      textColor: {
+        light: '#000000',
+        dark: '#ffffff',
+      },
     },
   },
   plugins: [],
