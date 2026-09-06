@@ -2,9 +2,17 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
+// SECURITY NOTE:
+// Same reasoning as assignmentUploadMiddleware.js — student
+// submissions are private academic work and must never be reachable
+// by guessing a static URL. They're stored here, outside the
+// publicly-served "uploads" folder, and only handed out through
+// GET /api/assignments/submissions/:submissionId/files/:fileId,
+// which checks that the requester is either the submitting student
+// or the instructor who owns the course.
 const uploadDirectory = path.join(
   process.cwd(),
-  "uploads",
+  "secure-uploads",
   "submissions"
 );
 

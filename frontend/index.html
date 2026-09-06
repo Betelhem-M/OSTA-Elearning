@@ -1,13 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OSTA E-Learning</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <!--
+      Runs before React mounts (and before the stylesheet paints anything)
+      so the correct theme class is already on <html> for the first frame.
+      Mirrors the same read-and-validate logic as ThemeContext.jsx — keep
+      the two in sync if the storage key or fallback rule ever changes.
+    -->
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('osta_theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var isDark = stored === 'dark' || (stored !== 'light' && prefersDark);
+        if (isDark) document.documentElement.classList.add('dark');
+      } catch (e) {
+        // localStorage/matchMedia unavailable — fall back to light, same
+        // as ThemeContext.jsx does in this case.
+      }
+    })();
+  </script>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OSTA E-Learning</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

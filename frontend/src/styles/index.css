@@ -2,77 +2,145 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * ============================================================
+ * OSTA Theme Tokens (Light / Dark)
+ * ============================================================
+ * Single source of truth for every color used by the semantic
+ * Tailwind tokens in tailwind.config.js (primary, accent, gold,
+ * success, danger, info, ink, surface, border). Add a new theme
+ * in the future by adding one more attribute-selector block here
+ * — no component changes required.
+ */
 :root {
-  --page-bg: #f8fafc;
-  --surface-bg: #ffffff;
-  --surface-muted: #e2e8f0;
-  --card-border: #dfe7f3;
-  --text-primary: #0f172a;
-  --text-muted: #475569;
-  --primary: rgb(0, 10, 61);
-  --primary-hover: rgb(16, 30, 88);
-  --primary-light: #edf3ff;
-  --primary-border: #9bb6ff;
-  --accent: #facc15;
-  --success: #22c55e;
-  --success-hover: #16a34a;
-}
+  --color-bg: 248 250 252;
+  /* slate-50  — page background */
+  --color-surface: 255 255 255;
+  /* white     — card/panel background */
+  --color-surface-muted: 241 245 249;
+  /* slate-100 — recessed background */
+  --color-surface-elevated: 255 255 255;
+  /* white     — modals/dropdowns/popovers */
+  --color-border: 226 232 240;
+  /* slate-200 */
+  --color-border-muted: 241 245 249;
+  /* slate-100 */
 
-html {
-  scroll-behavior: smooth;
-  color-scheme: light;
-  background-color: var(--page-bg);
+  --color-text: 15 23 42;
+  /* slate-900 — primary text */
+  --color-text-soft: 71 85 105;
+  /* slate-600 — secondary text */
+  --color-text-faint: 148 163 184;
+  /* slate-400 — muted text/placeholders */
+
+  --color-primary: 29 78 216;
+  /* blue-700 */
+  --color-primary-hover: 30 64 175;
+  /* blue-800 */
+  --color-primary-light: 239 246 255;
+  /* blue-50  — subtle active/hover bg */
+
+  --color-accent: 245 158 11;
+  /* amber-500 */
+  --color-accent-hover: 217 119 6;
+  /* amber-600 */
+  --color-accent-light: 254 243 199;
+  /* amber-100 */
+
+  --color-success: 16 185 129;
+  /* emerald-500 */
+  --color-success-hover: 5 150 105;
+  /* emerald-600 */
+  --color-success-light: 209 250 229;
+  /* emerald-100 */
+
+  --color-danger: 220 38 38;
+  /* red-600 */
+  --color-danger-hover: 185 28 28;
+  /* red-700 */
+  --color-danger-light: 254 226 226;
+  /* red-100 */
+
+  --color-info: 2 132 199;
+  /* sky-600 */
+  --color-info-hover: 3 105 161;
+  /* sky-700 */
+  --color-info-light: 224 242 254;
+  /* sky-100 */
 }
 
 html.dark {
-  color-scheme: dark;
-  --page-bg: rgb(0, 10, 61);
-  --surface-bg: #0b183d;
-  --surface-muted: #10214f;
-  --card-border: #1d3a75;
-  --text-primary: #f8fafc;
-  --text-muted: #cbd5e1;
-  --primary: #123a8a;
-  --primary-hover: #1d4fb7;
-  --primary-light: rgba(18, 58, 138, 0.18);
-  --primary-border: #a8c3ff;
-  --accent: #facc15;
-  --success: #22c55e;
-  --success-hover: #16a34a;
+  --color-bg: 2 6 23;
+  /* slate-950 */
+  --color-surface: 15 23 42;
+  /* slate-900 */
+  --color-surface-muted: 30 41 59;
+  /* slate-800 */
+  --color-surface-elevated: 30 41 59;
+  /* slate-800, lifted further by border/shadow */
+  --color-border: 51 65 85;
+  /* slate-700 */
+  --color-border-muted: 30 41 59;
+  /* slate-800 */
+
+  --color-text: 248 250 252;
+  /* slate-50 */
+  --color-text-soft: 203 213 225;
+  /* slate-300 */
+  --color-text-faint: 148 163 184;
+  /* slate-400 — unchanged, still reads fine on dark */
+
+  /* Brighter/lighter shades on dark surfaces so contrast ratios hold up
+     (a blue-700 that reads fine on white gets muddy on slate-900). */
+  --color-primary: 59 130 246;
+  /* blue-500 */
+  --color-primary-hover: 96 165 250;
+  /* blue-400 */
+  --color-primary-light: 30 41 59;
+  /* dark-surface tint instead of pale blue-50 */
+
+  --color-accent: 251 191 36;
+  /* amber-400 */
+  --color-accent-hover: 252 211 77;
+  /* amber-300 */
+  --color-accent-light: 69 46 8;
+  /* dark amber tint */
+
+  --color-success: 52 211 153;
+  /* emerald-400 */
+  --color-success-hover: 110 231 183;
+  /* emerald-300 */
+  --color-success-light: 6 46 36;
+  /* dark emerald tint */
+
+  --color-danger: 248 113 113;
+  /* red-400 */
+  --color-danger-hover: 252 165 165;
+  /* red-300 */
+  --color-danger-light: 60 15 15;
+  /* dark red tint */
+
+  --color-info: 56 189 248;
+  /* sky-400 */
+  --color-info-hover: 125 211 252;
+  /* sky-300 */
+  --color-info-light: 8 47 73;
+  /* dark sky tint */
 }
 
 @layer base {
-  [class*="bg-green-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="bg-emerald-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="bg-lime-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="border-green-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="border-emerald-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="text-green-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="text-emerald-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="text-lime-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="from-green-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="via-green-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="to-green-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="from-emerald-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="via-emerald-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="to-emerald-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="from-lime-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="via-lime-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]),
-  [class*="to-lime-"]:not(.success):not(.status-success):not(.is-active):not(.active):not([data-state="success"]):not([data-active="true"]) {
-    background-color: #edf3ff !important;
-    background-image: none !important;
-    border-color: #dfe7f3 !important;
-    color: #0f172a !important;
+  html {
+    scroll-behavior: smooth;
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased transition-colors duration-200;
-    background-color: var(--page-bg);
-    color: var(--text-primary);
-  }
-
-  html.dark body {
-    @apply bg-slate-950 text-slate-100;
+    @apply bg-surface text-ink;
+    transition: background-color 200ms ease, color 200ms ease;
   }
 
   a:focus-visible,
@@ -80,9 +148,64 @@ html.dark {
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    outline: 2px solid #facc15;
+    outline: 2px solid #2e7d32;
     outline-offset: 2px;
-    border-radius: 6px;
+    border-radius: 4px;
+  }
+
+  /* Theme-switch transition for the properties that actually change between
+     themes. Kept off html/* globally to avoid every layout/size property
+     transitioning (which causes janky animation on unrelated re-renders). */
+  body,
+  header,
+  nav,
+  aside,
+  footer,
+  main,
+  [class*="bg-"],
+  [class*="text-"],
+  [class*="border-"] {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+    transition-duration: 200ms;
+    transition-timing-function: ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+
+    body,
+    header,
+    nav,
+    aside,
+    footer,
+    main,
+    [class*="bg-"],
+    [class*="text-"],
+    [class*="border-"] {
+      transition: none !important;
+    }
+  }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--color-surface-muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-border));
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--color-text-faint));
+  }
+
+  html {
+    scrollbar-color: rgb(var(--color-border)) rgb(var(--color-surface-muted));
   }
 }
 
@@ -97,56 +220,53 @@ html.dark {
   }
 }
 
+/*
+ * Legacy compatibility shim
+ * -------------------------
+ * ~125 of 141 components still use raw Tailwind slate/white utility
+ * classes instead of the semantic tokens above (bg-white, text-slate-600,
+ * border-slate-200, etc.). This shim keeps those components readable in
+ * dark mode by remapping the raw classes to the same CSS variables the
+ * semantic tokens use. As each phase migrates a group of files to the
+ * semantic classes directly (bg-surface-card, text-ink-soft, border-border),
+ * its rules become redundant here and can be deleted — this block should
+ * shrink to nothing by the end of the project, not grow.
+ */
 @layer utilities {
+
   html.dark .bg-white,
-  html.dark .bg-slate-50,
-  html.dark .bg-slate-100,
-  html.dark .bg-surface-card,
-  html.dark .bg-surface,
-  html.dark .bg-slate-900 {
-    background-color: rgb(0, 10, 61) !important;
+  html.dark .bg-slate-50 {
+    background-color: rgb(var(--color-surface)) !important;
   }
 
-  html.dark .bg-slate-200 { background-color: #1e293b !important; }
-  html.dark .bg-primary,
-  html.dark .bg-primary-default,
-  html.dark .bg-primary-hover {
-    background-color: #123a8a !important;
+  html.dark .bg-slate-100 {
+    background-color: rgb(var(--color-surface-muted)) !important;
   }
 
-  html.dark .hover\:bg-primary-hover:hover,
-  html.dark .hover\:bg-primary:hover {
-    background-color: #1d4fb7 !important;
-  }
-
-  html.dark .text-primary,
-  html.dark .text-primary-dark,
-  html.dark .text-primary-hover {
-    color: #123a8a !important;
-  }
-
-  html.dark .text-ink,
-  html.dark .text-slate-900,
-  html.dark .text-slate-800,
+  /* Note: bg-primary-light and text-ink are NOT listed here — those tokens
+     are already CSS-variable-backed (see tailwind.config.js) and switch
+     automatically under html.dark with no override needed. */
   html.dark .text-slate-700,
-  html.dark .text-slate-600,
+  html.dark .text-slate-600 {
+    color: rgb(var(--color-text-soft)) !important;
+  }
+
   html.dark .text-slate-500,
   html.dark .text-slate-400 {
-    color: #f8fafc !important;
+    color: rgb(var(--color-text-faint)) !important;
   }
 
-  html.dark .text-slate-300 { color: #cbd5e1 !important; }
   html.dark .border-slate-100,
   html.dark .border-slate-200,
   html.dark .border-slate-300 {
-    border-color: #1f2c3d !important;
+    border-color: rgb(var(--color-border)) !important;
   }
 
   html.dark input,
   html.dark textarea,
   html.dark select {
-    background-color: #0b183d;
-    color: #f8fafc;
-    border-color: #1f2c3d;
+    background-color: rgb(var(--color-surface));
+    color: rgb(var(--color-text));
+    border-color: rgb(var(--color-border));
   }
 }

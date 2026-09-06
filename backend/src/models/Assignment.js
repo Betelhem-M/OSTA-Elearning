@@ -12,13 +12,17 @@ const Assignment = {
     allowedFileTypes,
     maxFileSizeMb,
     status,
+    attachmentPath,
+    attachmentName,
+    attachmentSize,
   }) {
     const [result] = await pool.execute(
       `
       INSERT INTO assignments
         (course_id, lesson_id, title, description, instructions,
-         due_date, points, allowed_file_types, max_file_size_mb, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         due_date, points, allowed_file_types, max_file_size_mb, status,
+         attachment_path, attachment_name, attachment_size)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         courseId,
@@ -31,6 +35,9 @@ const Assignment = {
         allowedFileTypes ?? null,
         maxFileSizeMb ?? 10,
         status ?? "draft",
+        attachmentPath ?? null,
+        attachmentName ?? null,
+        attachmentSize ?? null,
       ]
     );
 

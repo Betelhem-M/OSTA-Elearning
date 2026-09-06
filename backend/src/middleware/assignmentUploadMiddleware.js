@@ -1,10 +1,18 @@
-const multer = require("multer");
+﻿const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
+// SECURITY NOTE:
+// This directory is deliberately OUTSIDE the "uploads" folder that
+// app.js serves via express.static("/uploads"). Assignment attachments
+// can contain material the instructor doesn't want publicly guessable
+// by URL, so they are only ever served through the authenticated
+// GET /api/assignments/:id/attachment endpoint (assignmentController.
+// downloadAssignmentAttachment), which checks enrollment/ownership
+// before streaming the file.
 const uploadDirectory = path.join(
   process.cwd(),
-  "uploads",
+  "secure-uploads",
   "assignments"
 );
 

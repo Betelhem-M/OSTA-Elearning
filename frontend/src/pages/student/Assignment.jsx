@@ -22,6 +22,7 @@ import SubmissionForm from "@components/assignment/SubmissionForm";
 import FeedbackPanel from "@components/assignment/FeedbackPanel";
 
 import { apiRequest } from "@services/api";
+import { downloadAuthenticatedFile } from "@utils/download";
 
 const API_URL =
   "http://localhost:5000/api";
@@ -112,12 +113,12 @@ export default function Assignment() {
   // =====================================================
 
   async function loadAssignment() {
-    const data =
+    const response =
       await apiRequest(
         `/assignments/${assignmentId}`
       );
 
-    setAssignment(data);
+    setAssignment(response?.data ?? null);
   }
 
   // =====================================================
@@ -133,7 +134,7 @@ export default function Assignment() {
       );
     }
 
-    const data =
+    const response =
       await apiRequest(
         `/assignments/${assignmentId}/my-submission`,
         {
@@ -142,7 +143,7 @@ export default function Assignment() {
       );
 
     setSubmission(
-      data || null
+      response?.data ?? null
     );
   }
 
@@ -275,7 +276,7 @@ export default function Assignment() {
       }
 
       setSubmission(
-        data.submission ||
+        data.data ||
           null
       );
 
@@ -301,6 +302,34 @@ export default function Assignment() {
       );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  // =====================================================
+  // DOWNLOAD A SUBMITTED FILE
+  // =====================================================
+
+  const [downloadingFileId, setDownloadingFileId] = useState(null);
+
+  async function handleDownloadSubmissionFile(file) {
+    if (!file?.url || downloadingFileId) {
+      return;
+    }
+
+    try {
+      setDownloadingFileId(file.id);
+      setError("");
+
+      await downloadAuthenticatedFile(
+        file.url,
+        file.original_name || "submission-file"
+      );
+    } catch (err) {
+      setError(
+        err.message || "Failed to download the file."
+      );
+    } finally {
+      setDownloadingFileId(null);
     }
   }
 
@@ -590,6 +619,18 @@ export default function Assignment() {
       )
         ? assignment.rubrics
         : [],
+
+    attachmentUrl:
+      assignment.attachment_url ||
+      null,
+
+    attachmentName:
+      assignment.attachment_name ||
+      null,
+
+    attachmentSize:
+      assignment.attachment_size ||
+      null,
   };
 
   // =====================================================
@@ -864,6 +905,27 @@ export default function Assignment() {
                             </p>
                           )}
                         </div>
+
+                        {file.url && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDownloadSubmissionFile(
+                                file
+                              )
+                            }
+                            disabled={
+                              downloadingFileId ===
+                              file.id
+                            }
+                            className="shrink-0 text-xs font-bold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {downloadingFileId ===
+                            file.id
+                              ? "Downloading..."
+                              : "Download"}
+                          </button>
+                        )}
                       </div>
                     )
                   )}
