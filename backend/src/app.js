@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 
 const authRoutes = require("./routes/authRoutes");
 const quizRoutes = require("./routes/quizRoutes");
@@ -47,14 +48,33 @@ const app = express();
 // GLOBAL MIDDLEWARE
 // =====================================================
 
+// Allow configuring allowed CORS origins via CORS_ORIGIN env var
+// Example: CORS_ORIGIN="https://mydomain.com,https://www.mydomain.com"
+const DEFAULT_ORIGINS = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+];
+
+const allowedOrigins = (process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",")
+  : DEFAULT_ORIGINS
+).map((o) => o.trim()).filter(Boolean);
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://127.0.0.1:5173",
-      "http://127.0.0.1:5174",
-    ],
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        return callback(null, true);
+      }
+
+      // In production you may want to be strict. For now reject unknown origins.
+      return callback(new Error('CORS policy: Origin not allowed'), false);
+    },
     credentials: true,
   })
 );
@@ -80,7 +100,7 @@ app.get("/", (req, res) => {
 
 
 // =====================================================
-// STATIC FILES
+// STATIC FILES (uploads)
 // =====================================================
 
 app.use(
@@ -341,6 +361,22 @@ app.use(
 
 
 // =====================================================
+// STATIC FRONTEND (if present)
+// =====================================================
+
+// When the frontend build is copied into backend/public, serve it as a static SPA.
+const publicPath = path.join(__dirname, "..", "public");
+if (fs.existsSync(publicPath)) {
+  app.use(express.static(publicPath));
+
+  // Serve index.html for any non-API route (simple SPA fallback)
+  app.get(/^(?!\/api).*/, (req, res) => {
+    res.sendFile(path.join(publicPath, "index.html"));
+  });
+}
+
+
+// =====================================================
 // 404 HANDLER
 // =====================================================
 
@@ -360,4 +396,3 @@ app.use(errorMiddleware);
 
 
 module.exports = app;
-
