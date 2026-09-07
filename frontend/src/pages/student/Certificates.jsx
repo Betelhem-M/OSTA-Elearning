@@ -29,8 +29,73 @@ function formatDate(value) {
   });
 }
 
+function RequirementRow({ done, label }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      {done ? (
+        <CheckCircle2 size={16} className="shrink-0 text-primary" />
+      ) : (
+        <Circle size={16} className="shrink-0 text-slate-300" />
+      )}
+      <span
+        className={`text-xs font-semibold ${
+          done ? "text-ink" : "text-slate-500"
+        }`}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function PendingCourseCard({ course }) {
+  const lessonsDone =
+    course.totalRequiredLessons > 0 &&
+    course.lessonsCompleted === course.totalRequiredLessons;
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex items-center justify-between gap-3">
+        <h4 className="text-sm font-bold text-ink">{course.courseTitle}</h4>
+        <span className="shrink-0 text-xs font-bold text-primary">
+          {course.progressPercentage}%
+        </span>
+      </div>
+
+      <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+        <div
+          className="h-full rounded-full bg-primary transition-all"
+          style={{ width: `${course.progressPercentage}%` }}
+        />
+      </div>
+
+      <div className="mt-4 space-y-2.5">
+        <RequirementRow
+          done={lessonsDone}
+          label={`Lessons completed (${course.lessonsCompleted}/${course.totalRequiredLessons})`}
+        />
+
+        {course.assessmentRequired && (
+          <RequirementRow
+            done={course.assessmentPassed}
+            label="Required assessment passed"
+          />
+        )}
+
+        {course.assignmentsRequired > 0 && (
+          <RequirementRow
+            done={course.assignmentsCompleted === course.assignmentsRequired}
+            label={`Assignments graded (${course.assignmentsCompleted}/${course.assignmentsRequired})`}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Certificates() {
   const [certificates, setCertificates] = useState([]);
+  const [pending, setPending] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -45,9 +110,8 @@ export default function Certificates() {
         const data = await apiRequest("/certificates/my");
 
         if (!cancelled) {
-          setCertificates(
-            Array.isArray(data) ? data : []
-          );
+          setCertificates(Array.isArray(data?.certificates) ? data.certificates : []);
+          setPending(Array.isArray(data?.pending) ? data.pending : []);
         }
       } catch (err) {
         console.error("Certificates error:", err);
@@ -74,9 +138,9 @@ export default function Certificates() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 px-5 py-12 lg:px-10">
+      <main className="min-h-screen bg-surface px-5 py-12 lg:px-10">
         <div className="mx-auto max-w-[1100px]">
-          <div className="rounded-2xl border border-slate-100 bg-white p-12 text-center shadow-sm">
+          <div className="rounded-2xl border border-slate-100 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <Award
               size={42}
               className="mx-auto animate-pulse text-primary/40"
@@ -91,8 +155,11 @@ export default function Certificates() {
     );
   }
 
+  const hasCertificates = certificates.length > 0;
+  const hasPending = pending.length > 0;
+
   return (
-    <main className="min-h-screen bg-slate-50 px-5 py-10 lg:px-10">
+    <main className="min-h-screen bg-surface px-5 py-10 lg:px-10">
       <div className="mx-auto max-w-[1100px]">
         {/* HEADER */}
 
@@ -120,7 +187,7 @@ export default function Certificates() {
               Celebrate the skills you have developed through
               your learning journey. Your official OSTA
               certificates will appear here after you
-              successfully complete the required assessments.
+              successfully complete each course's requirements.
             </p>
           </div>
         </section>
@@ -135,149 +202,9 @@ export default function Certificates() {
           </div>
         )}
 
-        {/* NO CERTIFICATES */}
+        {/* EARNED CERTIFICATES */}
 
-        {certificates.length === 0 ? (
-          <div className="mt-7">
-            <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-9">
-              <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-primary/5 blur-3xl" />
-
-              <div className="relative max-w-3xl">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-light text-primary">
-                  <Award size={28} />
-                </div>
-
-                <div className="mt-5 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
-                  <Sparkles size={14} />
-                  Your next achievement
-                </div>
-
-                <h2 className="mt-2 text-2xl font-extrabold text-ink sm:text-3xl">
-                  Your certificate is waiting for you.
-                </h2>
-
-                <p className="mt-3 text-sm leading-7 text-slate-600">
-                  Every completed course is an opportunity to
-                  demonstrate what you have learned. Finish the
-                  required lessons and successfully pass the
-                  assessment to earn an official OSTA certificate
-                  recognizing your achievement.
-                </p>
-              </div>
-
-              <div className="relative mt-8 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2
-                      size={19}
-                      className="text-primary"
-                    />
-
-                    <p className="text-sm font-bold text-ink">
-                      Complete lessons
-                    </p>
-                  </div>
-
-                  <p className="mt-2 text-xs leading-5 text-slate-500">
-                    Finish all required lessons in your course.
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2
-                      size={19}
-                      className="text-primary"
-                    />
-
-                    <p className="text-sm font-bold text-ink">
-                      Pass assessment
-                    </p>
-                  </div>
-
-                  <p className="mt-2 text-xs leading-5 text-slate-500">
-                    Demonstrate your understanding by passing
-                    the required quiz or assessment.
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="flex items-center gap-3">
-                    <Award
-                      size={19}
-                      className="text-primary"
-                    />
-
-                    <p className="text-sm font-bold text-ink">
-                      Earn certificate
-                    </p>
-                  </div>
-
-                  <p className="mt-2 text-xs leading-5 text-slate-500">
-                    Your certificate becomes available once
-                    the requirements are verified.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
-              <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
-                  <LockKeyhole size={19} />
-                </div>
-
-                <div>
-                  <h3 className="text-base font-bold text-ink">
-                    Certificate not unlocked yet
-                  </h3>
-
-                  <p className="mt-1 text-sm leading-6 text-slate-500">
-                    Once you complete the required course
-                    content and pass its assessment, OSTA will
-                    verify your achievement and make your
-                    certificate available here.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-xl bg-slate-50 p-4">
-                <div className="flex items-center gap-3">
-                  <Circle
-                    size={17}
-                    className="text-slate-300"
-                  />
-
-                  <span className="text-xs font-semibold text-slate-600">
-                    Keep learning — your achievement is ahead.
-                  </span>
-                </div>
-              </div>
-
-              <Link
-                to="/my-learning"
-                className="mt-5 inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white transition hover:bg-primary-hover"
-              >
-                Continue Learning
-              </Link>
-            </section>
-
-            <section className="mt-6 rounded-2xl border border-slate-100 bg-white p-6">
-              <h3 className="text-sm font-bold text-ink">
-                How your certificate works
-              </h3>
-
-              <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-500">
-                OSTA certificates are tied to your actual
-                learning progress. A certificate is not created
-                simply because you enrolled in a course. Your
-                lesson completion and assessment results are
-                verified before the certificate is issued.
-              </p>
-            </section>
-          </div>
-        ) : (
-          /* EARNED CERTIFICATES */
+        {hasCertificates && (
           <div className="mt-7">
             <div className="mb-5">
               <h2 className="text-lg font-bold text-ink">
@@ -294,7 +221,7 @@ export default function Certificates() {
               {certificates.map((certificate) => (
                 <article
                   key={certificate.id}
-                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
                 >
                   <div className="relative overflow-hidden bg-primary p-6 text-white">
                     <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/10" />
@@ -388,6 +315,156 @@ export default function Certificates() {
                 </article>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* IN-PROGRESS COURSES — real, per-course status instead of a
+            generic message, so it's clear exactly what's still missing */}
+
+        {hasPending && (
+          <div className={hasCertificates ? "mt-10" : "mt-7"}>
+            <div className="mb-5 flex items-center gap-2">
+              <Sparkles size={16} className="text-primary" />
+              <h2 className="text-lg font-bold text-ink">
+                In Progress
+              </h2>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {pending.map((course) => (
+                <PendingCourseCard key={course.courseId} course={course} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* NOTHING EARNED AND NOTHING IN PROGRESS — original empty state,
+            shown only when there's truly nothing to report yet */}
+
+        {!hasCertificates && !hasPending && (
+          <div className="mt-7">
+            <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-9 dark:border-slate-800 dark:bg-slate-900">
+              <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-primary/5 blur-3xl" />
+
+              <div className="relative max-w-3xl">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-light text-primary">
+                  <Award size={28} />
+                </div>
+
+                <div className="mt-5 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary">
+                  <Sparkles size={14} />
+                  Your next achievement
+                </div>
+
+                <h2 className="mt-2 text-2xl font-extrabold text-ink sm:text-3xl">
+                  Your certificate is waiting for you.
+                </h2>
+
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  Every completed course is an opportunity to
+                  demonstrate what you have learned. Finish the
+                  required lessons and successfully pass the
+                  assessment to earn an official OSTA certificate
+                  recognizing your achievement.
+                </p>
+              </div>
+
+              <div className="relative mt-8 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={19}
+                      className="text-primary"
+                    />
+
+                    <p className="text-sm font-bold text-ink">
+                      Complete lessons
+                    </p>
+                  </div>
+
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    Finish all required lessons in your course.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2
+                      size={19}
+                      className="text-primary"
+                    />
+
+                    <p className="text-sm font-bold text-ink">
+                      Pass assessment
+                    </p>
+                  </div>
+
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    Demonstrate your understanding by passing
+                    the required quiz or assessment.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+                  <div className="flex items-center gap-3">
+                    <Award
+                      size={19}
+                      className="text-primary"
+                    />
+
+                    <p className="text-sm font-bold text-ink">
+                      Earn certificate
+                    </p>
+                  </div>
+
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    Your certificate becomes available once
+                    the requirements are verified.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7 dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                  <LockKeyhole size={19} />
+                </div>
+
+                <div>
+                  <h3 className="text-base font-bold text-ink">
+                    Certificate not unlocked yet
+                  </h3>
+
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    Once you complete the required course
+                    content and pass its assessment, OSTA will
+                    verify your achievement and make your
+                    certificate available here.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+                <div className="flex items-center gap-3">
+                  <Circle
+                    size={17}
+                    className="text-slate-300"
+                  />
+
+                  <span className="text-xs font-semibold text-slate-600">
+                    Keep learning — your achievement is ahead.
+                  </span>
+                </div>
+              </div>
+
+              <Link
+                to="/my-learning"
+                className="mt-5 inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white transition hover:bg-primary-hover"
+              >
+                Continue Learning
+              </Link>
+            </section>
           </div>
         )}
       </div>

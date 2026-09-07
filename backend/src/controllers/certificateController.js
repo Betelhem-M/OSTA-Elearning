@@ -1,53 +1,90 @@
-const crypto = require("crypto");
-
-const Certificate =
-  require("../models/Certificate");
-
-const Course =
-  require("../models/Course");
-
-const Enrollment =
-  require("../models/Enrollment");
-
-const pool =
-  require("../config/database");
-
-function makeCertificateNumber() {
-  const randomPart =
-    crypto
-      .randomBytes(5)
-      .toString("hex")
-      .toUpperCase();
-
-  return `OSTA-${new Date().getFullYear()}-${randomPart}`;
-}
+const Certificate = require("../models/Certificate");
+const Course = require("../models/Course");
+const Enrollment = require("../models/Enrollment");
+const certificateService = require("../services/certificateService");
 
 const certificateController = {
   // =====================================================
   // GET MY CERTIFICATES
+  //
+  // Also proactively syncs certificate eligibility for every course this
+  // student is enrolled in before returning the list. This is what makes
+  // a certificate appear on page load/refresh even if the course was
+  // actually finished before the automatic hooks existed (or a hook was
+  // otherwise missed) — the student doesn't have to take one more action
+  // to "re-trigger" anything.
+  //
+  // Response shape: { certificates: [...], pending: [...] } — `pending`
+  // covers every enrolled course that doesn't have a certificate yet,
+  // with the specific requirements still outstanding for each, so the
+  // frontend can show real per-course status instead of one generic
+  // "keep learning" message.
   // =====================================================
 
   async getMyCertificates(req, res) {
-    try {
-      const certificates =
-        await Certificate.findByUser(
-          req.user.id
-        );
+    const userId = Number(req.user.id);
 
-      return res.status(200).json(
-        Array.isArray(certificates)
-          ? certificates
-          : []
+    try {
+      const enrollments = await Enrollment.findByUser(userId);
+
+      for (const enrollment of enrollments) {
+        try {
+          await certificateService.issueCertificateIfEligible(
+            userId,
+            enrollment.course_id
+          );
+        } catch (syncError) {
+          console.error(
+            `Certificate sync failed (userId=${userId}, courseId=${enrollment.course_id}):`,
+            syncError
+          );
+        }
+      }
+
+      const certificates = await certificateService.getStudentCertificates(
+        userId
       );
+
+      const certifiedCourseIds = new Set(
+        (certificates || []).map((c) => Number(c.course_id))
+      );
+
+      const pending = [];
+
+      for (const enrollment of enrollments) {
+        if (certifiedCourseIds.has(Number(enrollment.course_id))) continue;
+
+        try {
+          const eligibility = await certificateService.checkCertificateEligibility(
+            userId,
+            enrollment.course_id
+          );
+
+          pending.push({
+            courseId: enrollment.course_id,
+            courseTitle: enrollment.course_title,
+            ...eligibility,
+          });
+        } catch (eligibilityError) {
+          console.error(
+            `Eligibility check failed (userId=${userId}, courseId=${enrollment.course_id}):`,
+            eligibilityError
+          );
+        }
+      }
+
+      return res.status(200).json({
+        certificates: Array.isArray(certificates) ? certificates : [],
+        pending,
+      });
     } catch (error) {
       console.error(
-        "Get my certificates error:",
+        `Get my certificates error (userId=${userId}):`,
         error
       );
 
       return res.status(500).json({
-        message:
-          "Failed to fetch certificates",
+        message: "Failed to fetch certificates",
       });
     }
   },
@@ -58,15 +95,13 @@ const certificateController = {
 
   async getById(req, res) {
     try {
-      const certificate =
-        await Certificate.findById(
-          req.params.id
-        );
+      const certificate = await certificateService.getCertificateById(
+        req.params.id
+      );
 
       if (!certificate) {
         return res.status(404).json({
-          message:
-            "Certificate not found",
+          message: "Certificate not found",
         });
       }
 
@@ -75,408 +110,181 @@ const certificateController = {
 
       if (
         req.user.role !== "admin" &&
-        Number(certificate.user_id) !==
-          Number(req.user.id)
+        Number(certificate.user_id) !== Number(req.user.id)
       ) {
         return res.status(403).json({
-          message:
-            "You are not allowed to view this certificate",
+          message: "You are not allowed to view this certificate",
         });
       }
 
-      return res.status(200).json(
-        certificate
-      );
+      return res.status(200).json(certificate);
     } catch (error) {
-      console.error(
-        "Get certificate error:",
-        error
-      );
+      console.error("Get certificate error:", error);
 
       return res.status(500).json({
-        message:
-          "Failed to fetch certificate",
+        message: "Failed to fetch certificate",
       });
     }
   },
 
   // =====================================================
-  // GENERATE CERTIFICATE
+  // CHECK ELIGIBILITY (diagnostic — also usable by the frontend to show
+  // exactly what's left for one specific course)
+  // GET /api/certificates/eligibility/:courseId
   // =====================================================
 
-  async generate(req, res) {
+  async getEligibility(req, res) {
     try {
-      const userId =
-        Number(req.user.id);
+      const userId = Number(req.user.id);
+      const courseId = Number(req.params.courseId);
 
-      const courseId =
-        Number(req.params.courseId);
-
-      if (
-        !Number.isInteger(courseId) ||
-        courseId <= 0
-      ) {
+      if (!Number.isInteger(courseId) || courseId <= 0) {
         return res.status(400).json({
-          message:
-            "Invalid course ID",
+          message: "Invalid course ID",
         });
       }
 
-      // -------------------------------------------------
-      // STUDENT ONLY
-      // -------------------------------------------------
-
-      if (req.user.role !== "student") {
-        return res.status(403).json({
-          message:
-            "Only students can receive course certificates",
-        });
-      }
-
-      // -------------------------------------------------
-      // COURSE
-      // -------------------------------------------------
-
-      const course =
-        await Course.findById(
-          courseId
-        );
-
-      if (!course) {
-        return res.status(404).json({
-          message:
-            "Course not found",
-        });
-      }
-
-      // -------------------------------------------------
-      // ENROLLMENT
-      // -------------------------------------------------
-
-      const enrollment =
-        await Enrollment.findByUserAndCourse(
-          userId,
-          courseId
-        );
+      const enrollment = await Enrollment.findByUserAndCourse(
+        userId,
+        courseId
+      );
 
       if (!enrollment) {
         return res.status(403).json({
-          message:
-            "You are not enrolled in this course",
+          message: "You are not enrolled in this course",
         });
       }
 
-      // -------------------------------------------------
-      // EXISTING CERTIFICATE
-      // -------------------------------------------------
-
-      const existing =
-        await Certificate.findByUserAndCourse(
-          userId,
-          courseId
-        );
+      const existing = await Certificate.findByUserAndCourse(
+        userId,
+        courseId
+      );
 
       if (existing) {
         return res.status(200).json({
-          message:
-            "Certificate already exists",
+          eligible: true,
+          alreadyIssued: true,
           certificate: existing,
         });
       }
 
-      // -------------------------------------------------
-      // GET PUBLISHED LESSONS
-      // -------------------------------------------------
+      const eligibility = await certificateService.checkCertificateEligibility(
+        userId,
+        courseId
+      );
 
-      const [lessonRows] =
-        await pool.execute(
-          `
-          SELECT
-            l.id,
-            l.title
-          FROM lessons l
-          JOIN course_sections cs
-            ON l.section_id = cs.id
-          WHERE cs.course_id = ?
-            AND l.is_published = 1
-          ORDER BY
-            cs.section_order,
-            l.lesson_order
-          `,
-          [courseId]
-        );
+      return res.status(200).json({
+        alreadyIssued: false,
+        ...eligibility,
+      });
+    } catch (error) {
+      console.error("Get certificate eligibility error:", error);
 
-      if (
-        lessonRows.length === 0
-      ) {
+      return res.status(500).json({
+        message: "Failed to check certificate eligibility",
+      });
+    }
+  },
+
+  // =====================================================
+  // GENERATE CERTIFICATE (manual check-and-claim)
+  //
+  // Certificates are normally issued automatically (see
+  // certificateService.issueCertificateIfEligible, called from lesson
+  // completion, quiz submission, assignment grading, and a sync check on
+  // every /certificates/my load). This endpoint exists so a student can
+  // proactively check "am I eligible yet?" and get a certificate
+  // immediately if so, with a clear reason list if not.
+  // =====================================================
+
+  async generate(req, res) {
+    try {
+      const userId = Number(req.user.id);
+      const courseId = Number(req.params.courseId);
+
+      if (!Number.isInteger(courseId) || courseId <= 0) {
         return res.status(400).json({
-          message:
-            "This course does not have any published lessons yet",
+          message: "Invalid course ID",
         });
       }
 
-      // -------------------------------------------------
-      // CHECK EVERY LESSON
-      // -------------------------------------------------
-
-      const lessonIds =
-        lessonRows.map(
-          (lesson) =>
-            Number(lesson.id)
-        );
-
-      const placeholders =
-        lessonIds
-          .map(() => "?")
-          .join(",");
-
-      const [
-        progressRows,
-      ] = await pool.execute(
-        `
-        SELECT
-          lesson_id,
-          completed
-        FROM lesson_progress
-        WHERE user_id = ?
-          AND lesson_id IN (${placeholders})
-        `,
-        [
-          userId,
-          ...lessonIds,
-        ]
-      );
-
-      const completedIds =
-        new Set(
-          progressRows
-            .filter(
-              (row) =>
-                Boolean(
-                  row.completed
-                )
-            )
-            .map((row) =>
-              Number(
-                row.lesson_id
-              )
-            )
-        );
-
-      const missingLessons =
-        lessonRows.filter(
-          (lesson) =>
-            !completedIds.has(
-              Number(
-                lesson.id
-              )
-            )
-        );
-
-      if (
-        missingLessons.length > 0
-      ) {
-        return res.status(400).json({
-          message:
-            "Complete all lessons before requesting your certificate",
-          missingLessons:
-            missingLessons.map(
-              (lesson) =>
-                lesson.title
-            ),
+      if (req.user.role !== "student") {
+        return res.status(403).json({
+          message: "Only students can receive course certificates",
         });
       }
 
-      // -------------------------------------------------
-      // FIND COURSE QUIZZES
-      // -------------------------------------------------
+      const course = await Course.findById(courseId);
 
-      const [
-        quizRows,
-      ] = await pool.execute(
-        `
-        SELECT
-          id,
-          title,
-          pass_percent
-        FROM quizzes
-        WHERE course_id = ?
-          AND status = 'published'
-        ORDER BY id
-        `,
-        [courseId]
-      );
-
-      // -------------------------------------------------
-      // IF COURSE HAS QUIZ, REQUIRE ONE PASSED ATTEMPT
-      // -------------------------------------------------
-
-      if (quizRows.length > 0) {
-        const quizIds =
-          quizRows.map(
-            (quiz) =>
-              Number(quiz.id)
-          );
-
-        const quizPlaceholders =
-          quizIds
-            .map(() => "?")
-            .join(",");
-
-        const [
-          passedAttempts,
-        ] = await pool.execute(
-          `
-          SELECT
-            qa.id,
-            qa.quiz_id,
-            qa.percentage,
-            qa.score
-          FROM quiz_attempts qa
-          WHERE qa.user_id = ?
-            AND qa.quiz_id IN (${quizPlaceholders})
-            AND qa.status = 'submitted'
-            AND qa.passed = 1
-          ORDER BY qa.percentage DESC, qa.id DESC
-          `,
-          [
-            userId,
-            ...quizIds,
-          ]
-        );
-
-        if (
-          passedAttempts.length === 0
-        ) {
-          return res.status(400).json({
-            message:
-              "Pass at least one course quiz before requesting your certificate",
-          });
-        }
-      }
-
-      // -------------------------------------------------
-      // CALCULATE SCORE
-      // -------------------------------------------------
-
-      let score = null;
-
-      const [
-        bestAttempts,
-      ] = await pool.execute(
-        `
-        SELECT
-          qa.percentage
-        FROM quiz_attempts qa
-        JOIN quizzes q
-          ON qa.quiz_id = q.id
-        WHERE qa.user_id = ?
-          AND q.course_id = ?
-          AND qa.status = 'submitted'
-          AND qa.passed = 1
-        ORDER BY
-          qa.percentage DESC,
-          qa.id DESC
-        LIMIT 1
-        `,
-        [userId, courseId]
-      );
-
-      if (
-        bestAttempts.length > 0
-      ) {
-        score = Number(
-          bestAttempts[0].percentage
-        );
-      }
-
-      // -------------------------------------------------
-      // RECIPIENT
-      // -------------------------------------------------
-
-      const [
-        userRows,
-      ] = await pool.execute(
-        `
-        SELECT
-          first_name,
-          last_name
-        FROM users
-        WHERE id = ?
-        LIMIT 1
-        `,
-        [userId]
-      );
-
-      if (userRows.length === 0) {
+      if (!course) {
         return res.status(404).json({
-          message:
-            "User not found",
+          message: "Course not found",
         });
       }
 
-      const recipientName =
-        `${userRows[0].first_name} ${userRows[0].last_name}`;
+      const enrollment = await Enrollment.findByUserAndCourse(
+        userId,
+        courseId
+      );
 
-      // -------------------------------------------------
-      // SKILLS
-      // -------------------------------------------------
-
-      const skills =
-        lessonRows
-          .slice(0, 8)
-          .map(
-            (lesson) =>
-              lesson.title
-          )
-          .join(", ");
-
-      // -------------------------------------------------
-      // CREATE CERTIFICATE
-      // -------------------------------------------------
-
-      const certificateNumber =
-        makeCertificateNumber();
-
-      const completionDate =
-        new Date()
-          .toISOString()
-          .slice(0, 10);
-
-      const certificateId =
-        await Certificate.create({
-          userId,
-          courseId,
-          certificateNumber,
-          recipientName,
-          completionDate,
-          score,
-          skills,
+      if (!enrollment) {
+        return res.status(403).json({
+          message: "You are not enrolled in this course",
         });
+      }
 
-      const certificate =
-        await Certificate.findById(
-          certificateId
+      const existing = await Certificate.findByUserAndCourse(
+        userId,
+        courseId
+      );
+
+      if (existing) {
+        return res.status(200).json({
+          message: "Certificate already exists",
+          certificate: existing,
+        });
+      }
+
+      const eligibility = await certificateService.checkCertificateEligibility(
+        userId,
+        courseId
+      );
+
+      if (!eligibility.eligible) {
+        return res.status(400).json({
+          message: "You have not met all certificate requirements yet",
+          pendingRequirements: eligibility.pendingRequirements,
+          ...eligibility,
+        });
+      }
+
+      const certificate = await certificateService.issueCertificateIfEligible(
+        userId,
+        courseId
+      );
+
+      if (!certificate) {
+        console.error(
+          `Manual generate: eligibility passed but issueCertificateIfEligible returned null (userId=${userId}, courseId=${courseId}) — likely a database error, check the issueCertificateIfEligible log line above.`
         );
+
+        return res.status(500).json({
+          message: "Failed to generate certificate",
+        });
+      }
 
       return res.status(201).json({
-        message:
-          "Certificate generated successfully",
+        message: "Certificate generated successfully",
         certificate,
       });
     } catch (error) {
-      console.error(
-        "Generate certificate error:",
-        error
-      );
+      console.error("Generate certificate error:", error);
 
       return res.status(500).json({
-        message:
-          "Failed to generate certificate",
+        message: "Failed to generate certificate",
       });
     }
   },
 };
 
-module.exports =
-  certificateController;
+module.exports = certificateController;

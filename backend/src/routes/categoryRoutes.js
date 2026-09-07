@@ -1,12 +1,51 @@
 const express = require("express");
 
-const categoryController = require("../controllers/categoryController");
-const authMiddleware = require("../middleware/authMiddleware");
+const certificateController =
+  require("../controllers/certificateController");
+
+const authMiddleware =
+  require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.get("/", categoryController.getAll);
+// =====================================================
+// MY CERTIFICATES
+// =====================================================
 
-router.post("/", authMiddleware, categoryController.create);
+router.get(
+  "/my",
+  authMiddleware,
+  certificateController.getMyCertificates
+);
+
+// =====================================================
+// GENERATE CERTIFICATE
+// =====================================================
+
+router.post(
+  "/generate/:courseId",
+  authMiddleware,
+  certificateController.generate
+);
+
+// =====================================================
+// CHECK CERTIFICATE ELIGIBILITY (diagnostic)
+// =====================================================
+
+router.get(
+  "/eligibility/:courseId",
+  authMiddleware,
+  certificateController.getEligibility
+);
+
+// =====================================================
+// GET SINGLE CERTIFICATE
+// =====================================================
+
+router.get(
+  "/:id",
+  authMiddleware,
+  certificateController.getById
+);
 
 module.exports = router;

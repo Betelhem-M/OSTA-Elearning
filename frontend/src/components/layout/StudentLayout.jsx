@@ -1,130 +1,134 @@
-import { NavLink, Outlet } from "react-router-dom";
-import {
-  LayoutDashboard,
-  BookOpen,
-  BarChart3,
-  FileText,
-  Award,
-  Users,
-  UserCircle,
-} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import * as Icons from "lucide-react";
+import { X } from "lucide-react";
 
-function StudentLayout() {
-  const navigation = [
-    {
-      name: "Dashboard",
-      path: "/student",
-      icon: LayoutDashboard,
-      end: true,
-    },
-    {
-      name: "My Courses",
-      path: "/student/courses",
-      icon: BookOpen,
-    },
-    {
-      name: "Progress",
-      path: "/student/progress",
-      icon: BarChart3,
-    },
-    {
-      name: "Assignments",
-      path: "/student/assignments",
-      icon: FileText,
-    },
-    {
-      name: "Certificates",
-      path: "/student/certificates",
-      icon: Award,
-    },
-    {
-      name: "Community",
-      path: "/student/community",
-      icon: Users,
-    },
-    {
-      name: "Profile",
-      path: "/profile",
-      icon: UserCircle,
-    },
-  ];
+export default function Sidebar({
+  navItems = [],
+  isOpen = false,
+  onClose,
+  title = "OSTA",
+  subtitle = "Learning Platform",
+}) {
+  const location = useLocation();
+
+  function isItemActive(href) {
+    if (!href) {
+      return false;
+    }
+
+    // Exact match first
+    if (location.pathname === href) {
+      return true;
+    }
+
+    // Keep parent navigation active on nested pages.
+    // Example:
+    // /instructor/courses
+    // /instructor/courses/create
+    // /instructor/courses/12
+    if (
+      href !== "/" &&
+      location.pathname.startsWith(
+        `${href}/`
+      )
+    ) {
+      return true;
+    }
+
+    return false;
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Sidebar */}
-      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-slate-200 bg-white lg:block">
-        {/* Logo */}
-        <div className="flex h-20 items-center border-b border-slate-200 px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-700 font-bold text-white">
-              O
-            </div>
+    <>
+      {/* MOBILE OVERLAY */}
 
-            <div>
-              <h1 className="font-bold text-slate-900">
-                OSTA
-              </h1>
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
-              <p className="text-[10px] uppercase tracking-wider text-slate-400">
-                E-Learning
-              </p>
-            </div>
+      {/* SIDEBAR */}
+
+      <aside
+        className={`fixed left-0 top-0 z-40 flex h-full w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-200 lg:translate-x-0 ${
+          isOpen
+            ? "translate-x-0"
+            : "-translate-x-full"
+        }`}
+      >
+        {/* BRAND */}
+
+        <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-extrabold text-white">
+            {title?.[0] || "O"}
           </div>
-        </div>
 
-        {/* Navigation */}
-        <nav className="space-y-1 p-4">
-          {navigation.map((item) => {
-            const Icon = item.icon;
-
-            return (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                end={item.end}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
-                    isActive
-                      ? "bg-green-50 text-green-700"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-green-700"
-                  }`
-                }
-              >
-                <Icon size={19} />
-
-                <span>{item.name}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
-      </aside>
-
-      {/* Main area */}
-      <div className="lg:ml-64">
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:px-8">
-          <div>
-            <p className="text-sm text-slate-500">
-              Student Portal
+          <div className="min-w-0">
+            <p className="truncate text-sm font-extrabold tracking-wide text-ink">
+              {title}
             </p>
 
-            <h2 className="font-semibold text-slate-900">
-              Innovation E-Learning
-            </h2>
+            <p className="truncate text-[9px] font-bold uppercase tracking-widest text-ink-faint">
+              {subtitle}
+            </p>
           </div>
 
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 font-semibold text-green-700">
-            S
-          </div>
-        </header>
+          <button
+            type="button"
+            className="ml-auto rounded-lg p-1 text-ink-soft hover:bg-slate-50 lg:hidden"
+            onClick={onClose}
+            aria-label="Close navigation"
+          >
+            <X size={18} />
+          </button>
+        </div>
 
-        {/* Page content */}
-        <main className="p-4 md:p-8">
-          <Outlet />
-        </main>
-      </div>
-    </div>
+        {/* NAVIGATION */}
+
+        <nav className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="space-y-1">
+            {navItems.map((item) => {
+              const Icon =
+                Icons[item.icon] ||
+                Icons.Circle;
+
+              const isActive =
+                isItemActive(
+                  item.href
+                );
+
+              return (
+                <Link
+                  key={`${item.label}-${item.href}`}
+                  to={item.href}
+                  onClick={onClose}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition ${
+                    isActive
+                      ? "bg-primary-light font-bold text-primary"
+                      : "font-medium text-slate-600 hover:bg-slate-50 hover:text-ink"
+                  }`}
+                >
+                  <Icon
+                    size={18}
+                    className={
+                      isActive
+                        ? "shrink-0 text-primary"
+                        : "shrink-0"
+                    }
+                  />
+
+                  <span className="truncate">
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      </aside>
+    </>
   );
 }
-
-export default StudentLayout;
