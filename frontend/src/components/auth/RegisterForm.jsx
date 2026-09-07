@@ -503,17 +503,21 @@ export default function RegisterForm() {
         <button
           type="button"
           onClick={() => handleSocialClick("Google")}
+          aria-label="Register with Google"
+          title="Register with Google"
           className="flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 text-sm font-bold text-ink transition hover:border-primary hover:bg-surface"
         >
-          <span className="font-extrabold text-blue-500">G</span> Google
+          <span className="font-extrabold text-primary">G</span>
         </button>
 
         <button
           type="button"
           onClick={() => handleSocialClick("GitHub")}
+          aria-label="Register with GitHub"
+          title="Register with GitHub"
           className="flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 text-sm font-bold text-ink transition hover:border-primary hover:bg-surface"
         >
-          <span className="font-extrabold text-slate-800">GH</span> GitHub
+          <span className="font-extrabold text-ink">GH</span>
         </button>
       </div>
 

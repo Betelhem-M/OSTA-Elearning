@@ -64,7 +64,7 @@ import CreateCourse from '@pages/instructor/CreateCourse';
 import InstructorAssignments from '@pages/instructor/Assignments';
 import InstructorStudents from '@pages/instructor/Students';
 import InstructorAnalytics from '@pages/instructor/Analytics';
-import InstructorSettings from '@pages/instructor/Settings';
+import PaymentAccounts from '@pages/instructor/PaymentAccounts';
 import StudentProgress from '@pages/instructor/StudentProgress';
 import QuizBuilder from '@pages/instructor/QuizBuilder';
 import CreateEvent from '@pages/instructor/CreateEvent';
@@ -378,7 +378,7 @@ export default function App() {
         {/* Settings */}
         <Route
           path="/instructor/settings"
-          element={<InstructorSettings />}
+          element={<PaymentAccounts />}
         />
       </Route>
 

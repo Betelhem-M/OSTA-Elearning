@@ -28,9 +28,7 @@ export default function Sidebar({
     // /instructor/courses/12
     if (
       href !== "/" &&
-      location.pathname.startsWith(
-        `${href}/`
-      )
+      location.pathname.startsWith(`${href}/`)
     ) {
       return true;
     }
@@ -54,9 +52,7 @@ export default function Sidebar({
 
       <aside
         className={`fixed left-0 top-0 z-40 flex h-full w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-200 lg:translate-x-0 ${
-          isOpen
-            ? "translate-x-0"
-            : "-translate-x-full"
+          isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* BRAND */}
@@ -96,9 +92,7 @@ export default function Sidebar({
                 Icons.Circle;
 
               const isActive =
-                isItemActive(
-                  item.href
-                );
+                isItemActive(item.href);
 
               return (
                 <Link
@@ -132,3 +126,4 @@ export default function Sidebar({
     </>
   );
 }
+

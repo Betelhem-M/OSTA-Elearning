@@ -37,6 +37,7 @@ function RequirementRow({ done, label }) {
       ) : (
         <Circle size={16} className="shrink-0 text-slate-300" />
       )}
+
       <span
         className={`text-xs font-semibold ${
           done ? "text-ink" : "text-slate-500"
@@ -56,7 +57,10 @@ function PendingCourseCard({ course }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center justify-between gap-3">
-        <h4 className="text-sm font-bold text-ink">{course.courseTitle}</h4>
+        <h4 className="text-sm font-bold text-ink">
+          {course.courseTitle}
+        </h4>
+
         <span className="shrink-0 text-xs font-bold text-primary">
           {course.progressPercentage}%
         </span>
@@ -84,7 +88,10 @@ function PendingCourseCard({ course }) {
 
         {course.assignmentsRequired > 0 && (
           <RequirementRow
-            done={course.assignmentsCompleted === course.assignmentsRequired}
+            done={
+              course.assignmentsCompleted ===
+              course.assignmentsRequired
+            }
             label={`Assignments graded (${course.assignmentsCompleted}/${course.assignmentsRequired})`}
           />
         )}
@@ -110,8 +117,17 @@ export default function Certificates() {
         const data = await apiRequest("/certificates/my");
 
         if (!cancelled) {
-          setCertificates(Array.isArray(data?.certificates) ? data.certificates : []);
-          setPending(Array.isArray(data?.pending) ? data.pending : []);
+          setCertificates(
+            Array.isArray(data?.certificates)
+              ? data.certificates
+              : []
+          );
+
+          setPending(
+            Array.isArray(data?.pending)
+              ? data.pending
+              : []
+          );
         }
       } catch (err) {
         console.error("Certificates error:", err);
@@ -318,13 +334,20 @@ export default function Certificates() {
           </div>
         )}
 
-        {/* IN-PROGRESS COURSES — real, per-course status instead of a
-            generic message, so it's clear exactly what's still missing */}
+        {/* IN-PROGRESS COURSES */}
 
         {hasPending && (
-          <div className={hasCertificates ? "mt-10" : "mt-7"}>
+          <div
+            className={
+              hasCertificates ? "mt-10" : "mt-7"
+            }
+          >
             <div className="mb-5 flex items-center gap-2">
-              <Sparkles size={16} className="text-primary" />
+              <Sparkles
+                size={16}
+                className="text-primary"
+              />
+
               <h2 className="text-lg font-bold text-ink">
                 In Progress
               </h2>
@@ -332,14 +355,16 @@ export default function Certificates() {
 
             <div className="grid gap-4 md:grid-cols-2">
               {pending.map((course) => (
-                <PendingCourseCard key={course.courseId} course={course} />
+                <PendingCourseCard
+                  key={course.courseId}
+                  course={course}
+                />
               ))}
             </div>
           </div>
         )}
 
-        {/* NOTHING EARNED AND NOTHING IN PROGRESS — original empty state,
-            shown only when there's truly nothing to report yet */}
+        {/* NOTHING EARNED AND NOTHING IN PROGRESS */}
 
         {!hasCertificates && !hasPending && (
           <div className="mt-7">
@@ -471,3 +496,4 @@ export default function Certificates() {
     </main>
   );
 }
+

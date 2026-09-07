@@ -34,11 +34,11 @@
   /* slate-400 — muted text/placeholders */
 
   --color-primary: 29 78 216;
-  /* blue-700 */
-  --color-primary-hover: 30 64 175;
-  /* blue-800 */
-  --color-primary-light: 239 246 255;
-  /* blue-50  — subtle active/hover bg */
+  /* navy-700 */
+  --color-primary-hover: 15 51 102;
+  /* navy-800 */
+  --color-primary-light: 226 232 240;
+  /* navy-50 — subtle active/hover bg */
 
   --color-accent: 245 158 11;
   /* amber-500 */
@@ -62,11 +62,11 @@
   /* red-100 */
 
   --color-info: 2 132 199;
-  /* sky-600 */
-  --color-info-hover: 3 105 161;
-  /* sky-700 */
-  --color-info-light: 224 242 254;
-  /* sky-100 */
+  /* navy-700 */
+  --color-info-hover: 15 51 102;
+  /* navy-800 */
+  --color-info-light: 226 232 240;
+  /* navy-100 */
 }
 
 html.dark {
@@ -93,9 +93,9 @@ html.dark {
   /* Brighter/lighter shades on dark surfaces so contrast ratios hold up
      (a blue-700 that reads fine on white gets muddy on slate-900). */
   --color-primary: 59 130 246;
-  /* blue-500 */
-  --color-primary-hover: 96 165 250;
-  /* blue-400 */
+  /* navy-300 */
+  --color-primary-hover: 191 219 254;
+  /* navy-200 */
   --color-primary-light: 30 41 59;
   /* dark-surface tint instead of pale blue-50 */
 
@@ -121,11 +121,11 @@ html.dark {
   /* dark red tint */
 
   --color-info: 56 189 248;
-  /* sky-400 */
-  --color-info-hover: 125 211 252;
-  /* sky-300 */
-  --color-info-light: 8 47 73;
-  /* dark sky tint */
+  /* navy-300 */
+  --color-info-hover: 191 219 254;
+  /* navy-200 */
+  --color-info-light: 30 41 59;
+  /* dark navy tint */
 }
 
 @layer base {
@@ -210,6 +210,44 @@ html.dark {
 }
 
 @layer utilities {
+  /* Legacy blue and sky utilities use the navy palette. */
+  .bg-blue-50,
+  .bg-sky-50 { background-color: rgb(226 232 240 / var(--tw-bg-opacity, 1)) !important; }
+  .bg-blue-100,
+  .bg-sky-100 { background-color: rgb(203 213 225 / var(--tw-bg-opacity, 1)) !important; }
+  .bg-blue-500,
+  .bg-blue-600,
+  .bg-sky-500,
+  .bg-sky-600 { background-color: rgb(30 64 175 / var(--tw-bg-opacity, 1)) !important; }
+  .bg-blue-700,
+  .bg-blue-800,
+  .bg-sky-700,
+  .bg-sky-800 { background-color: rgb(15 51 102 / var(--tw-bg-opacity, 1)) !important; }
+  .text-blue-400,
+  .text-blue-500,
+  .text-blue-600,
+  .text-blue-700,
+  .text-blue-800,
+  .text-sky-400,
+  .text-sky-500,
+  .text-sky-600,
+  .text-sky-700,
+  .text-sky-800 { color: rgb(30 64 175 / var(--tw-text-opacity, 1)) !important; }
+  html.dark .text-blue-400,
+  html.dark .text-blue-500,
+  html.dark .text-blue-600,
+  html.dark .text-blue-700,
+  html.dark .text-blue-800,
+  html.dark .text-sky-400,
+  html.dark .text-sky-500,
+  html.dark .text-sky-600,
+  html.dark .text-sky-700,
+  html.dark .text-sky-800 { color: rgb(255 255 255 / var(--tw-text-opacity, 1)) !important; }
+  html.dark .bg-blue-50,
+  html.dark .bg-blue-100,
+  html.dark .bg-sky-50,
+  html.dark .bg-sky-100 { background-color: rgb(30 41 59 / var(--tw-bg-opacity, 1)) !important; }
+
   .hide-scrollbar {
     scrollbar-width: none;
     -ms-overflow-style: none;

@@ -1,0 +1,352 @@
+CREATE TABLE IF NOT EXISTS users (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	first_name VARCHAR(100) NOT NULL,
+	last_name VARCHAR(100) NOT NULL,
+	email VARCHAR(191) NOT NULL UNIQUE,
+	phone VARCHAR(40) NULL,
+	region VARCHAR(100) NULL,
+	password VARCHAR(255) NOT NULL,
+	role VARCHAR(30) NOT NULL DEFAULT 'student',
+	account_type VARCHAR(30) NOT NULL DEFAULT 'student',
+	profile_image VARCHAR(500) NULL,
+	status VARCHAR(30) NOT NULL DEFAULT 'active',
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS categories (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	name VARCHAR(150) NOT NULL UNIQUE,
+	description TEXT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS courses (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	title VARCHAR(255) NOT NULL,
+	description TEXT NOT NULL,
+	long_description TEXT NULL,
+	instructor_id BIGINT UNSIGNED NOT NULL,
+	category_id BIGINT UNSIGNED NOT NULL,
+	level VARCHAR(40) NOT NULL DEFAULT 'Beginner',
+	price DECIMAL(10,2) NOT NULL DEFAULT 0,
+	thumbnail_color VARCHAR(30) NULL,
+	status VARCHAR(30) NOT NULL DEFAULT 'draft',
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	INDEX idx_courses_instructor (instructor_id),
+	INDEX idx_courses_category (category_id),
+	CONSTRAINT fk_courses_instructor FOREIGN KEY (instructor_id) REFERENCES users(id),
+	CONSTRAINT fk_courses_category FOREIGN KEY (category_id) REFERENCES categories(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS course_sections (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	course_id BIGINT UNSIGNED NOT NULL,
+	title VARCHAR(255) NOT NULL,
+	section_order INT UNSIGNED NOT NULL DEFAULT 1,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	INDEX idx_sections_course (course_id),
+	CONSTRAINT fk_sections_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS lessons (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	section_id BIGINT UNSIGNED NOT NULL,
+	title VARCHAR(255) NOT NULL,
+	description TEXT NULL,
+	video_url VARCHAR(1000) NULL,
+	duration_minutes INT UNSIGNED NOT NULL DEFAULT 0,
+	lesson_order INT UNSIGNED NOT NULL DEFAULT 0,
+	is_published BOOLEAN NOT NULL DEFAULT FALSE,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	INDEX idx_lessons_section (section_id),
+	CONSTRAINT fk_lessons_section FOREIGN KEY (section_id) REFERENCES course_sections(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS enrollments (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	user_id BIGINT UNSIGNED NOT NULL,
+	course_id BIGINT UNSIGNED NOT NULL,
+	enrolled_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	status VARCHAR(30) NOT NULL DEFAULT 'active',
+	UNIQUE KEY uq_enrollment (user_id, course_id),
+	INDEX idx_enrollments_course (course_id),
+	CONSTRAINT fk_enrollments_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+	CONSTRAINT fk_enrollments_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS payments (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	user_id BIGINT UNSIGNED NOT NULL,
+	course_id BIGINT UNSIGNED NOT NULL,
+	amount DECIMAL(10,2) NOT NULL,
+	currency CHAR(3) NOT NULL DEFAULT 'ETB',
+	method VARCHAR(30) NOT NULL,
+	payment_account_id BIGINT UNSIGNED NOT NULL,
+	transaction_reference VARCHAR(120) NOT NULL,
+	status VARCHAR(30) NOT NULL DEFAULT 'pending',
+	provider_reference VARCHAR(160) NULL,
+	review_note TEXT NULL,
+	reviewed_at DATETIME NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	INDEX idx_payments_user (user_id),
+	INDEX idx_payments_course (course_id),
+	INDEX idx_payments_status (status),
+	CONSTRAINT fk_payments_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+	CONSTRAINT fk_payments_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+
+CREATE TABLE IF NOT EXISTS instructor_payment_accounts (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	user_id BIGINT UNSIGNED NOT NULL,
+	method VARCHAR(30) NOT NULL,
+	account_name VARCHAR(100) NOT NULL,
+	account_number_encrypted TEXT NOT NULL,
+	status VARCHAR(30) NOT NULL DEFAULT 'active',
+	is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	UNIQUE KEY uq_instructor_payment_method (user_id, method),
+	INDEX idx_instructor_payment_status (user_id, status, is_verified),
+	CONSTRAINT fk_instructor_payment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS lesson_progress (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	user_id BIGINT UNSIGNED NOT NULL,
+	lesson_id BIGINT UNSIGNED NOT NULL,
+	completed BOOLEAN NOT NULL DEFAULT FALSE,
+	progress_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+	last_position_seconds INT UNSIGNED NOT NULL DEFAULT 0,
+	completed_at DATETIME NULL,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	UNIQUE KEY uq_lesson_progress (user_id, lesson_id),
+	CONSTRAINT fk_progress_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+	CONSTRAINT fk_progress_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS discussion_topics (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	user_id BIGINT UNSIGNED NOT NULL,
+	title VARCHAR(255) NOT NULL,
+	category VARCHAR(100) NOT NULL DEFAULT 'General',
+	body TEXT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	INDEX idx_topics_user (user_id),
+	CONSTRAINT fk_topics_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS discussion_replies (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	topic_id BIGINT UNSIGNED NOT NULL,
+	user_id BIGINT UNSIGNED NOT NULL,
+	body TEXT NOT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	INDEX idx_replies_topic (topic_id),
+	CONSTRAINT fk_replies_topic FOREIGN KEY (topic_id) REFERENCES discussion_topics(id) ON DELETE CASCADE,
+	CONSTRAINT fk_replies_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS assignments (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	course_id BIGINT UNSIGNED NOT NULL,
+	lesson_id BIGINT UNSIGNED NULL,
+	title VARCHAR(255) NOT NULL,
+	description TEXT NULL,
+	instructions TEXT NULL,
+	due_date DATETIME NULL,
+	points DECIMAL(10,2) NOT NULL DEFAULT 100,
+	allowed_file_types VARCHAR(500) NULL,
+	max_file_size_mb INT UNSIGNED NOT NULL DEFAULT 10,
+	status VARCHAR(30) NOT NULL DEFAULT 'draft',
+	attachment_path VARCHAR(1000) NULL,
+	attachment_name VARCHAR(255) NULL,
+	attachment_size BIGINT UNSIGNED NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	INDEX idx_assignments_course (course_id),
+	INDEX idx_assignments_lesson (lesson_id),
+	CONSTRAINT fk_assignments_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+	CONSTRAINT fk_assignments_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS submissions (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	assignment_id BIGINT UNSIGNED NOT NULL,
+	user_id BIGINT UNSIGNED NOT NULL,
+	comment TEXT NULL,
+	status VARCHAR(30) NOT NULL DEFAULT 'submitted',
+	submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	score DECIMAL(10,2) NULL,
+	feedback TEXT NULL,
+	graded_at DATETIME NULL,
+	graded_by BIGINT UNSIGNED NULL,
+	INDEX idx_submissions_assignment (assignment_id),
+	INDEX idx_submissions_user (user_id),
+	CONSTRAINT fk_submissions_assignment FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE,
+	CONSTRAINT fk_submissions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+	CONSTRAINT fk_submissions_grader FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS submission_files (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	submission_id BIGINT UNSIGNED NOT NULL,
+	file_path VARCHAR(1000) NOT NULL,
+	stored_name VARCHAR(255) NOT NULL,
+	original_name VARCHAR(255) NOT NULL,
+	file_size BIGINT UNSIGNED NOT NULL DEFAULT 0,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	INDEX idx_submission_files_submission (submission_id),
+	CONSTRAINT fk_submission_files_submission FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS quizzes (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	course_id BIGINT UNSIGNED NOT NULL,
+	lesson_id BIGINT UNSIGNED NULL,
+	title VARCHAR(255) NOT NULL,
+	description TEXT NULL,
+	total_questions INT UNSIGNED NOT NULL DEFAULT 0,
+	time_limit_minutes INT UNSIGNED NULL,
+	pass_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
+	shuffle_questions BOOLEAN NOT NULL DEFAULT FALSE,
+	status VARCHAR(30) NOT NULL DEFAULT 'draft',
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	INDEX idx_quizzes_course (course_id),
+	CONSTRAINT fk_quizzes_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+	CONSTRAINT fk_quizzes_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS questions (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	quiz_id BIGINT UNSIGNED NOT NULL,
+	question_number INT UNSIGNED NOT NULL,
+	prompt TEXT NOT NULL,
+	question_type VARCHAR(40) NOT NULL DEFAULT 'multiple_choice',
+	code TEXT NULL,
+	difficulty VARCHAR(30) NULL,
+	points DECIMAL(10,2) NOT NULL DEFAULT 0,
+	explanation TEXT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	INDEX idx_questions_quiz (quiz_id),
+	CONSTRAINT fk_questions_quiz FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS question_options (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	question_id BIGINT UNSIGNED NOT NULL,
+	option_key VARCHAR(20) NOT NULL,
+	option_text TEXT NOT NULL,
+	is_correct BOOLEAN NOT NULL DEFAULT FALSE,
+	INDEX idx_options_question (question_id),
+	CONSTRAINT fk_options_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS quiz_attempts (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	quiz_id BIGINT UNSIGNED NOT NULL,
+	user_id BIGINT UNSIGNED NOT NULL,
+	started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	submitted_at DATETIME NULL,
+	score DECIMAL(10,2) NULL,
+	percentage DECIMAL(5,2) NULL,
+	passed BOOLEAN NULL,
+	status VARCHAR(30) NOT NULL DEFAULT 'in_progress',
+	INDEX idx_attempts_quiz_user (quiz_id, user_id),
+	CONSTRAINT fk_attempts_quiz FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
+	CONSTRAINT fk_attempts_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS quiz_answers (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	attempt_id BIGINT UNSIGNED NOT NULL,
+	question_id BIGINT UNSIGNED NOT NULL,
+	selected_option_id BIGINT UNSIGNED NULL,
+	answer_text TEXT NULL,
+	is_correct BOOLEAN NULL,
+	points_earned DECIMAL(10,2) NOT NULL DEFAULT 0,
+	UNIQUE KEY uq_quiz_answer (attempt_id, question_id),
+	CONSTRAINT fk_answers_attempt FOREIGN KEY (attempt_id) REFERENCES quiz_attempts(id) ON DELETE CASCADE,
+	CONSTRAINT fk_answers_question FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+	CONSTRAINT fk_answers_option FOREIGN KEY (selected_option_id) REFERENCES question_options(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS notifications (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	user_id BIGINT UNSIGNED NOT NULL,
+	title VARCHAR(255) NOT NULL,
+	message TEXT NOT NULL,
+	category VARCHAR(60) NOT NULL DEFAULT 'General',
+	is_read BOOLEAN NOT NULL DEFAULT FALSE,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	INDEX idx_notifications_user (user_id),
+	CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS notification_links (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	notification_id BIGINT UNSIGNED NOT NULL,
+	entity_type VARCHAR(50) NOT NULL,
+	entity_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+	target_path VARCHAR(500) NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	INDEX idx_notification_links_notification (notification_id),
+	CONSTRAINT fk_notification_links_notification FOREIGN KEY (notification_id) REFERENCES notifications(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS certificates (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	user_id BIGINT UNSIGNED NOT NULL,
+	course_id BIGINT UNSIGNED NOT NULL,
+	certificate_number VARCHAR(200) NULL UNIQUE,
+	recipient_name VARCHAR(200) NULL,
+	completion_date DATE NULL,
+	score DECIMAL(5,2) NULL,
+	skills TEXT NULL,
+	issued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	UNIQUE KEY uq_certificate_user_course (user_id, course_id),
+	CONSTRAINT fk_certificates_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+	CONSTRAINT fk_certificates_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS lesson_notes (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	user_id BIGINT UNSIGNED NOT NULL,
+	lesson_id BIGINT UNSIGNED NOT NULL,
+	timestamp_seconds INT UNSIGNED NOT NULL DEFAULT 0,
+	note_text TEXT NOT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	INDEX idx_lesson_notes_user_lesson (user_id, lesson_id),
+	CONSTRAINT fk_lesson_notes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+	CONSTRAINT fk_lesson_notes_lesson FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS email_verification_codes (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	user_id BIGINT UNSIGNED NOT NULL,
+	code_hash CHAR(64) NOT NULL,
+	expires_at DATETIME NOT NULL,
+	verified_at DATETIME NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	INDEX idx_verification_user (user_id),
+	CONSTRAINT fk_verification_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+	user_id BIGINT UNSIGNED NOT NULL,
+	code_hash CHAR(64) NOT NULL,
+	token_hash CHAR(64) NOT NULL,
+	expires_at DATETIME NOT NULL,
+	used_at DATETIME NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	INDEX idx_reset_user (user_id),
+	INDEX idx_reset_token (token_hash),
+	CONSTRAINT fk_reset_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

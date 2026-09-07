@@ -29,6 +29,8 @@ export default function BottomNav({
             <Link
               key={`${item.label}-${item.href}`}
               to={item.href}
+              aria-label={item.label}
+              title={item.label}
               className="flex flex-1 flex-col items-center justify-center gap-1 transition-colors"
             >
               <div
@@ -41,15 +43,6 @@ export default function BottomNav({
                 <Icon size={22} />
               </div>
 
-              <span
-                className={`text-[10px] font-medium ${
-                  isActive
-                    ? "text-primary"
-                    : "text-ink-faint"
-                }`}
-              >
-                {item.label}
-              </span>
             </Link>
           );
         })}
@@ -64,7 +57,6 @@ export default function BottomNav({
           <div className="rounded-full p-1 text-ink-faint">
             {isDark ? <Sun size={22} /> : <Moon size={22} />}
           </div>
-          <span className="text-[10px] font-medium text-ink-faint">Theme</span>
         </button>
       </div>
     </nav>

@@ -50,6 +50,13 @@ export default function EnrollCard({
     setEnrollmentError,
   ] = useState("");
 
+  const [paymentMethod, setPaymentMethod] = useState("telebirr");
+  const [transactionReference, setTransactionReference] = useState("");
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentSubmitted, setPaymentSubmitted] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(false);
+
   const [
     firstLessonId,
     setFirstLessonId,
@@ -256,6 +263,22 @@ export default function EnrollCard({
       return;
     }
 
+    if (Number(course.price) > 0) {
+      try {
+        setLoadingPaymentMethods(true);
+        const response = await apiRequest(`/payments/methods?courseId=${Number(course.id)}`, { includeAuth: false });
+        setPaymentMethods(response.methods || []);
+        if (response.methods?.length) setPaymentMethod(response.methods[0].id);
+        else setEnrollmentError("The instructor has not added a verified Telebirr or CBE account yet.");
+      } catch (error) {
+        setEnrollmentError(error.message || "Payment accounts are not available.");
+      } finally {
+        setLoadingPaymentMethods(false);
+      }
+      setShowPayment(true);
+      return;
+    }
+
     try {
       setIsEnrolling(true);
       setEnrollmentError("");
@@ -289,6 +312,38 @@ export default function EnrollCard({
         error.message ||
           "Failed to enroll in course."
       );
+    } finally {
+      setIsEnrolling(false);
+    }
+  }
+
+  async function handlePaymentSubmit(event) {
+    event.preventDefault();
+
+    if (!transactionReference.trim()) {
+      setEnrollmentError("Enter the Telebirr or CBE transaction reference.");
+      return;
+    }
+
+    try {
+      setIsEnrolling(true);
+      setEnrollmentError("");
+
+      await apiRequest("/payments", {
+        token,
+        method: "POST",
+        body: {
+          courseId: Number(course.id),
+          method: paymentMethod,
+          paymentAccountId: paymentMethods.find((method) => method.id === paymentMethod)?.id,
+          transactionReference: transactionReference.trim(),
+        },
+      });
+
+      setPaymentSubmitted(true);
+      setShowPayment(false);
+    } catch (error) {
+      setEnrollmentError(error.message || "Failed to submit payment.");
     } finally {
       setIsEnrolling(false);
     }
@@ -351,6 +406,61 @@ export default function EnrollCard({
           Full lifetime access
         </p>
       </div>
+
+      {paymentSubmitted ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-900">
+          Payment submitted. Enrollment will be enabled after payment review.
+        </div>
+      ) : showPayment ? (
+        <form onSubmit={handlePaymentSubmit} className="space-y-4 rounded-xl border border-primary/20 bg-primary-light/40 p-4">
+          <div>
+            <p className="text-sm font-extrabold text-ink">Choose a payment method</p>
+            <p className="mt-1 text-xs text-slate-500">Amount due: {course.price} ETB</p>
+          </div>
+
+          {loadingPaymentMethods ? <p className="text-sm text-slate-500">Loading verified instructor accounts...</p> : <div className="grid grid-cols-2 gap-2">
+            {paymentMethods.map((method) => (
+              <button
+                key={method.id}
+                type="button"
+                onClick={() => setPaymentMethod(method.id)}
+                className={`rounded-lg border px-3 py-2 text-sm font-bold transition ${paymentMethod === method.id ? "border-primary bg-primary text-white" : "border-slate-200 bg-white text-ink hover:border-primary"}`}
+              >
+                {method.name}
+              </button>
+            ))}
+          </div>}
+
+          {paymentMethods.find((method) => method.id === paymentMethod) && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-950">
+              <p className="font-bold">Verified instructor account</p>
+              <p className="mt-1">{paymentMethods.find((method) => method.id === paymentMethod).accountName}</p>
+              <p className="font-mono text-sm">{paymentMethods.find((method) => method.id === paymentMethod).accountNumber}</p>
+            </div>
+          )}
+
+          <p className="text-xs leading-5 text-slate-600">
+            Send {course.price} ETB to the verified instructor account above, then enter the transaction reference below.
+          </p>
+
+          <input
+            value={transactionReference}
+            onChange={(event) => setTransactionReference(event.target.value)}
+            placeholder="Transaction reference"
+            className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            required
+          />
+
+          <div className="flex gap-2">
+            <button type="submit" disabled={isEnrolling} className="flex-1 rounded-lg bg-primary px-3 py-2.5 text-sm font-bold text-white hover:bg-primary-hover disabled:opacity-60">
+              {isEnrolling ? "Submitting..." : "Submit Payment"}
+            </button>
+            <button type="button" onClick={() => setShowPayment(false)} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-ink hover:bg-slate-50">
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : null}
 
       {/* ENROLLMENT */}
 

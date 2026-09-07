@@ -55,10 +55,11 @@ const certificateController = {
         if (certifiedCourseIds.has(Number(enrollment.course_id))) continue;
 
         try {
-          const eligibility = await certificateService.checkCertificateEligibility(
-            userId,
-            enrollment.course_id
-          );
+          const eligibility =
+            await certificateService.checkCertificateEligibility(
+              userId,
+              enrollment.course_id
+            );
 
           pending.push({
             courseId: enrollment.course_id,
@@ -168,10 +169,11 @@ const certificateController = {
         });
       }
 
-      const eligibility = await certificateService.checkCertificateEligibility(
-        userId,
-        courseId
-      );
+      const eligibility =
+        await certificateService.checkCertificateEligibility(
+          userId,
+          courseId
+        );
 
       return res.status(200).json({
         alreadyIssued: false,
@@ -245,10 +247,11 @@ const certificateController = {
         });
       }
 
-      const eligibility = await certificateService.checkCertificateEligibility(
-        userId,
-        courseId
-      );
+      const eligibility =
+        await certificateService.checkCertificateEligibility(
+          userId,
+          courseId
+        );
 
       if (!eligibility.eligible) {
         return res.status(400).json({
@@ -258,10 +261,11 @@ const certificateController = {
         });
       }
 
-      const certificate = await certificateService.issueCertificateIfEligible(
-        userId,
-        courseId
-      );
+      const certificate =
+        await certificateService.issueCertificateIfEligible(
+          userId,
+          courseId
+        );
 
       if (!certificate) {
         console.error(

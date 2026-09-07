@@ -39,6 +39,13 @@ import {
 
 import Sidebar from "@components/layout/Sidebar";
 import BottomNav from "@components/layout/BottomNav";
+import Navbar from "@components/layout/Navbar";
+import {
+  UserAvatar,
+  AvatarPicker,
+  getStoredAvatarId,
+  storeAvatarId,
+} from "@components/ui/UserAvatar";
 
 import {
   STUDENT_BOTTOM_NAV,
@@ -233,6 +240,13 @@ export default function Profile() {
     profile,
     setProfile,
   ] = useState(user);
+
+  const [avatarId, setAvatarId] = useState(() => getStoredAvatarId(user?.id));
+
+  function handleAvatarChange(nextAvatarId) {
+    setAvatarId(nextAvatarId);
+    storeAvatarId(user?.id, nextAvatarId);
+  }
 
   const [
     form,
@@ -809,54 +823,7 @@ export default function Profile() {
           HEADER
       ================================================= */}
 
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur lg:pl-64">
-        <button
-          type="button"
-          onClick={
-            drawer.open
-          }
-          className="rounded-lg p-2 hover:bg-slate-50 lg:hidden"
-          aria-label="Open navigation"
-        >
-          <Menu size={20} />
-        </button>
-
-        <div className="hidden lg:block" />
-
-        <div className="flex items-center gap-3">
-          <Link
-            to="/notifications"
-            className="relative rounded-full p-2 text-slate-600 hover:bg-slate-50"
-          >
-            <Bell size={20} />
-
-            {unreadCount >
-              0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                {
-                  unreadCount
-                }
-              </span>
-            )}
-          </Link>
-
-          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-primary-light text-xs font-black text-primary">
-            {profileImageUrl ? (
-              <img
-                src={
-                  profileImageUrl
-                }
-                alt={`${profile.first_name} ${profile.last_name}`}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              getInitials(
-                profile
-              )
-            )}
-          </div>
-        </div>
-      </header>
+      <Navbar onMenuOpen={drawer.open} />
 
       {/* =================================================
           CONTENT
@@ -877,21 +844,13 @@ export default function Profile() {
                   {/* AVATAR */}
 
                   <div className="relative">
-                    <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-primary-light text-2xl font-extrabold text-primary ring-4 ring-white shadow-md">
-                      {profileImageUrl ? (
-                        <img
-                          src={
-                            profileImageUrl
-                          }
-                          alt={`${profile.first_name} ${profile.last_name}`}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        getInitials(
-                          profile
-                        )
-                      )}
-                    </div>
+                    <UserAvatar
+                      user={profile}
+                      avatarId={avatarId}
+                      imageUrl={profileImageUrl}
+                      className="h-24 w-24 text-2xl ring-4 ring-white shadow-md"
+                      iconSize={38}
+                    />
 
                     <button
                       type="button"
@@ -1007,6 +966,19 @@ export default function Profile() {
                         </button>
                       )}
                     </div>
+
+                    {!profileImageUrl && (
+                      <div className="mt-5 max-w-md">
+                        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                          Choose a profile avatar
+                        </p>
+                        <AvatarPicker
+                          user={profile}
+                          selectedId={avatarId}
+                          onChange={handleAvatarChange}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -64,9 +64,9 @@ async function testDatabaseConnection() {
 /**
  * Checks INFORMATION_SCHEMA directly instead of relying on
  * "ADD COLUMN IF NOT EXISTS" — that syntax only exists on MySQL 8.0.29+,
- * and fails with a plain syntax error on older MySQL and on MariaDB. This
- * approach works on every version, since INFORMATION_SCHEMA.COLUMNS has
- * been standard since MySQL 5.x.
+ * and fails with a plain syntax error on older MySQL and on MariaDB.
+ * This approach works on every version, since INFORMATION_SCHEMA.COLUMNS
+ * has been standard since MySQL 5.x.
  */
 async function columnExists(table, column) {
   const [rows] = await pool.execute(
@@ -85,6 +85,11 @@ async function columnExists(table, column) {
 
 async function applySchemaMigrations() {
   const migrations = [
+    {
+      table: 'payments',
+      column: 'payment_account_id',
+      ddl: "ALTER TABLE payments ADD COLUMN payment_account_id BIGINT UNSIGNED NOT NULL AFTER method",
+    },
     {
       table: 'events',
       column: 'capacity',
@@ -167,12 +172,11 @@ async function applySchemaMigrations() {
 
       await pool.execute(ddl);
       applied += 1;
+
       console.log(`✅ Schema migration applied: ${table}.${column}`);
     } catch (error) {
-      // A real failure now (bad DDL, permissions, wrong AFTER column,
-      // etc.) is loud and specific — not lumped in with the normal
-      // "already exists" case like it was before.
       failed += 1;
+
       console.error(
         `❌ Schema migration FAILED for ${table}.${column}:`,
         error.message,

@@ -1,5 +1,6 @@
 const Enrollment = require("../models/Enrollment");
 const Course = require("../models/Course");
+const Payment = require("../models/Payment");
 
 const enrollmentController = {
   // =====================================================
@@ -69,6 +70,21 @@ const enrollmentController = {
           message:
             "This course is not available for enrollment",
         });
+      }
+
+      const coursePrice = Number(course.price) || 0;
+      if (coursePrice > 0) {
+        const approvedPayment = await Payment.findApprovedByUserAndCourse(
+          userId,
+          numericCourseId,
+          coursePrice
+        );
+
+        if (!approvedPayment) {
+          return res.status(402).json({
+            message: "Payment approval is required before enrolling in this course",
+          });
+        }
       }
 
       // ===================================================

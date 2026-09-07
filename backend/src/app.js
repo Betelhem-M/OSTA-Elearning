@@ -10,6 +10,8 @@ const lessonRoutes = require("./routes/lessonRoutes");
 const courseSectionRoutes = require("./routes/courseSectionRoutes");
 const lessonProgressRoutes = require("./routes/lessonProgressRoutes");
 const enrollmentRoutes = require("./routes/enrollmentRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+const instructorPaymentRoutes = require("./routes/instructorPaymentRoutes");
 const certificateRoutes = require("./routes/certificateRoutes");
 const discussionRoutes = require("./routes/discussionRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
@@ -47,7 +49,12 @@ const app = express();
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:5174",
+    ],
     credentials: true,
   })
 );
@@ -162,6 +169,20 @@ app.use(
 app.use(
   "/api/enrollments",
   enrollmentRoutes
+);
+
+// =====================================================
+// PAYMENTS
+// =====================================================
+
+app.use(
+  "/api/payments",
+  paymentRoutes
+);
+
+app.use(
+  "/api/instructor/payment-accounts",
+  instructorPaymentRoutes
 );
 
 
