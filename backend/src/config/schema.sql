@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS payments (
 	INDEX idx_payments_status (status),
 	CONSTRAINT fk_payments_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
 	CONSTRAINT fk_payments_course FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS instructor_payment_accounts (
 	id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
