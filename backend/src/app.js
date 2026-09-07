@@ -5,7 +5,7 @@ const fs = require("fs");
 
 const authRoutes = require("./routes/authRoutes");
 const quizRoutes = require("./routes/quizRoutes");
-const quizAttemptRoutes =require("./routes/quizAttemptRoutes");
+const quizAttemptRoutes = require("./routes/quizAttemptRoutes");
 const courseRoutes = require("./routes/courseRoutes");
 const lessonRoutes = require("./routes/lessonRoutes");
 const courseSectionRoutes = require("./routes/courseSectionRoutes");
@@ -32,17 +32,12 @@ const eventRoutes = require("./routes/eventRoutes");
 const researchRoutes = require("./routes/researchRoutes");
 const featureRoutes = require("./routes/featureRoutes");
 const portalRoutes = require("./routes/portalRoutes");
-const instructorProgressRoutes =
-  require("./routes/instructorProgressRoutes");
+const instructorProgressRoutes = require("./routes/instructorProgressRoutes");
 
-const authMiddleware =
-  require("./middleware/authMiddleware");
-
-const errorMiddleware =
-  require("./middleware/errorMiddleware");
+const authMiddleware = require("./middleware/authMiddleware");
+const errorMiddleware = require("./middleware/errorMiddleware");
 
 const app = express();
-
 
 // =====================================================
 // GLOBAL MIDDLEWARE
@@ -51,6 +46,7 @@ const app = express();
 // Allow configuring allowed CORS origins via CORS_ORIGIN env var
 // Example: CORS_ORIGIN="https://mydomain.com,https://www.mydomain.com"
 const DEFAULT_ORIGINS = [
+  "https://samhhgh-osta-elearning.vercel.app",
   "http://localhost:5173",
   "http://localhost:5174",
   "http://127.0.0.1:5173",
@@ -85,7 +81,6 @@ app.use(express.urlencoded({
   extended: true,
 }));
 
-
 // =====================================================
 // HEALTH CHECK
 // =====================================================
@@ -98,7 +93,6 @@ app.get("/", (req, res) => {
   });
 });
 
-
 // =====================================================
 // STATIC FILES (uploads)
 // =====================================================
@@ -109,7 +103,6 @@ app.use(
     path.join(__dirname, "uploads")
   )
 );
-
 
 // =====================================================
 // AUTH
@@ -131,7 +124,6 @@ app.get(
   }
 );
 
-
 // =====================================================
 // USERS
 // =====================================================
@@ -140,7 +132,6 @@ app.use(
   "/api/users",
   userRoutes
 );
-
 
 // =====================================================
 // STUDENT
@@ -151,7 +142,6 @@ app.use(
   studentRoutes
 );
 
-
 // =====================================================
 // COURSES
 // =====================================================
@@ -160,7 +150,6 @@ app.use(
   "/api/courses",
   courseRoutes
 );
-
 
 // =====================================================
 // LESSONS
@@ -171,7 +160,6 @@ app.use(
   lessonRoutes
 );
 
-
 // =====================================================
 // COURSE SECTIONS
 // =====================================================
@@ -180,7 +168,6 @@ app.use(
   "/api/course-sections",
   courseSectionRoutes
 );
-
 
 // =====================================================
 // ENROLLMENTS
@@ -205,7 +192,6 @@ app.use(
   instructorPaymentRoutes
 );
 
-
 // =====================================================
 // PROGRESS
 // =====================================================
@@ -214,7 +200,6 @@ app.use(
   "/api/progress",
   lessonProgressRoutes
 );
-
 
 // =====================================================
 // QUIZZES
@@ -236,7 +221,6 @@ app.use(
   assignmentRoutes
 );
 
-
 // =====================================================
 // CERTIFICATES
 // =====================================================
@@ -245,7 +229,6 @@ app.use(
   "/api/certificates",
   certificateRoutes
 );
-
 
 // =====================================================
 // NOTIFICATIONS
@@ -256,7 +239,6 @@ app.use(
   notificationRoutes
 );
 
-
 // =====================================================
 // DISCUSSIONS
 // =====================================================
@@ -266,13 +248,11 @@ app.use(
   discussionRoutes
 );
 
-
 // =====================================================
 // EVENTS
 // =====================================================
 
 app.use("/api/events", eventRoutes);
-
 
 // =====================================================
 // COMPETITIONS
@@ -283,7 +263,6 @@ app.use(
   competitionRoutes
 );
 
-
 // =====================================================
 // HACKATHONS
 // =====================================================
@@ -292,7 +271,6 @@ app.use(
   "/api/hackathons",
   hackathonRoutes
 );
-
 
 // =====================================================
 // INNOVATION
@@ -303,13 +281,11 @@ app.use(
   innovationRoutes
 );
 
-
 // =====================================================
 // RESEARCH
 // =====================================================
 
 app.use("/api/research", researchRoutes);
-
 
 // =====================================================
 // CATEGORIES
@@ -319,7 +295,6 @@ app.use(
   "/api/categories",
   categoryRoutes
 );
-
 
 // =====================================================
 // INSTRUCTOR
@@ -331,7 +306,6 @@ app.use(
 );
 
 app.use("/api/instructor", instructorProgressRoutes);
-
 
 // =====================================================
 // CROSS-CUTTING FEATURES
@@ -349,7 +323,6 @@ app.use(
   noteRoutes
 );
 
-
 // =====================================================
 // ADMIN
 // =====================================================
@@ -358,7 +331,6 @@ app.use(
   "/api/admin",
   adminRoutes
 );
-
 
 // =====================================================
 // STATIC FRONTEND (if present)
@@ -375,7 +347,6 @@ if (fs.existsSync(publicPath)) {
   });
 }
 
-
 // =====================================================
 // 404 HANDLER
 // =====================================================
@@ -387,12 +358,10 @@ app.use((req, res) => {
   });
 });
 
-
 // =====================================================
 // GLOBAL ERROR HANDLER
 // =====================================================
 
 app.use(errorMiddleware);
-
 
 module.exports = app;
