@@ -14,6 +14,10 @@ function getConnectionConfig() {
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "",
     database: process.env.DB_NAME || "osta_e_learning",
+    ssl:
+      process.env.DB_SSL === "true"
+        ? { rejectUnauthorized: false }
+        : undefined,
   };
 }
 
@@ -22,6 +26,10 @@ async function initializeDatabase() {
     ...getConnectionConfig(),
     multipleStatements: true,
     charset: "utf8mb4",
+    ssl:
+      process.env.DB_SSL === "true"
+        ? { rejectUnauthorized: false }
+        : undefined,
   });
 
   try {
