@@ -40,36 +40,13 @@ const errorMiddleware = require("./middleware/errorMiddleware");
 const app = express();
 
 // =====================================================
-// GLOBAL MIDDLEWARE
+// GLOBAL MIDDLEWARE (CORS allows all Vercel & local domains)
 // =====================================================
-
-// Allow configuring allowed CORS origins via CORS_ORIGIN env var
-// Example: CORS_ORIGIN="https://mydomain.com,https://www.mydomain.com"
-const DEFAULT_ORIGINS = [
-  "https://samhhgh-osta-elearning.vercel.app",
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:5174",
-];
-
-const allowedOrigins = (process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",")
-  : DEFAULT_ORIGINS
-).map((o) => o.trim()).filter(Boolean);
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps or curl)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        return callback(null, true);
-      }
-
-      // In production you may want to be strict. For now reject unknown origins.
-      return callback(new Error('CORS policy: Origin not allowed'), false);
+      return callback(null, true);
     },
     credentials: true,
   })
@@ -336,12 +313,10 @@ app.use(
 // STATIC FRONTEND (if present)
 // =====================================================
 
-// When the frontend build is copied into backend/public, serve it as a static SPA.
 const publicPath = path.join(__dirname, "..", "public");
 if (fs.existsSync(publicPath)) {
   app.use(express.static(publicPath));
 
-  // Serve index.html for any non-API route (simple SPA fallback)
   app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(path.join(publicPath, "index.html"));
   });
