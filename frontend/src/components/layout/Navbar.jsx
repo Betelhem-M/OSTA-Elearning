@@ -10,6 +10,9 @@ import { useAuth } from '@context/AuthContext'
 import { useNotifications } from '@context/NotificationContext'
 import { UserAvatar } from '@components/ui/UserAvatar'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const BACKEND_URL = API_URL.replace(/\/api\/?$/, '')
+
 export default function Navbar({ onMenuOpen }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { t } = useLanguage()
@@ -19,19 +22,14 @@ export default function Navbar({ onMenuOpen }) {
   const profileImageUrl = user?.profile_image
     ? user.profile_image.startsWith('http')
       ? user.profile_image
-      : `https://osta-elearning-production.up.railway.app${user.profile_image}`
+      : `${BACKEND_URL}${user.profile_image}`
     : null
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface-card/95 text-ink backdrop-blur-md">
-      <nav
-        className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-4 lg:px-12"
-        aria-label="Main navigation"
-      >
+      <nav className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-4 lg:px-12" aria-label="Main navigation">
         <Link to="/" className="flex items-center" aria-label="OSTA E-Learning home" title="OSTA E-Learning home">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-lg font-extrabold text-white">
-            O
-          </span>
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-lg font-extrabold text-white">O</span>
         </Link>
 
         <div className="hidden items-center gap-5 xl:flex" id="nav-links">
@@ -42,7 +40,10 @@ export default function Navbar({ onMenuOpen }) {
           ))}
         </div>
 
-        <div className="hidden items-center gap-2 sm:flex"><Link to="/search" aria-label={t('Search')} title={t('Search')} className="rounded-lg p-2 text-ink hover:bg-surface-muted"><Search size={18}/></Link><ThemeToggle/><LanguageSwitcher/>
+        <div className="hidden items-center gap-2 sm:flex">
+          <Link to="/search" aria-label={t('Search')} title={t('Search')} className="rounded-lg p-2 text-ink hover:bg-surface-muted"><Search size={18}/></Link>
+          <ThemeToggle/>
+          <LanguageSwitcher/>
           {isAuthenticated ? (
             <>
               <Link to="/notifications" aria-label="Notifications" title="Notifications" className="relative rounded-lg p-2 text-ink hover:bg-surface-muted">
@@ -61,18 +62,10 @@ export default function Navbar({ onMenuOpen }) {
           )}
         </div>
 
-        <button
-          className="rounded-lg p-2 text-ink sm:hidden"
-          aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={mobileOpen}
-          onClick={() => {
-            if (onMenuOpen) {
-              onMenuOpen()
-              return
-            }
-            setMobileOpen((v) => !v)
-          }}
-        >
+        <button className="rounded-lg p-2 text-ink sm:hidden" aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen} onClick={() => {
+          if (onMenuOpen) { onMenuOpen(); return }
+          setMobileOpen((v) => !v)
+        }}>
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </nav>
