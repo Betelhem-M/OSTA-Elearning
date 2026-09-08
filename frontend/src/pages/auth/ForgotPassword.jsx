@@ -7,9 +7,11 @@ export default function ForgotPassword() {
     <div className="min-h-screen bg-surface text-ink antialiased">
       <header className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 py-6 sm:px-8 lg:px-16">
         <Link to="/" className="flex items-center gap-3" aria-label="OSTA E-Learning home">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-sm font-black text-white">
-            O
-          </span>
+          <img
+            src="/assets/osta-logo.svg"
+            alt="OSTA"
+            className="h-10 w-10 object-contain"
+          />
         </Link>
         <Link
           to="/login"
