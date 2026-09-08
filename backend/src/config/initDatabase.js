@@ -5,7 +5,6 @@ require("dotenv").config();
 
 function getConnectionConfig() {
   // Railway
-  // DATABASE_URL is automatically provided by Railway MySQL.
   if (process.env.DATABASE_URL) {
     return {
       uri: process.env.DATABASE_URL,
@@ -27,63 +26,66 @@ function getConnectionConfig() {
 }
 
 /**
- * Clean the MariaDB dump before sending it to mysql2.
+ * Clean a MariaDB/MySQL dump before executing it through mysql2.
  *
- * schema.sql is a MariaDB dump rather than a plain application schema.
- * We keep useful executable SET statements (especially FOREIGN_KEY_CHECKS),
- * remove dump-only comments, and never execute DROP TABLE statements.
+ * The application should NOT delete existing production data.
+ * If the database already contains tables, initialization is skipped.
  */
 function cleanSchema(schema) {
   let cleaned = schema;
 
-  // Remove the MariaDB sandbox-mode comment.
+  // Remove MariaDB sandbox-mode comments.
   cleaned = cleaned.replace(
     /\/\*M!999999\\- enable the sandbox mode \*\//g,
     ""
   );
 
-  // Remove MariaDB-specific executable comments that are not needed here.
+  // Remove MariaDB-specific executable comments.
   cleaned = cleaned.replace(
     /\/\*M!\d{5,6}\s+[\s\S]*?\*\/\s*;?/gi,
     ""
   );
 
-  // Convert MySQL/MariaDB versioned executable comments into their SQL.
-  // Example: /*!40101 SET NAMES utf8mb4 */; -> SET NAMES utf8mb4;
-  // This preserves important dump settings such as FOREIGN_KEY_CHECKS=0.
+  // Convert MySQL versioned executable comments into SQL.
   cleaned = cleaned.replace(
     /\/\*!\d{5,6}\s*([\s\S]*?)\*\/\s*;?/gi,
     "$1;"
   );
 
-  // Remove normal SQL comments beginning with --.
+  // Remove normal SQL comments.
   cleaned = cleaned.replace(/^\s*--.*$/gm, "");
 
   // Remove MySQL # comments.
   cleaned = cleaned.replace(/^\s*#.*$/gm, "");
 
-  // Never execute DROP TABLE statements from the original dump.
+  // Never execute DROP TABLE statements automatically.
   cleaned = cleaned.replace(
     /DROP\s+TABLE\s+IF\s+EXISTS\s+`[^`]+`\s*;\s*/gi,
     ""
   );
 
-  // Remove USE `database`; statements.
+  // Remove USE statements.
   cleaned = cleaned.replace(
     /^\s*USE\s+`[^`]+`\s*;\s*$/gim,
     ""
   );
 
-  // Remove CREATE DATABASE statements if present.
+  // Remove CREATE DATABASE statements.
   cleaned = cleaned.replace(
     /CREATE\s+DATABASE\s+IF\s+NOT\s+EXISTS\s+`[^`]+`\s*;\s*/gi,
     ""
   );
 
-  // These are dump-only table locking statements and are not needed when
-  // initializing an application schema through mysql2.
-  cleaned = cleaned.replace(/^\s*LOCK\s+TABLES\s+.*;\s*$/gim, "");
-  cleaned = cleaned.replace(/^\s*UNLOCK\s+TABLES\s*;\s*$/gim, "");
+  // Remove table locking statements.
+  cleaned = cleaned.replace(
+    /^\s*LOCK\s+TABLES\s+.*;\s*$/gim,
+    ""
+  );
+
+  cleaned = cleaned.replace(
+    /^\s*UNLOCK\s+TABLES\s*;\s*$/gim,
+    ""
+  );
 
   return cleaned.trim();
 }
@@ -95,8 +97,9 @@ async function initializeDatabase() {
     const config = getConnectionConfig();
 
     // ------------------------------------------------------------
-    // CONNECT TO RAILWAY MYSQL
+    // CONNECT TO DATABASE
     // ------------------------------------------------------------
+
     if (config.uri) {
       connection = await mysql.createConnection({
         uri: config.uri,
@@ -106,9 +109,6 @@ async function initializeDatabase() {
 
       console.log("Connected to MySQL using DATABASE_URL.");
     } else {
-      // ----------------------------------------------------------
-      // CONNECT TO LOCAL MYSQL
-      // ----------------------------------------------------------
       connection = await mysql.createConnection({
         host: config.host,
         port: config.port,
@@ -126,8 +126,27 @@ async function initializeDatabase() {
     }
 
     // ------------------------------------------------------------
+    // CHECK WHETHER DATABASE ALREADY HAS TABLES
+    // ------------------------------------------------------------
+
+    const [tables] = await connection.query("SHOW TABLES");
+
+    if (tables.length > 0) {
+      console.log(
+        `Database already contains ${tables.length} table(s).`
+      );
+
+      console.log(
+        "Skipping automatic schema initialization to protect existing data."
+      );
+
+      return;
+    }
+
+    // ------------------------------------------------------------
     // FIND SCHEMA FILE
     // ------------------------------------------------------------
+
     const schemaPath = path.join(__dirname, "schema.sql");
 
     if (!fs.existsSync(schemaPath)) {
@@ -143,8 +162,9 @@ async function initializeDatabase() {
     console.log("Reading database schema...");
 
     // ------------------------------------------------------------
-    // CLEAN THE MARIADB DUMP
+    // CLEAN SCHEMA
     // ------------------------------------------------------------
+
     const schema = cleanSchema(originalSchema);
 
     if (!schema.trim()) {
@@ -153,11 +173,12 @@ async function initializeDatabase() {
       );
     }
 
-    console.log("Executing cleaned database schema...");
+    console.log("Executing database schema...");
 
     // ------------------------------------------------------------
     // EXECUTE SCHEMA
     // ------------------------------------------------------------
+
     await connection.query(schema);
 
     console.log("Database schema initialized successfully.");
