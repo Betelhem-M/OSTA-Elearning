@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { useLanguage } from "@context/LanguageContext";
 
-// Legacy pages still contain literal UI strings. This bridge translates exact
-// UI labels through the same global language preference until those components
-// are migrated to t(). It intentionally ignores long/dynamic content.
+// Legacy pages still contain literal UI strings. Keep one immutable source
+// value for every node so switching EN -> AM -> OM never translates a
+// previously translated value a second time.
 const EXTRA = {
   am: {
     Assignments: "የቤት ስራዎች",
@@ -15,7 +15,7 @@ const EXTRA = {
     Total: "ጠቅላላ",
     Search: "ፈልግ",
     "Search assignments...": "የቤት ስራዎችን ፈልግ...",
-    "All": "ሁሉም",
+    All: "ሁሉም",
     Loading: "በመጫን ላይ",
     "Loading your assignments...": "የቤት ስራዎችዎን በመጫን ላይ...",
     "Unable to load assignments": "የቤት ስራዎችን መጫን አልተቻለም",
@@ -62,9 +62,9 @@ const EXTRA = {
     "No data available": "ምንም መረጃ የለም",
     "Failed to fetch": "መረጃን ማምጣት አልተቻለም",
     "Failed to load": "መጫን አልተቻለም",
-    "Due": "የመጨረሻ ቀን",
-    "Max": "ከፍተኛ",
-    "pts": "ነጥቦች"
+    Due: "የመጨረሻ ቀን",
+    Max: "ከፍተኛ",
+    pts: "ነጥቦች",
   },
   om: {
     Assignments: "Hojii manaa",
@@ -125,47 +125,67 @@ const EXTRA = {
     "Failed to load": "Fe'uu hin dandeenye",
     Due: "Guyyaa xumuraa",
     Max: "Ol'aanaa",
-    pts: "qabxii"
-  }
+    pts: "qabxii",
+  },
 };
+
+function translateValue(value, language, t) {
+  const extra = EXTRA[language] || {};
+  return extra[value] || t(value) || value;
+}
 
 export default function LanguageAutoTranslator() {
   const { language, t } = useLanguage();
 
   useEffect(() => {
     const translate = () => {
-      const extra = EXTRA[language] || {};
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       const nodes = [];
       let node;
+
       while ((node = walker.nextNode())) nodes.push(node);
 
       for (const textNode of nodes) {
-        const value = textNode.nodeValue;
-        const trimmed = value.trim();
+        if (textNode.parentElement?.closest("script,style,noscript")) continue;
+
+        const current = textNode.nodeValue;
+        const trimmed = current.trim();
         if (!trimmed || trimmed.length > 120) continue;
         if (/^(https?:\/\/|\/|[\w.-]+@)/.test(trimmed)) continue;
-        const translated = Object.prototype.hasOwnProperty.call(extra, trimmed)
-          ? extra[trimmed]
-          : t(trimmed);
-        if (translated && translated !== trimmed) {
-          textNode.nodeValue = value.replace(trimmed, translated);
+
+        if (!textNode.dataset.ostaOriginalText) {
+          textNode.dataset.ostaOriginalText = trimmed;
+        }
+
+        const original = textNode.dataset.ostaOriginalText;
+        const translated = translateValue(original, language, t);
+        if (translated !== current) {
+          textNode.nodeValue = current.replace(trimmed, translated);
         }
       }
 
-      document.querySelectorAll("input[placeholder], textarea[placeholder], [aria-label]").forEach((el) => {
-        for (const attr of ["placeholder", "aria-label"]) {
-          const value = el.getAttribute(attr);
-          if (!value || value.length > 120) continue;
-          const translated = extra[value] || t(value);
-          if (translated && translated !== value) el.setAttribute(attr, translated);
-        }
-      });
+      document
+        .querySelectorAll("input[placeholder], textarea[placeholder], [aria-label]")
+        .forEach((el) => {
+          for (const attr of ["placeholder", "aria-label"]) {
+            const current = el.getAttribute(attr);
+            if (!current || current.length > 120) continue;
+
+            const key = `ostaOriginal${attr === "placeholder" ? "Placeholder" : "AriaLabel"}`;
+            if (!el.dataset[key]) el.dataset[key] = current;
+
+            const original = el.dataset[key];
+            const translated = translateValue(original, language, t);
+            if (translated !== current) el.setAttribute(attr, translated);
+          }
+        });
     };
 
     translate();
+
     const observer = new MutationObserver(() => translate());
     observer.observe(document.body, { childList: true, subtree: true });
+
     return () => observer.disconnect();
   }, [language, t]);
 
