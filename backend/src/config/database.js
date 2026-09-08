@@ -25,13 +25,13 @@ if (process.env.DATABASE_URL) {
 
   console.log('Using Railway DATABASE_URL.');
 } else {
-  // Local development database
+  // Local Docker MySQL / local development database
   pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST || '127.0.0.1',
     port: Number(process.env.DB_PORT) || 3308,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'osta_elearning',
+    database: process.env.DB_NAME || 'osta_elearning_platform',
 
     waitForConnections: true,
     connectionLimit: isProduction ? 20 : 10,
@@ -80,4 +80,3 @@ async function testDatabaseConnection() {
 testDatabaseConnection();
 
 module.exports = pool;
-
