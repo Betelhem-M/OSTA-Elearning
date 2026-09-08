@@ -6,6 +6,21 @@ import { useLanguage } from "@context/LanguageContext";
 // previously translated value a second time.
 const EXTRA = {
   am: {
+    Books: "መጻሕፍት",
+    "Upload Books": "መጻሕፍት ስቀል",
+    "Upload Book": "መጽሐፍ ስቀል",
+    "Book title": "የመጽሐፍ ርዕስ",
+    Author: "ደራሲ",
+    Description: "መግለጫ",
+    "Choose PDF book": "የPDF መጽሐፍ ምረጥ",
+    "Read online": "በመስመር ላይ አንብብ",
+    Download: "አውርድ",
+    "Register to download": "ለማውረድ ይመዝገቡ",
+    "Certificate of Completion": "የማጠናቀቂያ ምስክር ወረቀት",
+    "Certificate of completion": "የማጠናቀቂያ ምስክር ወረቀት",
+    "What a completed OSTA course certificate looks like": "የተጠናቀቀ የኦስታ ኮርስ ምስክር ወረቀት ምሳሌ",
+    "Courses": "ኮርሶች",
+    "Only PDF books are supported.": "የPDF መጻሕፍት ብቻ ይደገፋሉ።",
     Assignments: "የቤት ስራዎች",
     "Not Submitted": "አልቀረበም",
     Submitted: "ቀርቧል",
@@ -28,7 +43,6 @@ const EXTRA = {
     Dashboard: "ዳሽቦርድ",
     Profile: "መገለጫ",
     Lessons: "ትምህርቶች",
-    Courses: "ኮርሶች",
     Competitions: "ውድድሮች",
     Competition: "ውድድር",
     Community: "ማህበረሰብ",
@@ -67,6 +81,19 @@ const EXTRA = {
     pts: "ነጥቦች",
   },
   om: {
+    Books: "Kitaabota",
+    "Upload Books": "Kitaabota olkaa'i",
+    "Upload Book": "Kitaaba olkaa'i",
+    "Book title": "Mata-duree kitaabaa",
+    Author: "Barreessaa",
+    Description: "Ibsa",
+    "Choose PDF book": "Kitaaba PDF filadhu",
+    "Read online": "Toora interneetii irratti dubbisi",
+    Download: "Buusi",
+    "Register to download": "Buusuuf galmaa'i",
+    "Certificate of Completion": "Ragaa Xumuraa",
+    "Certificate of completion": "Ragaa Xumuraa",
+    "What a completed OSTA course certificate looks like": "Fakkeenya ragaa xumura koorsii OSTA",
     Assignments: "Hojii manaa",
     "Not Submitted": "Hin dhiyaanne",
     Submitted: "Dhiyaate",
@@ -142,50 +169,36 @@ export default function LanguageAutoTranslator() {
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       const nodes = [];
       let node;
-
       while ((node = walker.nextNode())) nodes.push(node);
 
       for (const textNode of nodes) {
         if (textNode.parentElement?.closest("script,style,noscript")) continue;
-
         const current = textNode.nodeValue;
         const trimmed = current.trim();
         if (!trimmed || trimmed.length > 120) continue;
         if (/^(https?:\/\/|\/|[\w.-]+@)/.test(trimmed)) continue;
-
-        if (!textNode.dataset.ostaOriginalText) {
-          textNode.dataset.ostaOriginalText = trimmed;
-        }
-
+        if (!textNode.dataset.ostaOriginalText) textNode.dataset.ostaOriginalText = trimmed;
         const original = textNode.dataset.ostaOriginalText;
         const translated = translateValue(original, language, t);
-        if (translated !== current) {
-          textNode.nodeValue = current.replace(trimmed, translated);
-        }
+        if (translated !== current) textNode.nodeValue = current.replace(trimmed, translated);
       }
 
-      document
-        .querySelectorAll("input[placeholder], textarea[placeholder], [aria-label]")
-        .forEach((el) => {
-          for (const attr of ["placeholder", "aria-label"]) {
-            const current = el.getAttribute(attr);
-            if (!current || current.length > 120) continue;
-
-            const key = `ostaOriginal${attr === "placeholder" ? "Placeholder" : "AriaLabel"}`;
-            if (!el.dataset[key]) el.dataset[key] = current;
-
-            const original = el.dataset[key];
-            const translated = translateValue(original, language, t);
-            if (translated !== current) el.setAttribute(attr, translated);
-          }
-        });
+      document.querySelectorAll("input[placeholder], textarea[placeholder], [aria-label]").forEach((el) => {
+        for (const attr of ["placeholder", "aria-label"]) {
+          const current = el.getAttribute(attr);
+          if (!current || current.length > 120) continue;
+          const key = `ostaOriginal${attr === "placeholder" ? "Placeholder" : "AriaLabel"}`;
+          if (!el.dataset[key]) el.dataset[key] = current;
+          const original = el.dataset[key];
+          const translated = translateValue(original, language, t);
+          if (translated !== current) el.setAttribute(attr, translated);
+        }
+      });
     };
 
     translate();
-
     const observer = new MutationObserver(() => translate());
     observer.observe(document.body, { childList: true, subtree: true });
-
     return () => observer.disconnect();
   }, [language, t]);
 
