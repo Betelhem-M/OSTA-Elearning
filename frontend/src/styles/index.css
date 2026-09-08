@@ -340,9 +340,29 @@ html.dark {
     box-shadow: 0 1px 3px rgb(0 0 0 / 0.28) !important;
   }
 
+  /* Remove decorative light gradients/glows from the competition dashboard
+     in dark mode. They were the source of the bright patches and washed-out
+     contrast around the command-center header. */
   html.dark .admin-shell .blur-3xl,
   html.dark .admin-shell .blur-2xl {
     opacity: 0 !important;
+  }
+
+  html.dark .admin-shell .from-gray-50 {
+    --tw-gradient-from: rgb(var(--color-bg)) !important;
+    --tw-gradient-to: rgb(var(--color-bg) / 0) !important;
+  }
+
+  html.dark .admin-shell .to-white {
+    --tw-gradient-to: rgb(var(--color-surface)) !important;
+  }
+
+  html.dark .admin-shell .from-primary-50 {
+    --tw-gradient-from: rgb(var(--color-primary-light)) !important;
+  }
+
+  html.dark .admin-shell .to-primary-100 {
+    --tw-gradient-to: rgb(var(--color-surface-muted)) !important;
   }
 
   .admin-shell input,
