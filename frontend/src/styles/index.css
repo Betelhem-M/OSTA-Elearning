@@ -173,6 +173,47 @@ html.dark {
   html.dark .bg-sky-50,
   html.dark .bg-sky-100 { background-color: rgb(30 41 59 / var(--tw-bg-opacity, 1)) !important; }
 
+  /* Dark mode compatibility for older raw Tailwind classes.
+     These keep course/instructor learning screens from turning white while
+     the application is using the dark semantic theme. */
+  html.dark .bg-white {
+    background-color: rgb(var(--color-surface)) !important;
+  }
+
+  html.dark .bg-slate-50 {
+    background-color: rgb(var(--color-bg)) !important;
+  }
+
+  html.dark .bg-slate-100 {
+    background-color: rgb(var(--color-surface-muted)) !important;
+  }
+
+  html.dark .bg-slate-200 {
+    background-color: rgb(var(--color-border)) !important;
+  }
+
+  html.dark .text-slate-900,
+  html.dark .text-slate-800,
+  html.dark .text-slate-700 {
+    color: rgb(var(--color-text)) !important;
+  }
+
+  html.dark .text-slate-600,
+  html.dark .text-slate-500 {
+    color: rgb(var(--color-text-soft)) !important;
+  }
+
+  html.dark .text-slate-400,
+  html.dark .text-slate-300 {
+    color: rgb(var(--color-text-faint)) !important;
+  }
+
+  html.dark .border-slate-100,
+  html.dark .border-slate-200,
+  html.dark .border-slate-300 {
+    border-color: rgb(var(--color-border)) !important;
+  }
+
   /* Admin portal visual cleanup.
      Keep these rules scoped to .admin-shell so public/student/instructor pages
      keep their own visual language. */
@@ -223,6 +264,85 @@ html.dark {
   .admin-shell .border-slate-200,
   .admin-shell .border-slate-300 {
     border-color: rgb(var(--color-border)) !important;
+  }
+
+  /* Competition page still uses the older gray/indigo palette. Remap those
+     utility classes to the same neutral contrast used by neighboring admin
+     pages, especially in dark mode. */
+  .admin-shell .bg-gray-50 {
+    background-color: rgb(var(--color-bg)) !important;
+  }
+
+  .admin-shell .bg-gray-100 {
+    background-color: rgb(var(--color-surface-muted)) !important;
+  }
+
+  .admin-shell .bg-gray-200 {
+    background-color: rgb(var(--color-border)) !important;
+  }
+
+  .admin-shell .text-gray-900,
+  .admin-shell .text-gray-800,
+  .admin-shell .text-gray-700 {
+    color: rgb(var(--color-text)) !important;
+  }
+
+  .admin-shell .text-gray-600,
+  .admin-shell .text-gray-500 {
+    color: rgb(var(--color-text-soft)) !important;
+  }
+
+  .admin-shell .text-gray-400,
+  .admin-shell .text-gray-300 {
+    color: rgb(var(--color-text-faint)) !important;
+  }
+
+  .admin-shell .border-gray-100,
+  .admin-shell .border-gray-200,
+  .admin-shell .border-gray-300 {
+    border-color: rgb(var(--color-border)) !important;
+  }
+
+  .admin-shell .hover\:bg-gray-50:hover,
+  .admin-shell .hover\:bg-gray-100:hover {
+    background-color: rgb(var(--color-surface-muted)) !important;
+  }
+
+  .admin-shell .bg-primary-50 {
+    background-color: rgb(var(--color-primary-light)) !important;
+  }
+
+  .admin-shell .bg-primary-100 {
+    background-color: rgb(var(--color-surface-muted)) !important;
+  }
+
+  .admin-shell .text-primary-500,
+  .admin-shell .text-primary-600,
+  .admin-shell .text-primary-700 {
+    color: rgb(var(--color-primary)) !important;
+  }
+
+  .admin-shell .border-primary-200,
+  .admin-shell .border-primary-300 {
+    border-color: rgb(var(--color-border)) !important;
+  }
+
+  html.dark .admin-shell .bg-indigo-600 {
+    background-color: rgb(var(--color-primary)) !important;
+  }
+
+  html.dark .admin-shell .hover\:bg-indigo-700:hover {
+    background-color: rgb(var(--color-primary-hover)) !important;
+  }
+
+  html.dark .admin-shell .shadow-indigo-200,
+  html.dark .admin-shell .shadow-lg {
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.28) !important;
+  }
+
+  html.dark .admin-shell .blur-3xl,
+  html.dark .admin-shell .blur-2xl {
+    opacity: 0 !important;
   }
 
   .admin-shell input,
