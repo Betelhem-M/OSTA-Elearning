@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+
+import SplashScreen from '@components/SplashScreen';
 
 import PublicLayout from '@layouts/PublicLayout';
 import StudentLayout from '@layouts/StudentLayout';
@@ -69,6 +72,12 @@ import EntrepreneurDashboard from '@pages/entrepreneur/EntrepreneurDashboard';
 import PrivateQuestions from '@pages/PrivateQuestions';
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
+
   return (
     <Routes>
       <Route element={<PublicLayout />}>
