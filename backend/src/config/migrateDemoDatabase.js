@@ -2,12 +2,9 @@ require("dotenv").config();
 
 const pool = require("./database");
 
-/**
- * The original local schema predates several backend features.  This migration
- * is intentionally additive: it never drops user/course/content data. It adds
- * the columns required by the current assignment, competition, research and
- * innovation APIs so the demo database matches the application code.
- */
+// The checked-in schema was created before several portal APIs were added.
+// This additive migration brings an existing local demo DB up to the schema
+// expected by the current backend without deleting any content.
 const migrations = [
   ["assignments", "lesson_id", "BIGINT(20) UNSIGNED NULL"],
   ["assignments", "instructions", "TEXT NULL"],
@@ -31,29 +28,20 @@ const migrations = [
 
   ["startups", "category", "VARCHAR(120) NULL"],
 
+  ["researchers", "field", "VARCHAR(150) NULL"],
+  ["researchers", "affiliation", "VARCHAR(250) NULL"],
+  ["researchers", "updated_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
+
   ["publications", "field", "VARCHAR(150) NULL"],
   ["publications", "publication_year", "YEAR NULL"],
 ];
 
-async function columnExists(table, column) {
+async function exists(type, name) {
   const [rows] = await pool.execute(
-    `SELECT COUNT(*) AS count
-       FROM information_schema.columns
-      WHERE table_schema = DATABASE()
-        AND table_name = ?
-        AND column_name = ?`,
-    [table, column]
-  );
-  return Number(rows[0].count) > 0;
-}
-
-async function tableExists(table) {
-  const [rows] = await pool.execute(
-    `SELECT COUNT(*) AS count
-       FROM information_schema.tables
-      WHERE table_schema = DATABASE()
-        AND table_name = ?`,
-    [table]
+    type === "table"
+      ? `SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?`
+      : `SELECT COUNT(*) AS count FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?`,
+    type === "table" ? [name] : name
   );
   return Number(rows[0].count) > 0;
 }
@@ -61,27 +49,20 @@ async function tableExists(table) {
 async function run() {
   const [dbRows] = await pool.execute("SELECT DATABASE() AS database_name");
   const databaseName = dbRows[0]?.database_name;
-
-  if (!databaseName) {
-    throw new Error("No database is selected. Check DB_NAME in backend/.env");
-  }
+  if (!databaseName) throw new Error("No database selected. Check DB_NAME in backend/.env");
 
   console.log(`Migrating local database: ${databaseName}`);
 
   for (const [table, column, definition] of migrations) {
-    if (!(await tableExists(table))) {
+    if (!(await exists("table", table))) {
       console.warn(`Skipping ${table}.${column}: table does not exist`);
       continue;
     }
-
-    if (await columnExists(table, column)) {
+    if (await exists("column", [table, column])) {
       console.log(`Already present: ${table}.${column}`);
       continue;
     }
-
-    await pool.execute(
-      `ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`
-    );
+    await pool.execute(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`);
     console.log(`Added: ${table}.${column}`);
   }
 
@@ -93,6 +74,4 @@ run()
     console.error("Demo database migration failed:", error);
     process.exitCode = 1;
   })
-  .finally(async () => {
-    await pool.end();
-  });
+  .finally(() => pool.end());
