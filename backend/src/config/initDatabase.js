@@ -11,13 +11,13 @@ function getConnectionConfig() {
     };
   }
 
-  // Local development
+  // Local Docker MySQL / local development
   return {
-    host: process.env.DB_HOST || "localhost",
+    host: process.env.DB_HOST || "127.0.0.1",
     port: Number(process.env.DB_PORT) || 3306,
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "osta_elearning",
+    database: process.env.DB_NAME || "osta_elearning_platform",
     ssl:
       process.env.DB_SSL === "true"
         ? { rejectUnauthorized: false }
@@ -34,49 +34,39 @@ function getConnectionConfig() {
 function cleanSchema(schema) {
   let cleaned = schema;
 
-  // Remove MariaDB sandbox-mode comments.
   cleaned = cleaned.replace(
     /\/\*M!999999\\- enable the sandbox mode \*\//g,
     ""
   );
 
-  // Remove MariaDB-specific executable comments.
   cleaned = cleaned.replace(
     /\/\*M!\d{5,6}\s+[\s\S]*?\*\/\s*;?/gi,
     ""
   );
 
-  // Convert MySQL versioned executable comments into SQL.
   cleaned = cleaned.replace(
     /\/\*!\d{5,6}\s*([\s\S]*?)\*\/\s*;?/gi,
     "$1;"
   );
 
-  // Remove normal SQL comments.
   cleaned = cleaned.replace(/^\s*--.*$/gm, "");
-
-  // Remove MySQL # comments.
   cleaned = cleaned.replace(/^\s*#.*$/gm, "");
 
-  // Never execute DROP TABLE statements automatically.
   cleaned = cleaned.replace(
     /DROP\s+TABLE\s+IF\s+EXISTS\s+`[^`]+`\s*;\s*/gi,
     ""
   );
 
-  // Remove USE statements.
   cleaned = cleaned.replace(
     /^\s*USE\s+`[^`]+`\s*;\s*$/gim,
     ""
   );
 
-  // Remove CREATE DATABASE statements.
   cleaned = cleaned.replace(
     /CREATE\s+DATABASE\s+IF\s+NOT\s+EXISTS\s+`[^`]+`\s*;\s*/gi,
     ""
   );
 
-  // Remove table locking statements.
   cleaned = cleaned.replace(
     /^\s*LOCK\s+TABLES\s+.*;\s*$/gim,
     ""
@@ -95,10 +85,6 @@ async function initializeDatabase() {
 
   try {
     const config = getConnectionConfig();
-
-    // ------------------------------------------------------------
-    // CONNECT TO DATABASE
-    // ------------------------------------------------------------
 
     if (config.uri) {
       connection = await mysql.createConnection({
@@ -125,10 +111,6 @@ async function initializeDatabase() {
       );
     }
 
-    // ------------------------------------------------------------
-    // CHECK WHETHER DATABASE ALREADY HAS TABLES
-    // ------------------------------------------------------------
-
     const [tables] = await connection.query("SHOW TABLES");
 
     if (tables.length > 0) {
@@ -142,10 +124,6 @@ async function initializeDatabase() {
 
       return;
     }
-
-    // ------------------------------------------------------------
-    // FIND SCHEMA FILE
-    // ------------------------------------------------------------
 
     const schemaPath = path.join(__dirname, "schema.sql");
 
@@ -161,10 +139,6 @@ async function initializeDatabase() {
 
     console.log("Reading database schema...");
 
-    // ------------------------------------------------------------
-    // CLEAN SCHEMA
-    // ------------------------------------------------------------
-
     const schema = cleanSchema(originalSchema);
 
     if (!schema.trim()) {
@@ -174,10 +148,6 @@ async function initializeDatabase() {
     }
 
     console.log("Executing database schema...");
-
-    // ------------------------------------------------------------
-    // EXECUTE SCHEMA
-    // ------------------------------------------------------------
 
     await connection.query(schema);
 
