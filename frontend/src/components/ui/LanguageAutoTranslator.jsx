@@ -1,10 +1,14 @@
 import { useEffect } from "react";
 import { useLanguage } from "@context/LanguageContext";
 
-// Legacy pages still contain literal UI strings. This component is deliberately
-// defensive: it only touches real DOM elements and always keeps the original
-// English value so switching languages never translates an already-translated
-// value.
+/*
+ * OSTA uses one language source of truth: LanguageContext.t().
+ * This helper covers legacy literal UI strings that have not yet been migrated
+ * to t(). It deliberately does NOT use an AI service at runtime: asynchronous
+ * AI translation would cause flicker, mixed languages, and race conditions when
+ * React re-renders. AI can be used to prepare/expand this dictionary, while the
+ * running application remains deterministic and consistent.
+ */
 const EXTRA = {
   am: {
     Books: "መጻሕፍት",
@@ -18,24 +22,7 @@ const EXTRA = {
     Download: "አውርድ",
     "Register to download": "ለማውረድ ይመዝገቡ",
     "Certificate of Completion": "የማጠናቀቂያ ምስክር ወረቀት",
-    "Certificate of completion": "የማጠናቀቂያ ምስክር ወረቀት",
-    "What a completed OSTA course certificate looks like": "የተጠናቀቀ የኦስታ ኮርስ ምስክር ወረቀት ምሳሌ",
     Assignments: "የቤት ስራዎች",
-    "Not Submitted": "አልቀረበም",
-    Submitted: "ቀርቧል",
-    "Late Submission": "ዘግይቶ ቀርቧል",
-    Graded: "ተገምግሟል",
-    Overdue: "ጊዜው አልፏል",
-    Total: "ጠቅላላ",
-    Search: "ፈልግ",
-    "Search assignments...": "የቤት ስራዎችን ፈልግ...",
-    All: "ሁሉም",
-    Loading: "በመጫን ላይ",
-    "Loading your assignments...": "የቤት ስራዎችዎን በመጫን ላይ...",
-    "Unable to load assignments": "የቤት ስራዎችን መጫን አልተቻለም",
-    "Try Again": "እንደገና ይሞክሩ",
-    Refresh: "አድስ",
-    "Refreshing...": "በማደስ ላይ...",
     Students: "ተማሪዎች",
     "My Courses": "ኮርሶቼ",
     "My Students": "ተማሪዎቼ",
@@ -44,7 +31,6 @@ const EXTRA = {
     Lessons: "ትምህርቶች",
     Courses: "ኮርሶች",
     Competitions: "ውድድሮች",
-    Competition: "ውድድር",
     Community: "ማህበረሰብ",
     Research: "ምርምር",
     Publications: "ህትመቶች",
@@ -53,14 +39,6 @@ const EXTRA = {
     Startups: "ጀማሪ ድርጅቶች",
     Ideas: "ሀሳቦች",
     Innovation: "ፈጠራ",
-    "Create Publication": "ህትመት ይፍጠሩ",
-    "New Publication": "አዲስ ህትመት",
-    "Publish Research": "ምርምር ያትሙ",
-    "Write a post": "ጽሁፍ ይጻፉ",
-    "Create Post": "ጽሁፍ ይፍጠሩ",
-    "Join Community": "ማህበረሰቡን ይቀላቀሉ",
-    "View All": "ሁሉንም ይመልከቱ",
-    "View Details": "ዝርዝር ይመልከቱ",
     Submit: "አስገባ",
     Save: "አስቀምጥ",
     Cancel: "ሰርዝ",
@@ -72,13 +50,13 @@ const EXTRA = {
     Previous: "ቀዳሚ",
     Close: "ዝጋ",
     Open: "ክፈት",
+    Search: "ፈልግ",
+    Loading: "በመጫን ላይ",
+    Refresh: "አድስ",
+    "Try Again": "እንደገና ይሞክሩ",
     "No results found.": "ምንም ውጤት አልተገኘም።",
     "No data available": "ምንም መረጃ የለም",
-    "Failed to fetch": "መረጃን ማምጣት አልተቻለም",
     "Failed to load": "መጫን አልተቻለም",
-    Due: "የመጨረሻ ቀን",
-    Max: "ከፍተኛ",
-    pts: "ነጥቦች",
   },
   om: {
     Books: "Kitaabota",
@@ -92,24 +70,7 @@ const EXTRA = {
     Download: "Buusi",
     "Register to download": "Buusuuf galmaa'i",
     "Certificate of Completion": "Ragaa Xumuraa",
-    "Certificate of completion": "Ragaa Xumuraa",
-    "What a completed OSTA course certificate looks like": "Fakkeenya ragaa xumura koorsii OSTA",
     Assignments: "Hojii manaa",
-    "Not Submitted": "Hin dhiyaanne",
-    Submitted: "Dhiyaate",
-    "Late Submission": "Yeroo darbee dhiyaate",
-    Graded: "Qoratame",
-    Overdue: "Yeroon isaa darbe",
-    Total: "Waliigala",
-    Search: "Barbaadi",
-    "Search assignments...": "Hojii mana barbaadi...",
-    All: "Hunda",
-    Loading: "Fe'amaa jira",
-    "Loading your assignments...": "Hojii mana kee fe'amaa jira...",
-    "Unable to load assignments": "Hojii mana fe'uu hin dandeenye",
-    "Try Again": "Irra deebi'ii yaali",
-    Refresh: "Haaromsi",
-    "Refreshing...": "Haaromsaa jira...",
     Students: "Barattoota",
     "My Courses": "Koorsota koo",
     "My Students": "Barattoota koo",
@@ -118,7 +79,6 @@ const EXTRA = {
     Lessons: "Barnoota",
     Courses: "Koorsota",
     Competitions: "Dorgommiiwwan",
-    Competition: "Dorgommii",
     Community: "Hawaasa",
     Research: "Qorannoo",
     Publications: "Maxxansaalee",
@@ -127,14 +87,6 @@ const EXTRA = {
     Startups: "Dhaabbilee haaraa",
     Ideas: "Yaadota",
     Innovation: "Kalaqa",
-    "Create Publication": "Maxxansa uumi",
-    "New Publication": "Maxxansa haaraa",
-    "Publish Research": "Qorannoo maxxansi",
-    "Write a post": "Barreeffama barreessi",
-    "Create Post": "Barreeffama uumi",
-    "Join Community": "Hawaasa seeni",
-    "View All": "Hunda ilaali",
-    "View Details": "Bal'ina ilaali",
     Submit: "Dhiyeessi",
     Save: "Olkaa'i",
     Cancel: "Haqi",
@@ -146,15 +98,18 @@ const EXTRA = {
     Previous: "Kan duraa",
     Close: "Cufi",
     Open: "Bani",
+    Search: "Barbaadi",
+    Loading: "Fe'amaa jira",
+    Refresh: "Haaromsi",
+    "Try Again": "Irra deebi'ii yaali",
     "No results found.": "Bu'aan hin argamne.",
     "No data available": "Daataan hin jiru",
-    "Failed to fetch": "Daataa fiduu hin dandeenye",
     "Failed to load": "Fe'uu hin dandeenye",
-    Due: "Guyyaa xumuraa",
-    Max: "Ol'aanaa",
-    pts: "qabxii",
   },
 };
+
+const originalText = new WeakMap();
+const originalAttributes = new WeakMap();
 
 function translateValue(value, language, t) {
   const extra = EXTRA[language] || {};
@@ -165,9 +120,9 @@ export default function LanguageAutoTranslator() {
   const { language, t } = useLanguage();
 
   useEffect(() => {
-    const translate = () => {
-      if (!document?.body) return;
+    if (typeof document === "undefined" || !document.body) return undefined;
 
+    const translate = () => {
       const walker = document.createTreeWalker(
         document.body,
         NodeFilter.SHOW_TEXT
@@ -186,41 +141,33 @@ export default function LanguageAutoTranslator() {
         if (!trimmed || trimmed.length > 120) continue;
         if (/^(https?:\/\/|\/|[\w.-]+@)/.test(trimmed)) continue;
 
-        // dataset exists on real Element nodes. Guard it anyway because the
-        // translator must never be able to crash the entire React tree.
-        if (!textNode.dataset) continue;
-        if (!textNode.dataset.ostaOriginalText) {
-          textNode.dataset.ostaOriginalText = trimmed;
-        }
+        // Text nodes do not have dataset. WeakMap safely associates the original
+        // English value with the node without mutating React's DOM ownership.
+        if (!originalText.has(textNode)) originalText.set(textNode, trimmed);
+        const source = originalText.get(textNode);
+        const translated = language === "en" ? source : translateValue(source, language, t);
 
-        const original = textNode.dataset.ostaOriginalText;
-        const translated = translateValue(original, language, t);
         if (translated && translated !== trimmed) {
           textNode.nodeValue = current.replace(trimmed, translated);
+        } else if (language === "en" && trimmed !== source) {
+          textNode.nodeValue = current.replace(trimmed, source);
         }
       }
 
       document
         .querySelectorAll("input[placeholder], textarea[placeholder], [aria-label]")
-        .forEach((el) => {
-          if (!el?.dataset) return;
+        .forEach((element) => {
+          if (!originalAttributes.has(element)) originalAttributes.set(element, {});
+          const originals = originalAttributes.get(element);
 
           for (const attr of ["placeholder", "aria-label"]) {
-            const current = el.getAttribute(attr);
+            const current = element.getAttribute(attr);
             if (!current || current.length > 120) continue;
+            if (!originals[attr]) originals[attr] = current;
 
-            const key =
-              attr === "placeholder"
-                ? "ostaOriginalPlaceholder"
-                : "ostaOriginalAriaLabel";
-
-            if (!el.dataset[key]) el.dataset[key] = current;
-
-            const original = el.dataset[key];
-            const translated = translateValue(original, language, t);
-            if (translated && translated !== current) {
-              el.setAttribute(attr, translated);
-            }
+            const source = originals[attr];
+            const translated = language === "en" ? source : translateValue(source, language, t);
+            if (translated && translated !== current) element.setAttribute(attr, translated);
           }
         });
     };
@@ -228,8 +175,6 @@ export default function LanguageAutoTranslator() {
     translate();
 
     const observer = new MutationObserver(() => {
-      // A DOM mutation can occur while React is replacing a node. Never allow
-      // the observer to turn a transient DOM state into an uncaught exception.
       try {
         translate();
       } catch (error) {
