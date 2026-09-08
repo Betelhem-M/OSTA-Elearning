@@ -27,14 +27,11 @@ function getConnectionConfig() {
 }
 
 /**
- * Clean a MariaDB/MySQL dump before sending it to mysql2.
+ * Clean the MariaDB dump before sending it to mysql2.
  *
- * The schema.sql file is a database dump, not a plain application schema.
- * Dump-only comments, session SET statements, USE statements, and DROP TABLE
- * statements are removed so initialization is safe to run on Railway.
- *
- * DROP TABLE statements are intentionally removed so an application restart
- * can never delete existing Railway data.
+ * schema.sql is a MariaDB dump rather than a plain application schema.
+ * We keep useful executable SET statements (especially FOREIGN_KEY_CHECKS),
+ * remove dump-only comments, and never execute DROP TABLE statements.
  */
 function cleanSchema(schema) {
   let cleaned = schema;
@@ -45,14 +42,18 @@ function cleanSchema(schema) {
     ""
   );
 
-  // Remove MySQL/MariaDB executable comments, including version-specific SETs.
+  // Remove MariaDB-specific executable comments that are not needed here.
   cleaned = cleaned.replace(
-    /\/\*!\d{5,6}[\s\S]*?\*\//g,
+    /\/\*M!\d{5,6}\s+[\s\S]*?\*\/\s*;?/gi,
     ""
   );
+
+  // Convert MySQL/MariaDB versioned executable comments into their SQL.
+  // Example: /*!40101 SET NAMES utf8mb4 */; -> SET NAMES utf8mb4;
+  // This preserves important dump settings such as FOREIGN_KEY_CHECKS=0.
   cleaned = cleaned.replace(
-    /\/\*M!\d{5,6}[\s\S]*?\*\//g,
-    ""
+    /\/\*!\d{5,6}\s*([\s\S]*?)\*\/\s*;?/gi,
+    "$1;"
   );
 
   // Remove normal SQL comments beginning with --.
@@ -78,6 +79,11 @@ function cleanSchema(schema) {
     /CREATE\s+DATABASE\s+IF\s+NOT\s+EXISTS\s+`[^`]+`\s*;\s*/gi,
     ""
   );
+
+  // These are dump-only table locking statements and are not needed when
+  // initializing an application schema through mysql2.
+  cleaned = cleaned.replace(/^\s*LOCK\s+TABLES\s+.*;\s*$/gim, "");
+  cleaned = cleaned.replace(/^\s*UNLOCK\s+TABLES\s*;\s*$/gim, "");
 
   return cleaned.trim();
 }
