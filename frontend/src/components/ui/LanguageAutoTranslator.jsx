@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { useLanguage } from "@context/LanguageContext";
 
-// Legacy pages still contain literal UI strings. Keep one immutable source
-// value for every node so switching EN -> AM -> OM never translates a
-// previously translated value a second time.
+// Legacy pages still contain literal UI strings. This component is deliberately
+// defensive: it only touches real DOM elements and always keeps the original
+// English value so switching languages never translates an already-translated
+// value.
 const EXTRA = {
   am: {
     Books: "መጻሕፍት",
@@ -19,8 +20,6 @@ const EXTRA = {
     "Certificate of Completion": "የማጠናቀቂያ ምስክር ወረቀት",
     "Certificate of completion": "የማጠናቀቂያ ምስክር ወረቀት",
     "What a completed OSTA course certificate looks like": "የተጠናቀቀ የኦስታ ኮርስ ምስክር ወረቀት ምሳሌ",
-    "Courses": "ኮርሶች",
-    "Only PDF books are supported.": "የPDF መጻሕፍት ብቻ ይደገፋሉ።",
     Assignments: "የቤት ስራዎች",
     "Not Submitted": "አልቀረበም",
     Submitted: "ቀርቧል",
@@ -43,6 +42,7 @@ const EXTRA = {
     Dashboard: "ዳሽቦርድ",
     Profile: "መገለጫ",
     Lessons: "ትምህርቶች",
+    Courses: "ኮርሶች",
     Competitions: "ውድድሮች",
     Competition: "ውድድር",
     Community: "ማህበረሰብ",
@@ -166,38 +166,77 @@ export default function LanguageAutoTranslator() {
 
   useEffect(() => {
     const translate = () => {
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      if (!document?.body) return;
+
+      const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT
+      );
       const nodes = [];
       let node;
+
       while ((node = walker.nextNode())) nodes.push(node);
 
       for (const textNode of nodes) {
-        if (textNode.parentElement?.closest("script,style,noscript")) continue;
-        const current = textNode.nodeValue;
+        const parent = textNode.parentElement;
+        if (!parent || parent.closest("script,style,noscript")) continue;
+
+        const current = textNode.nodeValue || "";
         const trimmed = current.trim();
         if (!trimmed || trimmed.length > 120) continue;
         if (/^(https?:\/\/|\/|[\w.-]+@)/.test(trimmed)) continue;
-        if (!textNode.dataset.ostaOriginalText) textNode.dataset.ostaOriginalText = trimmed;
+
+        // dataset exists on real Element nodes. Guard it anyway because the
+        // translator must never be able to crash the entire React tree.
+        if (!textNode.dataset) continue;
+        if (!textNode.dataset.ostaOriginalText) {
+          textNode.dataset.ostaOriginalText = trimmed;
+        }
+
         const original = textNode.dataset.ostaOriginalText;
         const translated = translateValue(original, language, t);
-        if (translated !== current) textNode.nodeValue = current.replace(trimmed, translated);
+        if (translated && translated !== trimmed) {
+          textNode.nodeValue = current.replace(trimmed, translated);
+        }
       }
 
-      document.querySelectorAll("input[placeholder], textarea[placeholder], [aria-label]").forEach((el) => {
-        for (const attr of ["placeholder", "aria-label"]) {
-          const current = el.getAttribute(attr);
-          if (!current || current.length > 120) continue;
-          const key = `ostaOriginal${attr === "placeholder" ? "Placeholder" : "AriaLabel"}`;
-          if (!el.dataset[key]) el.dataset[key] = current;
-          const original = el.dataset[key];
-          const translated = translateValue(original, language, t);
-          if (translated !== current) el.setAttribute(attr, translated);
-        }
-      });
+      document
+        .querySelectorAll("input[placeholder], textarea[placeholder], [aria-label]")
+        .forEach((el) => {
+          if (!el?.dataset) return;
+
+          for (const attr of ["placeholder", "aria-label"]) {
+            const current = el.getAttribute(attr);
+            if (!current || current.length > 120) continue;
+
+            const key =
+              attr === "placeholder"
+                ? "ostaOriginalPlaceholder"
+                : "ostaOriginalAriaLabel";
+
+            if (!el.dataset[key]) el.dataset[key] = current;
+
+            const original = el.dataset[key];
+            const translated = translateValue(original, language, t);
+            if (translated && translated !== current) {
+              el.setAttribute(attr, translated);
+            }
+          }
+        });
     };
 
     translate();
-    const observer = new MutationObserver(() => translate());
+
+    const observer = new MutationObserver(() => {
+      // A DOM mutation can occur while React is replacing a node. Never allow
+      // the observer to turn a transient DOM state into an uncaught exception.
+      try {
+        translate();
+      } catch (error) {
+        console.warn("OSTA language translation skipped a transient DOM update.", error);
+      }
+    });
+
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, [language, t]);
