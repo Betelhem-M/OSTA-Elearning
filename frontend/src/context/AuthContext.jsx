@@ -7,14 +7,11 @@ import {
 
 const AuthContext = createContext(null);
 
-// Use the same API URL configuration as services/api.js.
-// Local:
-// VITE_API_URL=https://osta-elearning-production.up.railway.app/api
-//
-// Production:
-// VITE_API_URL=https://your-railway-backend.up.railway.app/api
+// Use the Vite environment variable for both local and production.
+// Local: VITE_API_URL=http://localhost:5000/api
+// Production: set VITE_API_URL to the deployed backend API URL.
 const API_URL =
-  import.meta.env.VITE_API_URL || "https://osta-elearning-production.up.railway.app/api";
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 // =====================================================
 // LOAD SAVED USER
@@ -88,8 +85,6 @@ export function AuthProvider({ children }) {
 
     localStorage.removeItem("osta_user");
     localStorage.removeItem("osta_token");
-
-    // Remove possible legacy token key as well.
     localStorage.removeItem("token");
   }
 
@@ -125,37 +120,16 @@ export function AuthProvider({ children }) {
       throw new Error(data.message || "Login failed");
     }
 
-    // The backend authService.login() returns:
-    //
-    // {
-    //   user: {...},
-    //   token: "..."
-    // }
-    //
     if (!data.token || !data.user) {
       console.error("Invalid login response:", data);
-
-      throw new Error(
-        "Login response is missing user or token."
-      );
+      throw new Error("Login response is missing user or token.");
     }
-
-    // ===================================================
-    // STORE AUTHENTICATION
-    // ===================================================
 
     setUser(data.user);
     setToken(data.token);
 
-    localStorage.setItem(
-      "osta_user",
-      JSON.stringify(data.user)
-    );
-
+    localStorage.setItem("osta_user", JSON.stringify(data.user));
     localStorage.setItem("osta_token", data.token);
-
-    // Remove any old token that might belong to
-    // another authentication implementation.
     localStorage.removeItem("token");
 
     return data.user;
@@ -187,33 +161,21 @@ export function AuthProvider({ children }) {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error(
-        data.message || "Registration failed"
-      );
+      throw new Error(data.message || "Registration failed");
     }
 
     if (!data.user) {
       console.error("Invalid registration response:", data);
-
-      throw new Error(
-        "Registration response is missing user."
-      );
+      throw new Error("Registration response is missing user.");
     }
 
-    // The backend currently returns a token after registration.
-    // Store it if available so the authentication state remains
-    // consistent with login.
     if (data.token) {
       setToken(data.token);
       localStorage.setItem("osta_token", data.token);
     }
 
     setUser(data.user);
-
-    localStorage.setItem(
-      "osta_user",
-      JSON.stringify(data.user)
-    );
+    localStorage.setItem("osta_user", JSON.stringify(data.user));
 
     return data.user;
   }
@@ -228,11 +190,7 @@ export function AuthProvider({ children }) {
     }
 
     setUser(updatedUser);
-
-    localStorage.setItem(
-      "osta_user",
-      JSON.stringify(updatedUser)
-    );
+    localStorage.setItem("osta_user", JSON.stringify(updatedUser));
   }
 
   // =====================================================
@@ -253,14 +211,11 @@ export function AuthProvider({ children }) {
         user,
         setUser,
         updateUser,
-
         token,
         setToken,
-
         login,
         register,
         logout,
-
         isAuthenticated,
       }}
     >
@@ -277,11 +232,8 @@ export function useAuth() {
   const context = useContext(AuthContext);
 
   if (!context) {
-    throw new Error(
-      "useAuth must be used within AuthProvider"
-    );
+    throw new Error("useAuth must be used within AuthProvider");
   }
 
   return context;
 }
-
