@@ -9,20 +9,12 @@ function getTransporter() {
 
   transporter = nodemailer.createTransport({
     service: "gmail",
-
-    // Gmail's secure SMTP connection.
-    // Nodemailer configures Gmail's SMTP host/port automatically.
     secure: true,
-
     port: 465,
-
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
-
-    // Fail reasonably quickly instead of leaving
-    // Forgot Password stuck for a long time.
     connectionTimeout: 15000,
     greetingTimeout: 15000,
     socketTimeout: 20000,
@@ -31,12 +23,14 @@ function getTransporter() {
   return transporter;
 }
 
-async function sendEmail({
-  to,
-  subject,
-  html,
-  text,
-}) {
+async function sendEmail({ to, subject, html, text }) {
+  // Local/demo mode: skip SMTP completely.
+  // Registration verification is handled with the fixed demo code 123456.
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`Demo mode: email skipped for ${to}`);
+    return { demoMode: true };
+  }
+
   if (!process.env.SMTP_USER) {
     throw new Error("SMTP_USER must be configured");
   }
@@ -47,10 +41,7 @@ async function sendEmail({
 
   try {
     const result = await getTransporter().sendMail({
-      from:
-        process.env.SMTP_FROM ||
-        process.env.SMTP_USER,
-
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to,
       subject,
       text,
@@ -79,34 +70,13 @@ async function sendEmail({
 async function sendVerificationCode(to, code) {
   return sendEmail({
     to,
-
     subject: "Verify your OSTA E-Learning account",
-
     text: `Your OSTA verification code is ${code}. It expires in 15 minutes.`,
-
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
         <h2>Verify your OSTA E-Learning account</h2>
-
-        <p>Your verification code is:</p>
-
-        <div
-          style="
-            font-size: 32px;
-            font-weight: bold;
-            letter-spacing: 8px;
-            margin: 20px 0;
-          "
-        >
-          ${code}
-        </div>
-
+        <p>Your OSTA verification code is <strong>${code}</strong>.</p>
         <p>This code expires in 15 minutes.</p>
-
-        <p>
-          If you did not create an OSTA E-Learning account,
-          you can safely ignore this email.
-        </p>
       </div>
     `,
   });
@@ -115,34 +85,13 @@ async function sendVerificationCode(to, code) {
 async function sendPasswordResetCode(to, code) {
   return sendEmail({
     to,
-
     subject: "OSTA E-Learning password reset code",
-
     text: `Your OSTA password reset code is ${code}. It expires in 15 minutes.`,
-
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
         <h2>Reset your OSTA E-Learning password</h2>
-
-        <p>Your password reset code is:</p>
-
-        <div
-          style="
-            font-size: 32px;
-            font-weight: bold;
-            letter-spacing: 8px;
-            margin: 20px 0;
-          "
-        >
-          ${code}
-        </div>
-
+        <p>Your password reset code is <strong>${code}</strong>.</p>
         <p>This code expires in 15 minutes.</p>
-
-        <p>
-          If you did not request a password reset,
-          you can safely ignore this email.
-        </p>
       </div>
     `,
   });
