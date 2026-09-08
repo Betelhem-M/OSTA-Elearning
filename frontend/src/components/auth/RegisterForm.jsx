@@ -82,7 +82,7 @@ export default function RegisterForm() {
     if (hasErrors) return;
 
     try {
-      const registeredUser = await register({
+      await register({
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
@@ -108,6 +108,10 @@ export default function RegisterForm() {
     setErrors((prev) => ({ ...prev, form: message }));
   }
 
+  const pendingVerificationMessage =
+    typeof errors.form === "string" &&
+    errors.form.toLowerCase().includes("already registered but not verified");
+
   return (
     <div className="mx-auto w-full max-w-[520px]">
       <h2 className="text-2xl font-extrabold text-ink">
@@ -115,7 +119,7 @@ export default function RegisterForm() {
       </h2>
 
       <p className="mt-2 text-sm text-slate-500">
-        {t('Already have an account?')}{" "}
+        {t('Already have an account?')} {" "}
         <Link
           to="/login"
           className="font-bold text-primary underline decoration-primary-light underline-offset-4 hover:text-primary-dark"
@@ -150,338 +154,116 @@ export default function RegisterForm() {
       <form className="space-y-5" onSubmit={handleSubmit} noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label
-              htmlFor="firstName"
-              className="mb-2 block text-sm font-bold text-ink"
-            >
+            <label htmlFor="firstName" className="mb-2 block text-sm font-bold text-ink">
               {t('First Name')} <em className="not-italic text-primary">*</em>
             </label>
-
             <div className="relative">
-              <User
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-
-              <input
-                id="firstName"
-                type="text"
-                placeholder="e.g. Hana"
-                value={form.firstName}
-                onChange={(e) => updateField("firstName", e.target.value)}
-                className={`h-11 w-full rounded-md border bg-white pl-10 pr-3 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${
-                  errors.firstName ? "border-red-500" : "border-slate-300"
-                }`}
-              />
+              <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input id="firstName" type="text" placeholder="e.g. Hana" value={form.firstName} onChange={(e) => updateField("firstName", e.target.value)} className={`h-11 w-full rounded-md border bg-white pl-10 pr-3 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${errors.firstName ? "border-red-500" : "border-slate-300"}`} />
             </div>
-
-            {errors.firstName && (
-              <span className="mt-1.5 block text-xs font-semibold text-red-600">
-                {errors.firstName}
-              </span>
-            )}
+            {errors.firstName && <span className="mt-1.5 block text-xs font-semibold text-red-600">{errors.firstName}</span>}
           </div>
 
           <div>
-            <label
-              htmlFor="lastName"
-              className="mb-2 block text-sm font-bold text-ink"
-            >
+            <label htmlFor="lastName" className="mb-2 block text-sm font-bold text-ink">
               {t('Last Name')} <em className="not-italic text-primary">*</em>
             </label>
-
-            <input
-              id="lastName"
-              type="text"
-              placeholder="e.g. Bekele"
-              value={form.lastName}
-              onChange={(e) => updateField("lastName", e.target.value)}
-              className={`h-11 w-full rounded-md border bg-white px-3 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${
-                errors.lastName ? "border-red-500" : "border-slate-300"
-              }`}
-            />
-
-            {errors.lastName && (
-              <span className="mt-1.5 block text-xs font-semibold text-red-600">
-                {errors.lastName}
-              </span>
-            )}
+            <input id="lastName" type="text" placeholder="e.g. Bekele" value={form.lastName} onChange={(e) => updateField("lastName", e.target.value)} className={`h-11 w-full rounded-md border bg-white px-3 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${errors.lastName ? "border-red-500" : "border-slate-300"}`} />
+            {errors.lastName && <span className="mt-1.5 block text-xs font-semibold text-red-600">{errors.lastName}</span>}
           </div>
         </div>
 
         <div>
-          <label
-            htmlFor="email"
-            className="mb-2 block text-sm font-bold text-ink"
-          >
+          <label htmlFor="email" className="mb-2 block text-sm font-bold text-ink">
             {t('Email')} <em className="not-italic text-primary">*</em>
           </label>
-
           <div className="relative">
-            <Mail
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-
-            <input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              value={form.email}
-              onChange={(e) => updateField("email", e.target.value)}
-              className={`h-11 w-full rounded-md border bg-white pl-10 pr-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${
-                errors.email ? "border-red-500" : "border-slate-300"
-              }`}
-            />
+            <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input id="email" type="email" placeholder="you@example.com" value={form.email} onChange={(e) => updateField("email", e.target.value)} className={`h-11 w-full rounded-md border bg-white pl-10 pr-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${errors.email ? "border-red-500" : "border-slate-300"}`} />
           </div>
-
-          {errors.email && (
-            <span className="mt-1.5 block text-xs font-semibold text-red-600">
-              {errors.email}
-            </span>
-          )}
+          {errors.email && <span className="mt-1.5 block text-xs font-semibold text-red-600">{errors.email}</span>}
         </div>
 
         <div>
-          <label
-            htmlFor="phone"
-            className="mb-2 block text-sm font-bold text-ink"
-          >
+          <label htmlFor="phone" className="mb-2 block text-sm font-bold text-ink">
             {t('Phone')} <em className="not-italic text-primary">*</em>
           </label>
-
           <div className="relative">
-            <Phone
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-
-            <input
-              id="phone"
-              type="tel"
-              placeholder="+251 9•• ••• ••••"
-              value={form.phone}
-              onChange={(e) => updateField("phone", e.target.value)}
-              className={`h-11 w-full rounded-md border bg-white pl-10 pr-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${
-                errors.phone ? "border-red-500" : "border-slate-300"
-              }`}
-            />
+            <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input id="phone" type="tel" placeholder="+251 9•• ••• ••••" value={form.phone} onChange={(e) => updateField("phone", e.target.value)} className={`h-11 w-full rounded-md border bg-white pl-10 pr-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${errors.phone ? "border-red-500" : "border-slate-300"}`} />
           </div>
-
-          {errors.phone && (
-            <span className="mt-1.5 block text-xs font-semibold text-red-600">
-              {errors.phone}
-            </span>
-          )}
+          {errors.phone && <span className="mt-1.5 block text-xs font-semibold text-red-600">{errors.phone}</span>}
         </div>
 
         <div>
-          <label
-            htmlFor="region"
-            className="mb-2 block text-sm font-bold text-ink"
-          >
+          <label htmlFor="region" className="mb-2 block text-sm font-bold text-ink">
             {t('Region')} <em className="not-italic text-primary">*</em>
           </label>
-
           <div className="relative">
-            <MapPin
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-
-            <select
-              id="region"
-              value={form.region}
-              onChange={(e) => updateField("region", e.target.value)}
-              className={`h-11 w-full appearance-none rounded-md border bg-white pl-10 pr-9 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 ${
-                errors.region ? "border-red-500" : "border-slate-300"
-              }`}
-            >
+            <MapPin size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <select id="region" value={form.region} onChange={(e) => updateField("region", e.target.value)} className={`h-11 w-full appearance-none rounded-md border bg-white pl-10 pr-9 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 ${errors.region ? "border-red-500" : "border-slate-300"}`}>
               <option value="">{t('Select your region')}</option>
-
-              {REGIONS.map((r) => (
-                <option key={r} value={r}>
-                  {t(r)}
-                </option>
-              ))}
+              {REGIONS.map((r) => <option key={r} value={r}>{t(r)}</option>)}
             </select>
           </div>
-
-          {errors.region && (
-            <span className="mt-1.5 block text-xs font-semibold text-red-600">
-              {errors.region}
-            </span>
-          )}
+          {errors.region && <span className="mt-1.5 block text-xs font-semibold text-red-600">{errors.region}</span>}
         </div>
 
         <div>
-          <label
-            htmlFor="password"
-            className="mb-2 block text-sm font-bold text-ink"
-          >
+          <label htmlFor="password" className="mb-2 block text-sm font-bold text-ink">
             {t('Password')} <em className="not-italic text-primary">*</em>
           </label>
-
           <div className="relative">
-            <Lock
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-
-            <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              placeholder={t('Enter your password')}
-              value={form.password}
-              onChange={(e) => updateField("password", e.target.value)}
-              className={`h-11 w-full rounded-md border bg-white pl-10 pr-11 text-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${
-                errors.password ? "border-red-500" : "border-slate-300"
-              }`}
-            />
-
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? t('Hide password') : t('Show password')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary"
-            >
+            <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input id="password" type={showPassword ? "text" : "password"} placeholder={t('Enter your password')} value={form.password} onChange={(e) => updateField("password", e.target.value)} className={`h-11 w-full rounded-md border bg-white pl-10 pr-11 text-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${errors.password ? "border-red-500" : "border-slate-300"}`} />
+            <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? t('Hide password') : t('Show password')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary">
               {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
             </button>
           </div>
-
-          {errors.password && (
-            <span className="mt-1.5 block text-xs font-semibold text-red-600">
-              {errors.password}
-            </span>
-          )}
-
+          {errors.password && <span className="mt-1.5 block text-xs font-semibold text-red-600">{errors.password}</span>}
           {form.password && (
-            <div
-              className="-mt-1 mt-3"
-              aria-label={`Password strength: ${strength.label}`}
-            >
+            <div className="-mt-1 mt-3" aria-label={`Password strength: ${strength.label}`}>
               <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-primary-light">
-                <div
-                  className={`h-full rounded-full transition-all ${strength.color}`}
-                  style={{ width: strength.width }}
-                />
+                <div className={`h-full rounded-full transition-all ${strength.color}`} style={{ width: strength.width }} />
               </div>
-
-              <div className="flex justify-between text-[11px] font-bold text-slate-500">
-                <span>{t('Weak')}</span>
-                <span>{t('Good')}</span>
-                <span>{t('Strong')}</span>
-              </div>
+              <div className="flex justify-between text-[11px] font-bold text-slate-500"><span>{t('Weak')}</span><span>{t('Good')}</span><span>{t('Strong')}</span></div>
             </div>
           )}
         </div>
 
         <div>
-          <label
-            htmlFor="confirmPassword"
-            className="mb-2 block text-sm font-bold text-ink"
-          >
+          <label htmlFor="confirmPassword" className="mb-2 block text-sm font-bold text-ink">
             {t('Confirm Password')} <em className="not-italic text-primary">*</em>
           </label>
-
           <div className="relative">
-            <Lock
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-
-            <input
-              id="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-              placeholder={t('Confirm Password')}
-              value={form.confirmPassword}
-              onChange={(e) =>
-                updateField("confirmPassword", e.target.value)
-              }
-              className={`h-11 w-full rounded-md border bg-white pl-10 pr-11 text-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${
-                errors.confirmPassword
-                  ? "border-red-500"
-                  : "border-slate-300"
-              }`}
-            />
-
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword((v) => !v)}
-              aria-label={
-                showConfirmPassword
-                  ? t('Hide confirmation password')
-                  : t('Show confirmation password')
-              }
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary"
-            >
-              {showConfirmPassword ? (
-                <EyeOff size={17} />
-              ) : (
-                <Eye size={17} />
-              )}
+            <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder={t('Confirm Password')} value={form.confirmPassword} onChange={(e) => updateField("confirmPassword", e.target.value)} className={`h-11 w-full rounded-md border bg-white pl-10 pr-11 text-sm outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/15 ${errors.confirmPassword ? "border-red-500" : "border-slate-300"}`} />
+            <button type="button" onClick={() => setShowConfirmPassword((v) => !v)} aria-label={showConfirmPassword ? t('Hide confirmation password') : t('Show confirmation password')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary">
+              {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
             </button>
           </div>
-
-          {errors.confirmPassword && (
-            <span className="mt-1.5 block text-xs font-semibold text-red-600">
-              {errors.confirmPassword}
-            </span>
-          )}
+          {errors.confirmPassword && <span className="mt-1.5 block text-xs font-semibold text-red-600">{errors.confirmPassword}</span>}
         </div>
 
         <div className="space-y-3">
           <label className="flex items-start gap-3 text-sm leading-5 text-slate-600">
-            <input
-              type="checkbox"
-              checked={agreedToTerms}
-              onChange={(e) => setAgreedToTerms(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-primary"
-            />
-
-            <span>
-              {t('I agree to the terms')} {" "}
-              <a
-                href="#terms"
-                className="font-bold text-primary hover:underline"
-              >
-                {t('Terms of Service')}
-              </a>{" "}
-              {t('and')} {" "}
-              <a
-                href="#privacy"
-                className="font-bold text-primary hover:underline"
-              >
-                {t('Privacy Policy')}
-              </a>
-            </span>
+            <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
+            <span>{t('I agree to the terms')} {" "}<a href="#terms" className="font-bold text-primary hover:underline">{t('Terms of Service')}</a>{" "}{t('and')} {" "}<a href="#privacy" className="font-bold text-primary hover:underline">{t('Privacy Policy')}</a></span>
           </label>
-
-          {errors.terms && (
-            <span className="block text-xs font-semibold text-red-600">
-              {errors.terms}
-            </span>
-          )}
-
+          {errors.terms && <span className="block text-xs font-semibold text-red-600">{errors.terms}</span>}
           <label className="flex items-start gap-3 text-sm leading-5 text-slate-600">
-            <input
-              type="checkbox"
-              checked={subscribeNewsletter}
-              onChange={(e) => setSubscribeNewsletter(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-primary"
-            />
-
-            <span>
-              {t('Subscribe me to OSTA learning news and opportunities')}{" "}
-              <span className="text-slate-400">{t('(optional)')}</span>
-            </span>
+            <input type="checkbox" checked={subscribeNewsletter} onChange={(e) => setSubscribeNewsletter(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
+            <span>{t('Subscribe me to OSTA learning news and opportunities')} <span className="text-slate-400">{t('(optional)')}</span></span>
           </label>
         </div>
 
         {errors.form && (
-          <p className="text-sm font-semibold text-red-600">
+          <div className="text-sm font-semibold text-red-600">
             {errors.form}
-          </p>
+            {pendingVerificationMessage && (
+              <>{" "}<Link to={`/verify-email?email=${encodeURIComponent(form.email)}`} className="font-bold text-primary underline underline-offset-2 hover:text-primary-dark">here</Link></>
+            )}
+          </div>
         )}
 
         <Button type="submit" variant="primary" className="h-12 w-full">
@@ -491,39 +273,21 @@ export default function RegisterForm() {
 
       <div className="mt-6 flex items-center gap-3">
         <div className="h-px flex-1 bg-slate-200" />
-
-        <span className="text-xs font-semibold text-slate-400">
-          {t('Or register with')}
-        </span>
-
+        <span className="text-xs font-semibold text-slate-400">{t('Or register with')}</span>
         <div className="h-px flex-1 bg-slate-200" />
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          onClick={() => handleSocialClick("Google")}
-          aria-label="Register with Google"
-          title="Register with Google"
-          className="flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 text-sm font-bold text-ink transition hover:border-primary hover:bg-surface"
-        >
+        <button type="button" onClick={() => handleSocialClick("Google")} aria-label="Register with Google" title="Register with Google" className="flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 text-sm font-bold text-ink transition hover:border-primary hover:bg-surface">
           <span className="font-extrabold text-primary">G</span>
         </button>
-
-        <button
-          type="button"
-          onClick={() => handleSocialClick("GitHub")}
-          aria-label="Register with GitHub"
-          title="Register with GitHub"
-          className="flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 text-sm font-bold text-ink transition hover:border-primary hover:bg-surface"
-        >
+        <button type="button" onClick={() => handleSocialClick("GitHub")} aria-label="Register with GitHub" title="Register with GitHub" className="flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 text-sm font-bold text-ink transition hover:border-primary hover:bg-surface">
           <span className="font-extrabold text-ink">GH</span>
         </button>
       </div>
 
       <p className="mt-8 flex items-center justify-center gap-2 text-center text-xs text-slate-400">
-        © {new Date().getFullYear()} OSTA · Oromia Science and Technology
-        Authority
+        © {new Date().getFullYear()} OSTA · Oromia Science and Technology Authority
       </p>
     </div>
   );
