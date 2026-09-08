@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 import SplashScreen from '@components/SplashScreen';
-
 import PublicLayout from '@layouts/PublicLayout';
 import StudentLayout from '@layouts/StudentLayout';
 import StudentAwarePublicLayout from '@layouts/StudentAwarePublicLayout';
@@ -76,9 +75,7 @@ import PrivateQuestions from '@pages/PrivateQuestions';
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
 
-  if (showSplash) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  }
+  if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
 
   return (
     <Routes>
@@ -162,7 +159,6 @@ export default function App() {
         <Route path="/admin/reports" element={<AdminReports />} />
         <Route path="/admin/system" element={<SystemHealth />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
-        <Route path="/admin/reports" element={<AdminReports />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
