@@ -17,6 +17,7 @@ const certificateRoutes = require("./routes/certificateRoutes");
 const discussionRoutes = require("./routes/discussionRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const aiTutorRoutes = require("./routes/aiTutorRoutes");
+const bookRoutes = require("./routes/bookRoutes");
 
 const competitionRoutes = require("./routes/competitionRoutes");
 const innovationRoutes = require("./routes/innovationRoutes");
@@ -40,10 +41,6 @@ const errorMiddleware = require("./middleware/errorMiddleware");
 
 const app = express();
 
-// =====================================================
-// GLOBAL MIDDLEWARE (CORS allows all Vercel & local domains)
-// =====================================================
-
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -54,16 +51,7 @@ app.use(
 );
 
 app.use(express.json());
-
-app.use(
-  express.urlencoded({
-    extended: true,
-  })
-);
-
-// =====================================================
-// HEALTH CHECK
-// =====================================================
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
   res.status(200).json({
@@ -73,270 +61,50 @@ app.get("/", (req, res) => {
   });
 });
 
-// =====================================================
-// STATIC FILES (uploads)
-// =====================================================
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-app.use(
-  "/uploads",
-  express.static(
-    path.join(__dirname, "uploads")
-  )
-);
+app.use("/api/auth", authRoutes);
+app.get("/api/auth/me", authMiddleware, (req, res) => {
+  res.status(200).json({ success: true, user: req.user });
+});
 
-// =====================================================
-// AUTH
-// =====================================================
-
-app.use(
-  "/api/auth",
-  authRoutes
-);
-
-app.get(
-  "/api/auth/me",
-  authMiddleware,
-  (req, res) => {
-    res.status(200).json({
-      success: true,
-      user: req.user,
-    });
-  }
-);
-
-// =====================================================
-// USERS
-// =====================================================
-
-app.use(
-  "/api/users",
-  userRoutes
-);
-
-// =====================================================
-// STUDENT
-// =====================================================
-
-app.use(
-  "/api/student",
-  studentRoutes
-);
-
-// =====================================================
-// COURSES
-// =====================================================
-
-app.use(
-  "/api/courses",
-  courseRoutes
-);
-
-// =====================================================
-// LESSONS
-// =====================================================
-
-app.use(
-  "/api/lessons",
-  lessonRoutes
-);
-
-// =====================================================
-// COURSE SECTIONS
-// =====================================================
-
-app.use(
-  "/api/course-sections",
-  courseSectionRoutes
-);
-
-// =====================================================
-// ENROLLMENTS
-// =====================================================
-
-app.use(
-  "/api/enrollments",
-  enrollmentRoutes
-);
-
-// =====================================================
-// PAYMENTS
-// =====================================================
-
-app.use(
-  "/api/payments",
-  paymentRoutes
-);
-
-app.use(
-  "/api/instructor/payment-accounts",
-  instructorPaymentRoutes
-);
-
-// =====================================================
-// AI TUTOR
-// =====================================================
-
-app.use(
-  "/api/ai-tutor",
-  aiTutorRoutes
-);
-
-// =====================================================
-// PROGRESS
-// =====================================================
-
-app.use(
-  "/api/progress",
-  lessonProgressRoutes
-);
-
-// =====================================================
-// QUIZZES
-// =====================================================
-
+app.use("/api/users", userRoutes);
+app.use("/api/student", studentRoutes);
+app.use("/api/courses", courseRoutes);
+app.use("/api/lessons", lessonRoutes);
+app.use("/api/course-sections", courseSectionRoutes);
+app.use("/api/enrollments", enrollmentRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/instructor/payment-accounts", instructorPaymentRoutes);
+app.use("/api/ai-tutor", aiTutorRoutes);
+app.use("/api/books", bookRoutes);
+app.use("/api/progress", lessonProgressRoutes);
 app.use("/api/quizzes", quizRoutes);
-
-app.use(
-  "/api",
-  quizAttemptRoutes
-);
-
-// =====================================================
-// ASSIGNMENTS
-// =====================================================
-
-app.use(
-  "/api/assignments",
-  assignmentRoutes
-);
-
-// =====================================================
-// CERTIFICATES
-// =====================================================
-
-app.use(
-  "/api/certificates",
-  certificateRoutes
-);
-
-// =====================================================
-// NOTIFICATIONS
-// =====================================================
-
-app.use(
-  "/api/notifications",
-  notificationRoutes
-);
-
-// =====================================================
-// DISCUSSIONS
-// =====================================================
-
-app.use(
-  "/api/discussions",
-  discussionRoutes
-);
-
-// =====================================================
-// EVENTS
-// =====================================================
-
+app.use("/api", quizAttemptRoutes);
+app.use("/api/assignments", assignmentRoutes);
+app.use("/api/certificates", certificateRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/discussions", discussionRoutes);
 app.use("/api/events", eventRoutes);
-
-// =====================================================
-// COMPETITIONS
-// =====================================================
-
-app.use(
-  "/api/competitions",
-  competitionRoutes
-);
-
-// =====================================================
-// HACKATHONS
-// =====================================================
-
-app.use(
-  "/api/hackathons",
-  hackathonRoutes
-);
-
-// =====================================================
-// INNOVATION
-// =====================================================
-
-app.use(
-  "/api/innovation",
-  innovationRoutes
-);
-
-// =====================================================
-// RESEARCH
-// =====================================================
-
+app.use("/api/competitions", competitionRoutes);
+app.use("/api/hackathons", hackathonRoutes);
+app.use("/api/innovation", innovationRoutes);
 app.use("/api/research", researchRoutes);
-
-// =====================================================
-// CATEGORIES
-// =====================================================
-
-app.use(
-  "/api/categories",
-  categoryRoutes
-);
-
-// =====================================================
-// INSTRUCTOR
-// =====================================================
-
-app.use(
-  "/api/instructor",
-  instructorRoutes
-);
-
+app.use("/api/categories", categoryRoutes);
+app.use("/api/instructor", instructorRoutes);
 app.use("/api/instructor", instructorProgressRoutes);
-
-// =====================================================
-// CROSS-CUTTING FEATURES
-// =====================================================
-
 app.use("/api/features", featureRoutes);
 app.use("/api/portal", portalRoutes);
-
-// =====================================================
-// NOTES
-// =====================================================
-
-app.use(
-  "/api/notes",
-  noteRoutes
-);
-
-// =====================================================
-// ADMIN
-// =====================================================
-
-app.use(
-  "/api/admin",
-  adminRoutes
-);
-
-// =====================================================
-// STATIC FRONTEND (if present)
-// =====================================================
+app.use("/api/notes", noteRoutes);
+app.use("/api/admin", adminRoutes);
 
 const publicPath = path.join(__dirname, "..", "public");
 if (fs.existsSync(publicPath)) {
   app.use(express.static(publicPath));
-
   app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(path.join(publicPath, "index.html"));
   });
 }
-
-// =====================================================
-// 404 HANDLER
-// =====================================================
 
 app.use((req, res) => {
   res.status(404).json({
@@ -344,10 +112,6 @@ app.use((req, res) => {
     message: `Route not found: ${req.method} ${req.originalUrl}`,
   });
 });
-
-// =====================================================
-// GLOBAL ERROR HANDLER
-// =====================================================
 
 app.use(errorMiddleware);
 
