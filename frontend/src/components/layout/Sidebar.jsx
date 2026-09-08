@@ -2,6 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import * as Icons from "lucide-react";
 import { X } from "lucide-react";
 import { useLanguage } from "@context/LanguageContext";
+import { useAuth } from "@context/AuthContext";
+import { getDashboardPath } from "@constants/roles";
 
 const sidebarTranslations = {
   en: { "AI Tutor": "AI Tutor" },
@@ -18,6 +20,8 @@ export default function Sidebar({
 }) {
   const location = useLocation();
   const { language } = useLanguage();
+  const { user } = useAuth();
+  const dashboardPath = getDashboardPath(user?.role, user?.account_type);
 
   function isItemActive(href) {
     if (!href) {
@@ -44,8 +48,6 @@ export default function Sidebar({
 
   return (
     <>
-      {/* MOBILE OVERLAY */}
-
       {isOpen && (
         <div
           className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
@@ -54,8 +56,6 @@ export default function Sidebar({
         />
       )}
 
-      {/* SIDEBAR */}
-
       <aside
         className={`fixed left-0 top-0 z-40 flex h-full w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-200 lg:translate-x-0 ${
           isOpen
@@ -63,12 +63,20 @@ export default function Sidebar({
             : "-translate-x-full"
         }`}
       >
-        {/* BRAND */}
-
         <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-extrabold text-white">
-            {title?.[0] || "O"}
-          </div>
+          <Link
+            to={dashboardPath}
+            onClick={onClose}
+            aria-label="OSTA dashboard"
+            title="OSTA dashboard"
+            className="flex h-10 w-10 shrink-0 items-center justify-center"
+          >
+            <img
+              src="/assets/osta-logo.svg"
+              alt="OSTA"
+              className="h-10 w-10 object-contain"
+            />
+          </Link>
 
           <div className="min-w-0">
             <p className="truncate text-sm font-extrabold tracking-wide text-ink">
@@ -90,17 +98,11 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* NAVIGATION */}
-
         <nav className="flex-1 overflow-y-auto px-4 py-6">
           <div className="space-y-1">
             {navItems.map((item) => {
-              const Icon =
-                Icons[item.icon] ||
-                Icons.Circle;
-
-              const isActive =
-                isItemActive(item.href);
+              const Icon = Icons[item.icon] || Icons.Circle;
+              const isActive = isItemActive(item.href);
 
               return (
                 <Link
