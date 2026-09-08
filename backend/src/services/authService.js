@@ -49,7 +49,7 @@ function generateCode() {
 
 // Local-development verification code.
 // Set DEV_EMAIL_VERIFICATION_BYPASS=true in the local backend .env
-// to allow 123456 for every email without requiring SMTP.
+// to allow the demo verification flow without requiring SMTP.
 function isLocalVerificationBypassEnabled() {
   return (
     process.env.NODE_ENV !== "production" &&
@@ -95,7 +95,7 @@ const authService = {
 
         throw new Error(
           isLocalVerificationBypassEnabled()
-            ? "This email is already registered but not verified. Use verification code 123456."
+            ? "This email is already registered but not verified. Please complete email verification to continue."
             : "This email is already registered but not verified. A new verification code has been sent."
         );
       }
@@ -150,7 +150,7 @@ const authService = {
     return {
       user,
       message: isLocalVerificationBypassEnabled()
-        ? "Registration successful. Use verification code 123456 to verify your email."
+        ? "Registration successful. Please verify your email to continue."
         : "Registration successful. A verification code has been sent to your email.",
     };
   },
@@ -277,7 +277,7 @@ const authService = {
 
     return {
       message: isLocalVerificationBypassEnabled()
-        ? "Use verification code 123456."
+        ? "A new verification code has been generated. Please enter it to continue."
         : "A new verification code has been sent.",
     };
   },
