@@ -34,6 +34,9 @@ const migrations = [
 
   ["publications", "field", "VARCHAR(150) NULL"],
   ["publications", "publication_year", "YEAR NULL"],
+
+  // Lessons use resource_url in the current seed script and lesson viewer.
+  ["lessons", "resource_url", "VARCHAR(1000) NULL"],
 ];
 
 async function exists(type, name) {
