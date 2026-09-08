@@ -1,7 +1,9 @@
 import axios from "axios";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+// One source of truth for every frontend API call. Local demo uses the local
+// Express server; production can override this with VITE_API_URL.
+export const API_BASE_URL =
+  (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -10,52 +12,28 @@ const api = axios.create({
   },
 });
 
-// =====================================================
-// ATTACH JWT TOKEN
-// =====================================================
+function getToken() {
+  return localStorage.getItem("osta_token") || localStorage.getItem("token");
+}
 
 api.interceptors.request.use(
   (config) => {
-    const token =
-      localStorage.getItem("osta_token") ||
-      localStorage.getItem("token");
-
+    const token = getToken();
     if (token) {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
-
-      console.log(
-        "🔐 Authorization header attached:",
-        `${token.substring(0, 20)}...`
-      );
-    } else {
-      console.warn("⚠️ No authentication token found.");
     }
-
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// =====================================================
-// RESPONSE ERROR HANDLING
-// =====================================================
-
 api.interceptors.response.use(
   (response) => response,
-
   (error) => {
-    const status = error?.response?.status;
-    const data = error?.response?.data;
-
-    if (status === 401) {
-      console.error("❌ Authentication required:", data);
+    if (error?.response?.status === 401) {
+      console.warn("Authentication required for API request.");
     }
-
-    if (status === 403) {
-      console.error("❌ Permission denied:", data);
-    }
-
     return Promise.reject(error);
   }
 );
@@ -68,48 +46,27 @@ export async function apiRequest(endpoint, options = {}) {
     includeAuth = true,
   } = options;
 
-  const token =
-    providedToken ||
-    (includeAuth
-      ? localStorage.getItem("osta_token") ||
-        localStorage.getItem("token")
-      : null);
-
+  const token = providedToken || (includeAuth ? getToken() : null);
   const headers = {};
 
-  if (body !== undefined) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  if (token && includeAuth) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (token && includeAuth) headers.Authorization = `Bearer ${token}`;
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method,
     headers,
     credentials: "include",
-    ...(body !== undefined
-      ? {
-          body: JSON.stringify(body),
-        }
-      : {}),
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     const error = new Error(
-      data.message ||
-        `Request failed with status ${response.status}`
+      data.message || `Request failed with status ${response.status}`
     );
-
     error.status = response.status;
-    error.response = {
-      status: response.status,
-      data,
-    };
-
+    error.response = { status: response.status, data };
     throw error;
   }
 
