@@ -1,5 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 313" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" role="img" aria-labelledby="title desc">
 <title id="title">OSTA logo</title>
 <desc id="desc">OSTA education, innovation and technology logo</desc>
-<image width="320" height="313" preserveAspectRatio="xMidYMid meet" href="data:image/webp;base64,UklGRq8mAABXRUJQVlA4WAoAAAAQAAAAyAAAygAAQUxQSBsAAAABJRU5ErkJggg=="/>
+<defs>
+  <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#0b5d2a"/>
+    <stop offset="1" stop-color="#145f2b"/>
+  </linearGradient>
+  <linearGradient id="shadow" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#8ea8ff" stop-opacity=".15"/>
+    <stop offset="1" stop-color="#5274ff" stop-opacity=".9"/>
+  </linearGradient>
+</defs>
+<circle cx="240" cy="257" r="145" fill="url(#shadow)" opacity=".9"/>
+<circle cx="240" cy="235" r="142" fill="url(#ring)"/>
+<path d="M142 210c0-43 29-74 61-74h25v111c-18-17-37-26-61-26h-25z" fill="#fff"/>
+<path d="M228 136c25-32 51-49 91-67v184c-34-15-62-12-91 13V136z" fill="#fff"/>
+<path d="M228 136c25-32 51-49 91-67v184c-34-15-62-12-91 13V136z" fill="none" stroke="#0b5d2a" stroke-width="8"/>
+<path d="M142 210c0-43 29-74 61-74h25v111c-18-17-37-26-61-26h-25z" fill="none" stroke="#0b5d2a" stroke-width="8"/>
+<circle cx="288" cy="236" r="73" fill="#fff"/>
+<g stroke="#163be8" stroke-width="4" fill="none" opacity=".95">
+  <path d="M252 176v120M267 166v140M282 164v144M297 169v136M312 178v116"/>
+  <path d="M236 194h104M228 210h112M226 226h120M226 242h120M230 258h116M238 274h100"/>
+  <path d="M248 190l-12-12m12 12h18m-30 62l-12 12m92-69l15-14m-15 14h-18m22 53l15 13m-15-13h-17"/>
+</g>
+<path d="M288 191l10 27 28 1-22 17 8 28-24-15-24 15 8-28-22-17 28-1z" fill="#1539e8"/>
+<path d="M288 202l6 17 18 1-14 10 5 18-15-10-15 10 5-18-14-10 18-1z" fill="#fff"/>
+<path d="M217 55h46v10h-46zM72 229h48v10H72zM360 229h48v10h-48zM217 391h46v10h-46z" fill="#1539e8"/>
 </svg>
