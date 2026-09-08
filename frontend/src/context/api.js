@@ -10,38 +10,31 @@ const api = axios.create({
   },
 });
 
-// Automatically attach JWT token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("osta_token");
+    const token =
+      localStorage.getItem("osta_token") ||
+      localStorage.getItem("token");
 
     if (token) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
 
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 api.interceptors.response.use(
   (response) => response,
-
   (error) => {
     if (error.response?.status === 401) {
-      console.error(
-        "Authentication failed:",
-        error.response.data
-      );
+      console.error("Authentication failed:", error.response.data);
     }
 
     if (error.response?.status === 403) {
-      console.error(
-        "Permission denied:",
-        error.response.data
-      );
+      console.error("Permission denied:", error.response.data);
     }
 
     return Promise.reject(error);
