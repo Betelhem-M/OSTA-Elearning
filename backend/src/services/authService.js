@@ -47,6 +47,17 @@ function generateCode() {
   return String(crypto.randomInt(100000, 1000000));
 }
 
+// Local-development verification code.
+// Set DEV_EMAIL_VERIFICATION_BYPASS=true in the local backend .env
+// to allow 123456 for every email without requiring SMTP.
+function isLocalVerificationBypassEnabled() {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    String(process.env.DEV_EMAIL_VERIFICATION_BYPASS || "").toLowerCase() ===
+      "true"
+  );
+}
+
 const authService = {
   async register({
     firstName,
@@ -63,25 +74,29 @@ const authService = {
     const existingUser = await User.findByEmail(normalizedEmail);
 
     if (existingUser) {
-      // If the account exists but has not been verified,
-      // allow the user to request a fresh verification code.
       const alreadyVerified = await AuthToken.isVerified(existingUser.id);
 
       if (!alreadyVerified) {
-        const verificationCode = generateCode();
+        const verificationCode = isLocalVerificationBypassEnabled()
+          ? "123456"
+          : generateCode();
 
         await AuthToken.createVerification(
           existingUser.id,
           verificationCode
         );
 
-        await sendVerificationCode(
-          existingUser.email,
-          verificationCode
-        );
+        if (!isLocalVerificationBypassEnabled()) {
+          await sendVerificationCode(
+            existingUser.email,
+            verificationCode
+          );
+        }
 
         throw new Error(
-          "This email is already registered but not verified. A new verification code has been sent."
+          isLocalVerificationBypassEnabled()
+            ? "This email is already registered but not verified. Use verification code 123456."
+            : "This email is already registered but not verified. A new verification code has been sent."
         );
       }
 
@@ -108,17 +123,21 @@ const authService = {
     /*
      * Email verification
      */
-    const verificationCode = generateCode();
+    const verificationCode = isLocalVerificationBypassEnabled()
+      ? "123456"
+      : generateCode();
 
     await AuthToken.createVerification(
       id,
       verificationCode
     );
 
-    await sendVerificationCode(
-      normalizedEmail,
-      verificationCode
-    );
+    if (!isLocalVerificationBypassEnabled()) {
+      await sendVerificationCode(
+        normalizedEmail,
+        verificationCode
+      );
+    }
 
     user.account_type = normalizeAccountType(user.account_type);
 
@@ -130,8 +149,9 @@ const authService = {
      */
     return {
       user,
-      message:
-        "Registration successful. A verification code has been sent to your email.",
+      message: isLocalVerificationBypassEnabled()
+        ? "Registration successful. Use verification code 123456 to verify your email."
+        : "Registration successful. A verification code has been sent to your email.",
     };
   },
 
@@ -197,9 +217,14 @@ const authService = {
       throw new Error("Invalid verification request");
     }
 
+    const codeToVerify =
+      isLocalVerificationBypassEnabled() && verificationCode === "123456"
+        ? "123456"
+        : verificationCode;
+
     const verified = await AuthToken.verifyEmail(
       user.id,
-      verificationCode
+      codeToVerify
     );
 
     if (!verified) {
@@ -234,20 +259,26 @@ const authService = {
       throw new Error("This email is already verified.");
     }
 
-    const verificationCode = generateCode();
+    const verificationCode = isLocalVerificationBypassEnabled()
+      ? "123456"
+      : generateCode();
 
     await AuthToken.createVerification(
       user.id,
       verificationCode
     );
 
-    await sendVerificationCode(
-      user.email,
-      verificationCode
-    );
+    if (!isLocalVerificationBypassEnabled()) {
+      await sendVerificationCode(
+        user.email,
+        verificationCode
+      );
+    }
 
     return {
-      message: "A new verification code has been sent.",
+      message: isLocalVerificationBypassEnabled()
+        ? "Use verification code 123456."
+        : "A new verification code has been sent.",
     };
   },
 
