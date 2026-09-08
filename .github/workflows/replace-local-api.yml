@@ -1,0 +1,49 @@
+name: Replace Railway API URLs with local API
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  replace:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Replace hardcoded Railway API URLs
+        run: |
+          OLD='https://osta-elearning-production.up.railway.app/api'
+          NEW='http://localhost:5000/api'
+          grep -RIl --exclude-dir=node_modules "$OLD" frontend | xargs -r sed -i "s|$OLD|import.meta.env.VITE_API_URL || '$NEW'|g"
+
+          # Normalize the files that received the replacement so declarations remain valid.
+          python3 - <<'PY'
+          from pathlib import Path
+          for path in Path('frontend').rglob('*'):
+              if path.is_file() and path.suffix in {'.js', '.jsx', '.ts', '.tsx'}:
+                  text = path.read_text(encoding='utf-8')
+                  text = text.replace("const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';", "const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';")
+                  path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Remove temporary workflow
+        run: rm -f .github/workflows/replace-local-api.yml
+
+      - name: Commit replacements
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add frontend .github/workflows/replace-local-api.yml
+          if git diff --cached --quiet; then
+            echo 'No Railway API URLs remained.'
+            exit 0
+          fi
+          git commit -m 'Use local API URL across frontend'
+          git push
