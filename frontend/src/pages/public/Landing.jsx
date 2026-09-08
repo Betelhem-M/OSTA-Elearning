@@ -16,228 +16,64 @@ import { Link } from "react-router-dom";
 
 import Button from "@components/ui/Button";
 import CourseCard from "@components/course/CourseCard";
+import CertificateShowcase from "@components/public/CertificateShowcase";
 import { useLanguage } from "@context/LanguageContext";
-
 import { apiRequest } from "@services/api";
 
 const PLATFORM_FEATURES = [
-  {
-    titleKey: "Learn",
-    descriptionKey:
-      "Access courses and build practical technology skills through structured learning.",
-    icon: GraduationCap,
-  },
-  {
-    titleKey: "Innovate",
-    descriptionKey:
-      "Turn ideas into practical projects and connect with an ecosystem built for innovation.",
-    icon: Lightbulb,
-  },
-  {
-    titleKey: "Research",
-    descriptionKey:
-      "Explore research opportunities, publications, and technology-focused work.",
-    icon: FlaskConical,
-  },
-  {
-    titleKey: "Connect",
-    descriptionKey:
-      "Take part in discussions, events, competitions, and the wider OSTA community.",
-    icon: Users,
-  },
+  { titleKey: "Learn", descriptionKey: "Access courses and build practical technology skills through structured learning.", icon: GraduationCap },
+  { titleKey: "Innovate", descriptionKey: "Turn ideas into practical projects and connect with an ecosystem built for innovation.", icon: Lightbulb },
+  { titleKey: "Research", descriptionKey: "Explore research opportunities, publications, and technology-focused work.", icon: FlaskConical },
+  { titleKey: "Connect", descriptionKey: "Take part in discussions, events, competitions, and the wider OSTA community.", icon: Users },
 ];
 
 function normalizeCourse(course) {
-  return {
-    ...course,
-    price:
-      course.price === null ||
-      course.price === undefined
-        ? 0
-        : Number(course.price),
-  };
+  return { ...course, price: course.price === null || course.price === undefined ? 0 : Number(course.price) };
 }
 
 export default function Landing() {
   const { t } = useLanguage();
-  const [courses, setCourses] =
-    useState([]);
+  const [courses, setCourses] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
 
-  const [categories, setCategories] =
-    useState([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [refreshing, setRefreshing] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  // =====================================================
-  // LOAD REAL PUBLIC DATA
-  // =====================================================
-
-  async function loadLandingData({
-    refresh = false,
-  } = {}) {
+  async function loadLandingData({ refresh = false } = {}) {
     try {
-      if (refresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-
+      if (refresh) setRefreshing(true); else setLoading(true);
       setError("");
-
-      const [
-        coursesResponse,
-        categoriesResponse,
-      ] = await Promise.all([
+      const [coursesResponse, categoriesResponse] = await Promise.all([
         apiRequest("/courses"),
         apiRequest("/categories"),
       ]);
-
-      const realCourses =
-        Array.isArray(
-          coursesResponse
-        )
-          ? coursesResponse.map(
-              normalizeCourse
-            )
-          : [];
-
-      const realCategories =
-        Array.isArray(
-          categoriesResponse
-        )
-          ? categoriesResponse
-          : [];
-
-      setCourses(realCourses);
-      setCategories(
-        realCategories
-      );
+      setCourses(Array.isArray(coursesResponse) ? coursesResponse.map(normalizeCourse) : []);
+      setCategories(Array.isArray(categoriesResponse) ? categoriesResponse : []);
     } catch (err) {
-      console.error(
-        "Landing page error:",
-        err
-      );
-
+      console.error("Landing page error:", err);
       setCourses([]);
       setCategories([]);
-
-      setError(
-        err.message ||
-          "We couldn't load the latest OSTA content."
-      );
+      setError(err.message || "We couldn't load the latest OSTA content.");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }
 
-  useEffect(() => {
-    loadLandingData();
-  }, []);
+  useEffect(() => { loadLandingData(); }, []);
 
-  // =====================================================
-  // ONLY PUBLISHED COURSES
-  // =====================================================
-
-  const publishedCourses =
-    useMemo(() => {
-      return courses.filter(
-        (course) =>
-          !course.status ||
-          course.status ===
-            "published"
-      );
-    }, [courses]);
-
-  // =====================================================
-  // FEATURED COURSES
-  // =====================================================
-
-  const featuredCourses =
-    useMemo(() => {
-      return publishedCourses
-        .slice(0, 3);
-    }, [publishedCourses]);
-
-  // =====================================================
-  // CATEGORIES
-  // =====================================================
-
-  const browsableCategories =
-    useMemo(() => {
-      return categories
-        .filter(
-          (category) =>
-            category?.name
-        )
-        .slice(0, 12);
-    }, [categories]);
-
-  // =====================================================
-  // REAL PLATFORM STATISTICS
-  // =====================================================
-
-  const freeCourses =
-    useMemo(() => {
-      return publishedCourses.filter(
-        (course) =>
-          Number(
-            course.price || 0
-          ) === 0
-      ).length;
-    }, [publishedCourses]);
-
-  const instructorCount =
-    useMemo(() => {
-      const instructors =
-        publishedCourses
-          .map(
-            (course) =>
-              course.instructor_id
-          )
-          .filter(Boolean);
-
-      return new Set(
-        instructors
-      ).size;
-    }, [publishedCourses]);
-
-  // =====================================================
-  // HERO STATS
-  // =====================================================
+  const publishedCourses = useMemo(() => courses.filter((course) => !course.status || course.status === "published"), [courses]);
+  const featuredCourses = useMemo(() => publishedCourses.slice(0, 3), [publishedCourses]);
+  const browsableCategories = useMemo(() => categories.filter((category) => category?.name).slice(0, 12), [categories]);
+  const freeCourses = useMemo(() => publishedCourses.filter((course) => Number(course.price || 0) === 0).length, [publishedCourses]);
+  const instructorCount = useMemo(() => new Set(publishedCourses.map((course) => course.instructor_id).filter(Boolean)).size, [publishedCourses]);
 
   const heroStats = [
-    {
-      value:
-        publishedCourses.length,
-      labelKey: "Published courses",
-    },
-    {
-      value:
-        browsableCategories.length,
-      labelKey: "Learning categories",
-    },
-    {
-      value: freeCourses,
-      labelKey: "Free courses",
-    },
-    {
-      value:
-        instructorCount,
-      labelKey: "Course instructors",
-    },
+    { value: publishedCourses.length, labelKey: "Published courses" },
+    { value: browsableCategories.length, labelKey: "Learning categories" },
+    { value: freeCourses, labelKey: "Free courses" },
+    { value: instructorCount, labelKey: "Course instructors" },
   ];
-
-  // =====================================================
-  // LOADING
-  // =====================================================
 
   if (loading) {
     return (
@@ -245,510 +81,56 @@ export default function Landing() {
         <section className="bg-gradient-to-br from-primary-dark via-primary-darker to-primary px-5 py-16 text-white sm:px-10 lg:py-24">
           <div className="mx-auto max-w-[1100px] text-center">
             <div className="mx-auto h-7 w-40 animate-pulse rounded-full bg-white/10" />
-
             <div className="mx-auto mt-6 h-12 max-w-3xl animate-pulse rounded-xl bg-white/10 sm:h-16" />
-
             <div className="mx-auto mt-5 h-16 max-w-xl animate-pulse rounded-xl bg-white/10" />
-
-            <div className="mt-8 flex justify-center gap-3">
-              <div className="h-12 w-40 animate-pulse rounded-lg bg-white/10" />
-
-              <div className="h-12 w-40 animate-pulse rounded-lg bg-white/10" />
-            </div>
+            <div className="mt-8 flex justify-center gap-3"><div className="h-12 w-40 animate-pulse rounded-lg bg-white/10" /><div className="h-12 w-40 animate-pulse rounded-lg bg-white/10" /></div>
           </div>
         </section>
-
-        <div className="mx-auto max-w-[1100px] px-5 py-14 sm:px-10">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({
-              length: 4,
-            }).map((_, index) => (
-              <div
-                key={index}
-                className="h-36 animate-pulse rounded-2xl bg-slate-100"
-              />
-            ))}
-          </div>
-        </div>
+        <div className="mx-auto max-w-[1100px] px-5 py-14 sm:px-10"><div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-36 animate-pulse rounded-2xl bg-slate-100" />)}</div></div>
       </div>
     );
   }
 
   return (
     <div>
-      {/* =================================================
-          HERO
-      ================================================= */}
-
       <section className="bg-gradient-to-br from-primary-dark via-primary-darker to-primary px-5 py-16 text-white sm:px-10 lg:py-24">
         <div className="mx-auto max-w-[1100px] text-center">
-          <span className="inline-flex rounded-full bg-gold/15 px-4 py-1.5 text-xs font-black uppercase tracking-wide text-gold">
-            {t('OSTA Learning & Innovation Platform')}
-          </span>
-
-          <h1 className="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-tight sm:text-5xl">
-            {t('Empowering Oromia through innovation and technology')}
-          </h1>
-
-          <p className="mx-auto mt-5 max-w-xl text-sm leading-6 text-white/80 sm:text-base">
-            {t('Learn practical technology skills, explore research and innovation opportunities, join competitions, attend events, and connect with a growing community of learners and innovators.')}
-          </p>
-
+          <span className="inline-flex rounded-full bg-gold/15 px-4 py-1.5 text-xs font-black uppercase tracking-wide text-gold">{t('OSTA Learning & Innovation Platform')}</span>
+          <h1 className="mx-auto mt-5 max-w-3xl text-3xl font-extrabold leading-tight sm:text-5xl">{t('Empowering Oromia through innovation and technology')}</h1>
+          <p className="mx-auto mt-5 max-w-xl text-sm leading-6 text-white/80 sm:text-base">{t('Learn practical technology skills, explore research and innovation opportunities, join competitions, attend events, and connect with a growing community of learners and innovators.')}</p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button
-              as={Link}
-              to="/register"
-              variant="secondary"
-              className="h-12 px-6"
-            >
-              {t('Get Started Free')}
-            </Button>
-
-            <Button
-              as={Link}
-              to="/courses"
-              variant="outline"
-              className="h-12 border-white/40 px-6 text-white hover:bg-white/10"
-            >
-              {t('Browse Courses')}
-            </Button>
+            <Button as={Link} to="/register" variant="secondary" className="h-12 px-6">{t('Get Started Free')}</Button>
+            <Button as={Link} to="/courses" variant="outline" className="h-12 border-white/40 px-6 text-white hover:bg-white/10">{t('Browse Courses')}</Button>
           </div>
-
-          {/* REAL DATABASE STATS */}
-
           <div className="mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-4">
-            {heroStats.map(
-              (stat) => (
-                <div
-                  key={stat.labelKey}
-                >
-                  <p className="text-2xl font-extrabold sm:text-3xl">
-                    {stat.value}
-                  </p>
-
-                  <p className="mt-1 text-xs text-white/60">
-                    {t(stat.labelKey)}
-                  </p>
-                </div>
-              )
-            )}
+            {heroStats.map((stat) => <div key={stat.labelKey}><p className="text-2xl font-extrabold sm:text-3xl">{stat.value}</p><p className="mt-1 text-xs text-white/60">{t(stat.labelKey)}</p></div>)}
           </div>
         </div>
       </section>
 
-      {/* =================================================
-          ERROR
-      ================================================= */}
-
-      {error && (
-        <section className="mx-auto max-w-[1100px] px-5 pt-6 sm:px-10">
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-amber-100 bg-amber-50 p-4">
-            <div>
-              <p className="text-sm font-bold text-amber-800">
-                {t('Some platform data couldn\'t be loaded')}
-              </p>
-
-              <p className="mt-1 text-xs text-amber-700">
-                {error}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                loadLandingData({
-                  refresh: true,
-                })
-              }
-              disabled={refreshing}
-              className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
-            >
-              <RefreshCw
-                size={14}
-                className={
-                  refreshing
-                    ? "animate-spin"
-                    : ""
-                }
-              />
-
-              {refreshing
-                ? t('Refreshing...')
-                : t('Try Again')}
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* =================================================
-          PLATFORM HIGHLIGHTS
-      ================================================= */}
+      {error && <section className="mx-auto max-w-[1100px] px-5 pt-6 sm:px-10"><div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-amber-100 bg-amber-50 p-4"><div><p className="text-sm font-bold text-amber-800">{t('Some platform data couldn\'t be loaded')}</p><p className="mt-1 text-xs text-amber-700">{error}</p></div><button type="button" onClick={() => loadLandingData({ refresh: true })} disabled={refreshing} className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-60"><RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />{refreshing ? t('Refreshing...') : t('Try Again')}</button></div></section>}
 
       <section className="mx-auto max-w-[1100px] px-5 py-14 sm:px-10">
-        <div className="mb-6">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-            {t('One platform')}
-          </p>
-
-          <h2 className="mt-2 text-xl font-extrabold text-ink sm:text-2xl">
-            {t('Learn, innovate, research, and connect')}
-          </h2>
-
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            {t('OSTA brings the core parts of a technology and innovation ecosystem together in one place.')}
-          </p>
-        </div>
-
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {PLATFORM_FEATURES.map(
-            (item) => {
-              const Icon =
-                item.icon;
-
-              return (
-                <div
-                  key={
-                    item.titleKey
-                  }
-                  className="rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
-                >
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-light text-primary">
-                    <Icon
-                      size={20}
-                    />
-                  </span>
-
-                  <h3 className="mt-4 text-sm font-bold text-ink">
-                    {t(item.titleKey)}
-                  </h3>
-
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    {t(item.descriptionKey)}
-                  </p>
-                </div>
-              );
-            }
-          )}
-        </div>
+        <div className="mb-6"><p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">{t('One platform')}</p><h2 className="mt-2 text-xl font-extrabold text-ink sm:text-2xl">{t('Learn, innovate, research, and connect')}</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">{t('OSTA brings the core parts of a technology and innovation ecosystem together in one place.')}</p></div>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{PLATFORM_FEATURES.map((item) => { const Icon = item.icon; return <div key={item.titleKey} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-light text-primary"><Icon size={20} /></span><h3 className="mt-4 text-sm font-bold text-ink">{t(item.titleKey)}</h3><p className="mt-1 text-xs leading-5 text-slate-500">{t(item.descriptionKey)}</p></div>; })}</div>
       </section>
 
-      {/* =================================================
-          BROWSE BY CATEGORY
-      ================================================= */}
+      <section className="bg-surface px-5 py-12 sm:px-10"><div className="mx-auto max-w-[1100px]"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">{t('Explore')}</p><h2 className="mt-2 text-lg font-bold text-ink">{t('Browse by category')}</h2><p className="mt-1 text-sm text-slate-500">{t('Explore real course categories available on OSTA.')}</p></div><Link to="/courses" className="flex items-center gap-1 text-xs font-bold text-primary hover:underline">{t('View all courses')}<ArrowRight size={13} /></Link></div>{browsableCategories.length > 0 ? <div className="mt-5 flex flex-wrap gap-2">{browsableCategories.map((category) => <Link key={category.id} to={`/courses?category=${encodeURIComponent(category.name)}`} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-primary hover:text-primary">{category.name}</Link>)}</div> : <div className="mt-5 rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center"><Layers3 size={28} className="mx-auto text-slate-300" /><p className="mt-2 text-sm font-semibold text-slate-500">{t('No course categories are available yet.')}</p></div>}</div></section>
 
-      <section className="bg-surface px-5 py-12 sm:px-10">
-        <div className="mx-auto max-w-[1100px]">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-                {t('Explore')}
-              </p>
+      <section className="mx-auto max-w-[1100px] px-5 py-14 sm:px-10"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">{t('Start learning')}</p><h2 className="mt-2 text-lg font-bold text-ink sm:text-xl">{t('Featured Courses')}</h2><p className="mt-1 text-sm text-slate-500">{t('Discover courses currently available on the platform.')}</p></div><Link to="/courses" className="flex items-center gap-1 text-xs font-bold text-primary hover:underline">{t('View all courses')}<ArrowRight size={13} /></Link></div>{featuredCourses.length > 0 ? <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{featuredCourses.map((course) => <CourseCard key={course.id} course={course} />)}</div> : <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center"><BookOpen size={40} className="mx-auto text-slate-300" /><h3 className="mt-4 text-base font-bold text-ink">{t('Courses are coming soon')}</h3><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">{t('There are no published courses available yet. Once instructors publish courses, they will appear here automatically.')}</p><Link to="/courses" className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-primary-hover">{t('Open Course Marketplace')}<ArrowRight size={14} /></Link></div>}</section>
 
-              <h2 className="mt-2 text-lg font-bold text-ink">
-                {t('Browse by category')}
-              </h2>
+      <CertificateShowcase />
 
-              <p className="mt-1 text-sm text-slate-500">
-                {t('Explore real course categories available on OSTA.')}
-              </p>
-            </div>
+      <section className="bg-surface px-5 py-14 sm:px-10"><div className="mx-auto grid max-w-[1100px] gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Link to="/innovation-hub" className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><Lightbulb size={22} className="text-primary" /><h3 className="mt-4 text-sm font-bold text-ink">{t('Innovation Hub')}</h3><p className="mt-1 text-xs leading-5 text-slate-500">{t('Explore ideas, startups, competitions, and innovation opportunities.')}</p><span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary">{t('Explore')}<ArrowRight size={13} /></span></Link>
+        <Link to="/research" className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><FlaskConical size={22} className="text-primary" /><h3 className="mt-4 text-sm font-bold text-ink">Research Portal</h3><p className="mt-1 text-xs leading-5 text-slate-500">Discover research-focused work and opportunities across OSTA.</p><span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary">Explore<ArrowRight size={13} /></span></Link>
+        <Link to="/competitions" className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><Trophy size={22} className="text-primary" /><h3 className="mt-4 text-sm font-bold text-ink">Competitions</h3><p className="mt-1 text-xs leading-5 text-slate-500">Challenge yourself through competitions, competitions, and technology events.</p><span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary">Explore<ArrowRight size={13} /></span></Link>
+        <Link to="/discussion" className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><MessageCircle size={22} className="text-primary" /><h3 className="mt-4 text-sm font-bold text-ink">Community</h3><p className="mt-1 text-xs leading-5 text-slate-500">Ask questions, exchange ideas, and connect with other learners.</p><span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary">Join the discussion<ArrowRight size={13} /></span></Link>
+      </div></section>
 
-            <Link
-              to="/courses"
-              className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
-            >
-              {t('View all courses')}
-              <ArrowRight
-                size={13}
-              />
-            </Link>
-          </div>
+      <section className="mx-auto max-w-[1100px] px-5 py-14 sm:px-10"><div className="flex flex-col items-center justify-between gap-6 rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:flex-row sm:p-8"><div className="flex items-start gap-4"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary"><CalendarDays size={21} /></div><div><h2 className="text-lg font-bold text-ink">{t('Stay connected with OSTA events')}</h2><p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">{t('Find workshops, conferences, training sessions, and other events as they are published.')}</p></div></div><Link to="/events" className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-5 py-3 text-xs font-bold text-white hover:bg-primary-hover">{t('View Events')}<ArrowRight size={14} /></Link></div></section>
 
-          {browsableCategories.length >
-          0 ? (
-            <div className="mt-5 flex flex-wrap gap-2">
-              {browsableCategories.map(
-                (category) => (
-                  <Link
-                    key={
-                      category.id
-                    }
-                    to={`/courses?category=${encodeURIComponent(
-                      category.name
-                    )}`}
-                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-primary hover:text-primary"
-                  >
-                    {category.name}
-                  </Link>
-                )
-              )}
-            </div>
-          ) : (
-            <div className="mt-5 rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center">
-              <Layers3
-                size={28}
-                className="mx-auto text-slate-300"
-              />
-
-              <p className="mt-2 text-sm font-semibold text-slate-500">
-                {t('No course categories are available yet.')}
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* =================================================
-          FEATURED COURSES
-      ================================================= */}
-
-      <section className="mx-auto max-w-[1100px] px-5 py-14 sm:px-10">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-              {t('Start learning')}
-            </p>
-
-            <h2 className="mt-2 text-lg font-bold text-ink sm:text-xl">
-              {t('Featured Courses')}
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              {t('Discover courses currently available on the platform.')}
-            </p>
-          </div>
-
-          <Link
-            to="/courses"
-            className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
-          >
-            {t('View all courses')}
-            <ArrowRight
-              size={13}
-            />
-          </Link>
-        </div>
-
-        {featuredCourses.length >
-        0 ? (
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredCourses.map(
-              (course) => (
-                <CourseCard
-                  key={course.id}
-                  course={course}
-                />
-              )
-            )}
-          </div>
-        ) : (
-          <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
-            <BookOpen
-              size={40}
-              className="mx-auto text-slate-300"
-            />
-
-            <h3 className="mt-4 text-base font-bold text-ink">
-              {t('Courses are coming soon')}
-            </h3>
-
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-              {t('There are no published courses available yet. Once instructors publish courses, they will appear here automatically.')}
-            </p>
-
-            <Link
-              to="/courses"
-              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-primary-hover"
-            >
-              {t('Open Course Marketplace')}
-              <ArrowRight
-                size={14}
-              />
-            </Link>
-          </div>
-        )}
-      </section>
-
-      {/* =================================================
-          COMMUNITY / ECOSYSTEM
-      ================================================= */}
-
-      <section className="bg-surface px-5 py-14 sm:px-10">
-        <div className="mx-auto grid max-w-[1100px] gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <Link
-            to="/innovation-hub"
-            className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-          >
-            <Lightbulb
-              size={22}
-              className="text-primary"
-            />
-
-            <h3 className="mt-4 text-sm font-bold text-ink">
-              {t('Innovation Hub')}
-            </h3>
-
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              {t('Explore ideas, startups, competitions, and innovation opportunities.')}
-            </p>
-
-            <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary">
-              {t('Explore')}
-              <ArrowRight
-                size={13}
-                className="transition group-hover:translate-x-0.5"
-              />
-            </span>
-          </Link>
-
-          <Link
-            to="/research"
-            className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-          >
-            <FlaskConical
-              size={22}
-              className="text-primary"
-            />
-
-            <h3 className="mt-4 text-sm font-bold text-ink">
-              Research Portal
-            </h3>
-
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              Discover research-focused work and opportunities across OSTA.
-            </p>
-
-            <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary">
-              Explore
-              <ArrowRight
-                size={13}
-              />
-            </span>
-          </Link>
-
-          <Link
-            to="/competitions"
-            className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-          >
-            <Trophy
-              size={22}
-              className="text-primary"
-            />
-
-            <h3 className="mt-4 text-sm font-bold text-ink">
-              Competitions
-            </h3>
-
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              Challenge yourself through competitions, competitions, and technology events.
-            </p>
-
-            <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary">
-              Explore
-              <ArrowRight
-                size={13}
-              />
-            </span>
-          </Link>
-
-          <Link
-            to="/discussion"
-            className="group rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-          >
-            <MessageCircle
-              size={22}
-              className="text-primary"
-            />
-
-            <h3 className="mt-4 text-sm font-bold text-ink">
-              Community
-            </h3>
-
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              Ask questions, exchange ideas, and connect with other learners.
-            </p>
-
-            <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary">
-              Join the discussion
-              <ArrowRight
-                size={13}
-              />
-            </span>
-          </Link>
-        </div>
-      </section>
-
-      {/* =================================================
-          EVENTS PROMO
-      ================================================= */}
-
-      <section className="mx-auto max-w-[1100px] px-5 py-14 sm:px-10">
-        <div className="flex flex-col items-center justify-between gap-6 rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:flex-row sm:p-8">
-          <div className="flex items-start gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary">
-              <CalendarDays
-                size={21}
-              />
-            </div>
-
-            <div>
-              <h2 className="text-lg font-bold text-ink">
-                {t('Stay connected with OSTA events')}
-              </h2>
-
-              <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">
-                {t('Find workshops, conferences, training sessions, and other events as they are published.')}
-              </p>
-            </div>
-          </div>
-
-          <Link
-            to="/events"
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-5 py-3 text-xs font-bold text-white hover:bg-primary-hover"
-          >
-            {t('View Events')}
-            <ArrowRight
-              size={14}
-            />
-          </Link>
-        </div>
-      </section>
-
-      {/* =================================================
-          FINAL CTA
-      ================================================= */}
-
-      <section className="mx-auto max-w-[1100px] px-5 py-14 sm:px-10">
-        <div className="rounded-2xl bg-gradient-to-br from-primary to-primary-hover px-6 py-12 text-center text-white sm:px-12">
-          <h2 className="text-2xl font-extrabold">
-            {t('Ready to start learning?')}
-          </h2>
-
-          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/80">
-            {t('Join OSTA and access technology learning, research, innovation, competitions, and community opportunities.')}
-          </p>
-
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Button
-              as={Link}
-              to="/register"
-              variant="secondary"
-              className="h-12 px-8"
-            >
-              Get Started Free
-            </Button>
-
-            <Button
-              as={Link}
-              to="/courses"
-              variant="outline"
-              className="h-12 border-white/40 px-8 text-white hover:bg-white/10"
-            >
-              Browse Courses
-            </Button>
-          </div>
-        </div>
-      </section>
+      <section className="mx-auto max-w-[1100px] px-5 py-14 sm:px-10"><div className="rounded-2xl bg-gradient-to-br from-primary to-primary-hover px-6 py-12 text-center text-white sm:px-12"><h2 className="text-2xl font-extrabold">{t('Ready to start learning?')}</h2><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/80">{t('Join OSTA and access technology learning, research, innovation, competitions, and community opportunities.')}</p><div className="mt-6 flex flex-wrap justify-center gap-3"><Button as={Link} to="/register" variant="secondary" className="h-12 px-8">Get Started Free</Button><Button as={Link} to="/courses" variant="outline" className="h-12 border-white/40 px-8 text-white hover:bg-white/10">Browse Courses</Button></div></div></section>
     </div>
   );
 }
