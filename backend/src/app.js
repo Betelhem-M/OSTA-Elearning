@@ -16,6 +16,7 @@ const instructorPaymentRoutes = require("./routes/instructorPaymentRoutes");
 const certificateRoutes = require("./routes/certificateRoutes");
 const discussionRoutes = require("./routes/discussionRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const aiTutorRoutes = require("./routes/aiTutorRoutes");
 
 const competitionRoutes = require("./routes/competitionRoutes");
 const innovationRoutes = require("./routes/innovationRoutes");
@@ -54,9 +55,11 @@ app.use(
 
 app.use(express.json());
 
-app.use(express.urlencoded({
-  extended: true,
-}));
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
 
 // =====================================================
 // HEALTH CHECK
@@ -167,6 +170,15 @@ app.use(
 app.use(
   "/api/instructor/payment-accounts",
   instructorPaymentRoutes
+);
+
+// =====================================================
+// AI TUTOR
+// =====================================================
+
+app.use(
+  "/api/ai-tutor",
+  aiTutorRoutes
 );
 
 // =====================================================
