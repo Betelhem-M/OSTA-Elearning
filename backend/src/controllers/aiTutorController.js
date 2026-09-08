@@ -119,16 +119,22 @@ const aiTutorController = {
         }
       }
 
-      const apiKey = process.env.AI_API_KEY;
+      // Keep the OpenAI credential on the backend only. ChatGPT/OpenAI API
+      // keys must never be exposed in the React frontend or committed to Git.
+      const apiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY;
       const apiUrl =
+        process.env.OPENAI_API_URL ||
         process.env.AI_API_URL ||
         "https://api.openai.com/v1/responses";
-      const model = process.env.AI_MODEL || "gpt-5.6-luna";
+      const model =
+        process.env.OPENAI_MODEL ||
+        process.env.AI_MODEL ||
+        "gpt-5.6-luna";
 
       if (!apiKey) {
         return res.status(503).json({
           message:
-            "AI Tutor is not configured yet. Add AI_API_KEY to the backend environment.",
+            "AI Tutor is not configured yet. Add OPENAI_API_KEY to the backend environment.",
         });
       }
 
