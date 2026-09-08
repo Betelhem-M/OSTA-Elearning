@@ -1,6 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import * as Icons from "lucide-react";
 import { X } from "lucide-react";
+import { useLanguage } from "@context/LanguageContext";
+
+const sidebarTranslations = {
+  en: { "AI Tutor": "AI Tutor" },
+  am: { "AI Tutor": "የኦስታ ኤአይ አስተማሪ" },
+  om: { "AI Tutor": "AI Tutor OSTA" },
+};
 
 export default function Sidebar({
   navItems = [],
@@ -10,32 +17,29 @@ export default function Sidebar({
   subtitle = "Learning Platform",
 }) {
   const location = useLocation();
+  const { language } = useLanguage();
 
   function isItemActive(href) {
     if (!href) {
       return false;
     }
 
-    // Exact match first
     if (location.pathname === href) {
       return true;
     }
 
-    // Keep parent navigation active on nested pages.
-    // Example:
-    // /instructor/courses
-    // /instructor/courses/create
-    // /instructor/courses/12
     if (
       href !== "/" &&
-      location.pathname.startsWith(
-        `${href}/`
-      )
+      location.pathname.startsWith(`${href}/`)
     ) {
       return true;
     }
 
     return false;
+  }
+
+  function getLabel(item) {
+    return sidebarTranslations[language]?.[item.label] || item.label;
   }
 
   return (
@@ -96,9 +100,7 @@ export default function Sidebar({
                 Icons.Circle;
 
               const isActive =
-                isItemActive(
-                  item.href
-                );
+                isItemActive(item.href);
 
               return (
                 <Link
@@ -121,7 +123,7 @@ export default function Sidebar({
                   />
 
                   <span className="truncate">
-                    {item.label}
+                    {getLabel(item)}
                   </span>
                 </Link>
               );
