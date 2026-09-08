@@ -1,12 +1,12 @@
-const API_URL = 'https://osta-elearning-production.up.railway.app/api'
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export async function getCourses() {
-  const response = await fetch(`${API_URL}/courses`)
-
-  const data = await response.json()
+  const response = await fetch(`${API_URL}/courses`);
+  const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || 'Failed to fetch courses')
+    throw new Error(data.message || "Failed to fetch courses");
   }
 
   return data.map((course) => ({
@@ -16,23 +16,19 @@ export async function getCourses() {
     thumbnailColor: course.thumbnail_color,
     rating: course.rating ?? 0,
     students: course.students ?? 0,
-    price:
-      Number(course.price) === 0
-        ? 'FREE'
-        : course.price,
-  }))
+    price: Number(course.price) === 0 ? "FREE" : course.price,
+  }));
 }
 
 export async function getCourseById(id) {
-  const response = await fetch(`${API_URL}/courses/${id}`)
-
-  const data = await response.json()
+  const response = await fetch(`${API_URL}/courses/${id}`);
+  const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || 'Failed to fetch course')
+    throw new Error(data.message || "Failed to fetch course");
   }
 
-  return data
+  return data;
 }
 
 export async function getMyCourses(token) {
@@ -40,12 +36,12 @@ export async function getMyCourses(token) {
     headers: {
       Authorization: `Bearer ${token}`,
     },
-  })
+  });
 
-  const data = await response.json()
+  const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || 'Failed to fetch your courses')
+    throw new Error(data.message || "Failed to fetch your courses");
   }
 
   return data.map((course) => ({
@@ -55,32 +51,29 @@ export async function getMyCourses(token) {
     thumbnailColor: course.thumbnail_color,
     rating: course.rating ?? 0,
     students: course.students ?? 0,
-    price:
-      Number(course.price) === 0
-        ? 'FREE'
-        : course.price,
-  }))
+    price: Number(course.price) === 0 ? "FREE" : course.price,
+  }));
 }
 
 export async function deleteCourse(id, token) {
   const response = await fetch(`${API_URL}/courses/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
     },
-  })
+  });
 
-  const data = await response.json()
+  const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || 'Failed to delete course')
+    throw new Error(data.message || "Failed to delete course");
   }
 
-  return data
+  return data;
 }
+
 export async function getCategories() {
   const response = await fetch(`${API_URL}/categories`);
-
   const data = await response.json();
 
   if (!response.ok) {
