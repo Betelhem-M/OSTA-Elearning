@@ -16,6 +16,7 @@ import AccountTypeRoute from './routes/AccountTypeRoute';
 import Landing from '@pages/public/Landing';
 import Marketplace from '@pages/public/Marketplace';
 import CourseDetails from '@pages/public/CourseDetails';
+import Books from '@pages/public/Books';
 import InnovationHub from '@pages/public/InnovationHub';
 import ResearchPortal from '@pages/public/ResearchPortal';
 import Competitions from '@pages/public/Competitions';
@@ -47,6 +48,7 @@ import AITutor from '@pages/student/AITutor';
 import InstructorDashboard from '@pages/instructor/Dashboard';
 import MyCourses from '@pages/instructor/MyCourses';
 import CreateCourse from '@pages/instructor/CreateCourse';
+import UploadBooks from '@pages/instructor/UploadBooks';
 import InstructorAssignments from '@pages/instructor/Assignments';
 import InstructorStudents from '@pages/instructor/Students';
 import InstructorAnalytics from '@pages/instructor/Analytics';
@@ -91,6 +93,7 @@ export default function App() {
       <Route element={<StudentAwarePublicLayout />}>
         <Route path="/courses" element={<Marketplace />} />
         <Route path="/courses/:courseId" element={<CourseDetails />} />
+        <Route path="/books" element={<Books />} />
         <Route path="/innovation-hub" element={<InnovationHub />} />
         <Route path="/research" element={<ResearchPortal />} />
         <Route path="/competitions" element={<Competitions />} />
@@ -131,6 +134,7 @@ export default function App() {
         <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
         <Route path="/instructor/courses" element={<MyCourses />} />
         <Route path="/instructor/courses/create" element={<CreateCourse />} />
+        <Route path="/instructor/books/upload" element={<UploadBooks />} />
         <Route path="/instructor/courses/:courseId" element={<CourseWorkspace />} />
         <Route path="/instructor/quizzes/create" element={<QuizBuilder />} />
         <Route path="/instructor/quizzes/:quizId/edit" element={<QuizBuilder />} />
@@ -158,6 +162,7 @@ export default function App() {
         <Route path="/admin/reports" element={<AdminReports />} />
         <Route path="/admin/system" element={<SystemHealth />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
+        <Route path="/admin/reports" element={<AdminReports />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
