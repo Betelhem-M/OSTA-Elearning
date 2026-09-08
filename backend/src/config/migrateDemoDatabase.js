@@ -66,6 +66,28 @@ async function run() {
     console.log(`Added: ${table}.${column}`);
   }
 
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS books (
+      id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+      title VARCHAR(255) NOT NULL,
+      description TEXT NULL,
+      author VARCHAR(255) NULL,
+      file_name VARCHAR(255) NOT NULL,
+      file_path VARCHAR(1000) NOT NULL,
+      mime_type VARCHAR(120) NOT NULL DEFAULT 'application/pdf',
+      file_size BIGINT UNSIGNED NOT NULL DEFAULT 0,
+      uploaded_by BIGINT(20) UNSIGNED NULL,
+      status VARCHAR(30) NOT NULL DEFAULT 'published',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY idx_books_status (status),
+      KEY idx_books_uploaded_by (uploaded_by),
+      CONSTRAINT fk_books_uploaded_by FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+  console.log("Books table is ready.");
+
   console.log("Demo database migration completed successfully.");
 }
 
