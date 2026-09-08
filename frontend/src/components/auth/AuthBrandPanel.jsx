@@ -1,4 +1,3 @@
-import { ShieldCheck } from "lucide-react";
 import { useLanguage } from '@context/LanguageContext';
 
 export default function AuthBrandPanel({ eyebrow, title, description }) {
@@ -15,9 +14,11 @@ export default function AuthBrandPanel({ eyebrow, title, description }) {
     >
       <div>
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10">
-            <ShieldCheck size={22} className="text-gold" />
-          </span>
+          <img
+            src="/assets/osta-logo.svg"
+            alt="OSTA"
+            className="h-11 w-11 object-contain"
+          />
           <div>
             <p className="text-[15px] font-extrabold tracking-wide">OSTA</p>
             <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/70">
