@@ -2,130 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * ============================================================
- * OSTA Theme Tokens (Light / Dark)
- * ============================================================
- * Single source of truth for every color used by the semantic
- * Tailwind tokens in tailwind.config.js (primary, accent, gold,
- * success, danger, info, ink, surface, border). Add a new theme
- * in the future by adding one more attribute-selector block here
- * — no component changes required.
- */
+/* OSTA semantic theme tokens */
 :root {
   --color-bg: 248 250 252;
-  /* slate-50  — page background */
   --color-surface: 255 255 255;
-  /* white     — card/panel background */
   --color-surface-muted: 241 245 249;
-  /* slate-100 — recessed background */
   --color-surface-elevated: 255 255 255;
-  /* white     — modals/dropdowns/popovers */
   --color-border: 226 232 240;
-  /* slate-200 */
   --color-border-muted: 241 245 249;
-  /* slate-100 */
-
   --color-text: 15 23 42;
-  /* slate-900 — primary text */
   --color-text-soft: 71 85 105;
-  /* slate-600 — secondary text */
   --color-text-faint: 148 163 184;
-  /* slate-400 — muted text/placeholders */
-
   --color-primary: 29 78 216;
-  /* navy-700 */
   --color-primary-hover: 15 51 102;
-  /* navy-800 */
   --color-primary-light: 226 232 240;
-  /* navy-50 — subtle active/hover bg */
-
   --color-accent: 245 158 11;
-  /* amber-500 */
   --color-accent-hover: 217 119 6;
-  /* amber-600 */
   --color-accent-light: 254 243 199;
-  /* amber-100 */
-
   --color-success: 16 185 129;
-  /* emerald-500 */
   --color-success-hover: 5 150 105;
-  /* emerald-600 */
   --color-success-light: 209 250 229;
-  /* emerald-100 */
-
   --color-danger: 220 38 38;
-  /* red-600 */
   --color-danger-hover: 185 28 28;
-  /* red-700 */
   --color-danger-light: 254 226 226;
-  /* red-100 */
-
   --color-info: 2 132 199;
-  /* navy-700 */
   --color-info-hover: 15 51 102;
-  /* navy-800 */
   --color-info-light: 226 232 240;
-  /* navy-100 */
 }
 
 html.dark {
   --color-bg: 2 6 23;
-  /* slate-950 */
   --color-surface: 15 23 42;
-  /* slate-900 */
   --color-surface-muted: 30 41 59;
-  /* slate-800 */
   --color-surface-elevated: 30 41 59;
-  /* slate-800, lifted further by border/shadow */
   --color-border: 51 65 85;
-  /* slate-700 */
   --color-border-muted: 30 41 59;
-  /* slate-800 */
-
   --color-text: 248 250 252;
-  /* slate-50 */
   --color-text-soft: 203 213 225;
-  /* slate-300 */
   --color-text-faint: 148 163 184;
-  /* slate-400 — unchanged, still reads fine on dark */
-
-  /* Brighter/lighter shades on dark surfaces so contrast ratios hold up
-     (a blue-700 that reads fine on white gets muddy on slate-900). */
   --color-primary: 59 130 246;
-  /* navy-300 */
   --color-primary-hover: 191 219 254;
-  /* navy-200 */
   --color-primary-light: 30 41 59;
-  /* dark-surface tint instead of pale blue-50 */
-
   --color-accent: 251 191 36;
-  /* amber-400 */
   --color-accent-hover: 252 211 77;
-  /* amber-300 */
   --color-accent-light: 69 46 8;
-  /* dark amber tint */
-
   --color-success: 52 211 153;
-  /* emerald-400 */
   --color-success-hover: 110 231 183;
-  /* emerald-300 */
   --color-success-light: 6 46 36;
-  /* dark emerald tint */
-
   --color-danger: 248 113 113;
-  /* red-400 */
   --color-danger-hover: 252 165 165;
-  /* red-300 */
   --color-danger-light: 60 15 15;
-  /* dark red tint */
-
   --color-info: 56 189 248;
-  /* navy-300 */
   --color-info-hover: 191 219 254;
-  /* navy-200 */
   --color-info-light: 30 41 59;
-  /* dark navy tint */
 }
 
 @layer base {
@@ -148,14 +77,11 @@ html.dark {
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    outline: 2px solid #2e7d32;
+    outline: 2px solid #1d4ed8;
     outline-offset: 2px;
     border-radius: 4px;
   }
 
-  /* Theme-switch transition for the properties that actually change between
-     themes. Kept off html/* globally to avoid every layout/size property
-     transitioning (which causes janky animation on unrelated re-renders). */
   body,
   header,
   nav,
@@ -171,7 +97,6 @@ html.dark {
   }
 
   @media (prefers-reduced-motion: reduce) {
-
     body,
     header,
     nav,
@@ -185,7 +110,6 @@ html.dark {
     }
   }
 
-  /* Scrollbars */
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -210,7 +134,6 @@ html.dark {
 }
 
 @layer utilities {
-  /* Legacy blue and sky utilities use the navy palette. */
   .bg-blue-50,
   .bg-sky-50 { background-color: rgb(226 232 240 / var(--tw-bg-opacity, 1)) !important; }
   .bg-blue-100,
@@ -233,6 +156,7 @@ html.dark {
   .text-sky-600,
   .text-sky-700,
   .text-sky-800 { color: rgb(30 64 175 / var(--tw-text-opacity, 1)) !important; }
+
   html.dark .text-blue-400,
   html.dark .text-blue-500,
   html.dark .text-blue-600,
@@ -243,10 +167,76 @@ html.dark {
   html.dark .text-sky-600,
   html.dark .text-sky-700,
   html.dark .text-sky-800 { color: rgb(255 255 255 / var(--tw-text-opacity, 1)) !important; }
+
   html.dark .bg-blue-50,
   html.dark .bg-blue-100,
   html.dark .bg-sky-50,
   html.dark .bg-sky-100 { background-color: rgb(30 41 59 / var(--tw-bg-opacity, 1)) !important; }
+
+  /* Admin portal visual cleanup.
+     Keep these rules scoped to .admin-shell so public/student/instructor pages
+     keep their own visual language. */
+  .admin-shell .bg-white {
+    background-color: rgb(var(--color-surface)) !important;
+  }
+
+  .admin-shell .bg-slate-50 {
+    background-color: rgb(var(--color-bg)) !important;
+  }
+
+  .admin-shell .bg-slate-100 {
+    background-color: rgb(var(--color-surface-muted)) !important;
+  }
+
+  .admin-shell [class*="shadow-"] {
+    box-shadow: 0 1px 3px rgb(15 23 42 / 0.08) !important;
+  }
+
+  html.dark .admin-shell [class*="shadow-"] {
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.28) !important;
+  }
+
+  .admin-shell [class*="backdrop-blur"] {
+    background-color: rgb(var(--color-surface) / 0.96) !important;
+  }
+
+  html.dark .admin-shell [class*="backdrop-blur"] {
+    background-color: rgb(var(--color-surface) / 0.96) !important;
+  }
+
+  .admin-shell .text-slate-900,
+  .admin-shell .text-slate-800,
+  .admin-shell .text-slate-700 {
+    color: rgb(var(--color-text)) !important;
+  }
+
+  .admin-shell .text-slate-600,
+  .admin-shell .text-slate-500 {
+    color: rgb(var(--color-text-soft)) !important;
+  }
+
+  .admin-shell .text-slate-400 {
+    color: rgb(var(--color-text-faint)) !important;
+  }
+
+  .admin-shell .border-slate-100,
+  .admin-shell .border-slate-200,
+  .admin-shell .border-slate-300 {
+    border-color: rgb(var(--color-border)) !important;
+  }
+
+  .admin-shell input,
+  .admin-shell textarea,
+  .admin-shell select {
+    background-color: rgb(var(--color-surface)) !important;
+    color: rgb(var(--color-text)) !important;
+    border-color: rgb(var(--color-border)) !important;
+  }
+
+  .admin-shell input::placeholder,
+  .admin-shell textarea::placeholder {
+    color: rgb(var(--color-text-faint)) !important;
+  }
 
   .hide-scrollbar {
     scrollbar-width: none;
@@ -255,56 +245,5 @@ html.dark {
 
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
-  }
-}
-
-/*
- * Legacy compatibility shim
- * -------------------------
- * ~125 of 141 components still use raw Tailwind slate/white utility
- * classes instead of the semantic tokens above (bg-white, text-slate-600,
- * border-slate-200, etc.). This shim keeps those components readable in
- * dark mode by remapping the raw classes to the same CSS variables the
- * semantic tokens use. As each phase migrates a group of files to the
- * semantic classes directly (bg-surface-card, text-ink-soft, border-border),
- * its rules become redundant here and can be deleted — this block should
- * shrink to nothing by the end of the project, not grow.
- */
-@layer utilities {
-
-  html.dark .bg-white,
-  html.dark .bg-slate-50 {
-    background-color: rgb(var(--color-surface)) !important;
-  }
-
-  html.dark .bg-slate-100 {
-    background-color: rgb(var(--color-surface-muted)) !important;
-  }
-
-  /* Note: bg-primary-light and text-ink are NOT listed here — those tokens
-     are already CSS-variable-backed (see tailwind.config.js) and switch
-     automatically under html.dark with no override needed. */
-  html.dark .text-slate-700,
-  html.dark .text-slate-600 {
-    color: rgb(var(--color-text-soft)) !important;
-  }
-
-  html.dark .text-slate-500,
-  html.dark .text-slate-400 {
-    color: rgb(var(--color-text-faint)) !important;
-  }
-
-  html.dark .border-slate-100,
-  html.dark .border-slate-200,
-  html.dark .border-slate-300 {
-    border-color: rgb(var(--color-border)) !important;
-  }
-
-  html.dark input,
-  html.dark textarea,
-  html.dark select {
-    background-color: rgb(var(--color-surface));
-    color: rgb(var(--color-text));
-    border-color: rgb(var(--color-border));
   }
 }
