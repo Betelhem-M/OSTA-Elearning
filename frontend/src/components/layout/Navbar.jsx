@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Menu, X, Search, Bell } from 'lucide-react'
 import { useState } from 'react'
 import { PUBLIC_NAV } from '@constants/navigation'
+import { getDashboardPath } from '@constants/roles'
 import Button from '@components/ui/Button'
 import ThemeToggle from '@components/ui/ThemeToggle'
 import LanguageSwitcher from '@components/ui/LanguageSwitcher'
@@ -25,11 +26,19 @@ export default function Navbar({ onMenuOpen }) {
       : `${BACKEND_URL}${user.profile_image}`
     : null
 
+  const dashboardPath = isAuthenticated
+    ? getDashboardPath(user?.role, user?.account_type)
+    : '/'
+
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface-card/95 text-ink backdrop-blur-md">
       <nav className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-4 lg:px-12" aria-label="Main navigation">
-        <Link to="/" className="flex items-center" aria-label="OSTA E-Learning home" title="OSTA E-Learning home">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-lg font-extrabold text-white">O</span>
+        <Link to={dashboardPath} className="flex items-center" aria-label="OSTA dashboard" title="OSTA dashboard">
+          <img
+            src="/assets/osta-logo.svg"
+            alt="OSTA"
+            className="h-10 w-10 object-contain"
+          />
         </Link>
 
         <div className="hidden items-center gap-5 xl:flex" id="nav-links">
