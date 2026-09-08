@@ -9,7 +9,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "https://osta-elearning-production.up.railway.app/api";
 
 export default function Students() {
   const navigate = useNavigate();

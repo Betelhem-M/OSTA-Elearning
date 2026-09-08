@@ -4,7 +4,7 @@ import CourseCurriculum from '@components/course/CourseCurriculum'
 import EnrollCard from '@components/course/EnrollCard'
 import InstructorBio from '@components/course/InstructorBio'
 
-const API_URL = 'http://localhost:5000/api'
+const API_URL = 'https://osta-elearning-production.up.railway.app/api'
 
 export default function CourseDetails() {
   const { courseId } = useParams()

@@ -9,12 +9,12 @@ const AuthContext = createContext(null);
 
 // Use the same API URL configuration as services/api.js.
 // Local:
-// VITE_API_URL=http://localhost:5000/api
+// VITE_API_URL=https://osta-elearning-production.up.railway.app/api
 //
 // Production:
 // VITE_API_URL=https://your-railway-backend.up.railway.app/api
 const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  import.meta.env.VITE_API_URL || "https://osta-elearning-production.up.railway.app/api";
 
 // =====================================================
 // LOAD SAVED USER

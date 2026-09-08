@@ -5,7 +5,7 @@
 // throwaway object URL to save instead.
 
 const RAW_API_BASE =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  import.meta.env.VITE_API_URL || "https://osta-elearning-production.up.railway.app/api";
 
 // Endpoints returned by the backend (e.g. attachment_url, file.url)
 // already start with "/api/...", so the download origin must NOT

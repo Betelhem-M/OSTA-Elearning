@@ -71,7 +71,7 @@ import {
 } from "@services/api";
 
 const API_URL =
-  "http://localhost:5000/api";
+  "https://osta-elearning-production.up.railway.app/api";
 
 function getRoleInfo(user) {
   if (

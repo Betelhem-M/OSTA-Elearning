@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api'
+const API_URL = 'https://osta-elearning-production.up.railway.app/api'
 
 export async function getCourses() {
   const response = await fetch(`${API_URL}/courses`)
