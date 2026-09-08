@@ -351,3 +351,36 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 	INDEX idx_reset_token (token_hash),
 	CONSTRAINT fk_reset_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- EVENTS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS events (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    instructor_id BIGINT UNSIGNED NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    category VARCHAR(100) NOT NULL DEFAULT 'General',
+    description TEXT NULL,
+    event_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    duration_hours DECIMAL(5,2) NOT NULL DEFAULT 2,
+    delivery_mode VARCHAR(30) NOT NULL DEFAULT 'online',
+    location_or_link VARCHAR(1000) NOT NULL,
+    capacity INT UNSIGNED NOT NULL DEFAULT 100,
+    banner_image VARCHAR(500) NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'draft',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_events_instructor (instructor_id),
+    INDEX idx_events_date (event_date),
+    INDEX idx_events_status (status),
+
+    CONSTRAINT fk_events_instructor
+        FOREIGN KEY (instructor_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
