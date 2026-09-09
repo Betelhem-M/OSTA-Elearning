@@ -9,7 +9,7 @@ export default function CourseCard({ course }) {
   const price =
     Number(course.price) === 0
       ? 'FREE'
-      : `$${course.price}`
+      : `ETB ${Number(course.price).toLocaleString()}`
 
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_4px_14px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_12px_26px_rgba(15,23,42,0.1)]">
