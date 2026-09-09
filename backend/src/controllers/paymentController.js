@@ -8,6 +8,9 @@ const OFFICIAL_PAYMENT_PAGES = {
   cbe: "https://combanketh.et/products/digital-banking",
 };
 
+const isLocalDemoPayment = (reference) =>
+  process.env.NODE_ENV !== "production" && /^DEMO-/i.test(reference);
+
 const paymentController = {
   async methods(req, res) {
     try {
@@ -19,10 +22,7 @@ const paymentController = {
       const methods = [];
 
       for (const method of ["telebirr", "cbe"]) {
-        const account = await InstructorPaymentAccount.findVerifiedForCourse(
-          courseId,
-          method
-        );
+        const account = await InstructorPaymentAccount.findVerifiedForCourse(courseId, method);
 
         if (account) {
           methods.push({
@@ -63,38 +63,25 @@ const paymentController = {
       const courseId = Number(req.body.courseId);
       const method = String(req.body.method || "").toLowerCase();
       const rawPaymentAccountId = req.body.paymentAccountId;
-      const transactionReference = String(
-        req.body.transactionReference || ""
-      ).trim();
+      const transactionReference = String(req.body.transactionReference || "").trim();
 
       if (!Number.isInteger(courseId) || courseId < 1) {
         return res.status(400).json({ message: "A valid course ID is required" });
       }
 
       if (!["telebirr", "cbe"].includes(method)) {
-        return res
-          .status(400)
-          .json({ message: "Choose Telebirr or CBE Mobile Banking" });
+        return res.status(400).json({ message: "Choose Telebirr or CBE Mobile Banking" });
       }
 
-      if (
-        transactionReference.length < 4 ||
-        transactionReference.length > 120
-      ) {
-        return res
-          .status(400)
-          .json({ message: "Enter a valid payment transaction reference" });
+      if (transactionReference.length < 4 || transactionReference.length > 120) {
+        return res.status(400).json({ message: "Enter a valid payment transaction reference" });
       }
 
       const course = await Course.findById(courseId);
-      if (!course) {
-        return res.status(404).json({ message: "Course not found" });
-      }
+      if (!course) return res.status(404).json({ message: "Course not found" });
 
       if (course.status && course.status !== "published") {
-        return res
-          .status(400)
-          .json({ message: "This course is not available for enrollment" });
+        return res.status(400).json({ message: "This course is not available for enrollment" });
       }
 
       const amount = Number(course.price) || 0;
@@ -102,46 +89,31 @@ const paymentController = {
         return res.status(400).json({ message: "This course does not require payment" });
       }
 
-      const instructorAccount =
-        await InstructorPaymentAccount.findVerifiedForCourse(courseId, method);
-
+      const instructorAccount = await InstructorPaymentAccount.findVerifiedForCourse(courseId, method);
       if (!instructorAccount) {
         return res.status(409).json({
-          message:
-            "This instructor has not configured a verified account for the selected payment method",
+          message: "This instructor has not configured a verified account for the selected payment method",
         });
       }
 
-      const paymentAccountId =
-        Number(rawPaymentAccountId) || instructorAccount.id;
-
+      const paymentAccountId = Number(rawPaymentAccountId) || instructorAccount.id;
       if (instructorAccount.id !== paymentAccountId) {
-        return res
-          .status(400)
-          .json({ message: "Payment account does not belong to this course" });
+        return res.status(400).json({ message: "Payment account does not belong to this course" });
       }
 
       if (await Enrollment.findByUserAndCourse(req.user.id, courseId)) {
-        return res
-          .status(409)
-          .json({ message: "You are already enrolled in this course" });
+        return res.status(409).json({ message: "You are already enrolled in this course" });
       }
 
-      const existingPayment = await Payment.findByUserAndCourse(
-        req.user.id,
-        courseId
-      );
-
-      if (
-        existingPayment &&
-        ["pending", "approved"].includes(existingPayment.status)
-      ) {
+      const existingPayment = await Payment.findByUserAndCourse(req.user.id, courseId);
+      if (existingPayment && ["pending", "approved"].includes(existingPayment.status)) {
         return res.status(409).json({
           message: "A payment is already awaiting verification for this course",
           payment: existingPayment,
         });
       }
 
+      const demoPayment = isLocalDemoPayment(transactionReference);
       const paymentId = await Payment.create({
         userId: req.user.id,
         courseId,
@@ -151,10 +123,34 @@ const paymentController = {
         transactionReference,
       });
 
+      // Local demo only: a reference such as DEMO-123456 represents a simulated
+      // successful transaction. Production still requires normal payment review.
+      if (demoPayment) {
+        const pool = require("../config/database");
+        await pool.execute(
+          `UPDATE payments SET status = 'approved', reviewed_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          [paymentId]
+        );
+
+        const enrollmentId = await Enrollment.create(req.user.id, courseId);
+
+        return res.status(201).json({
+          message: "Demo payment accepted and enrollment completed",
+          paymentId,
+          enrollmentId,
+          status: "approved",
+          demo: true,
+          method,
+          amount,
+          currency: "ETB",
+        });
+      }
+
       return res.status(201).json({
         message: "Payment submitted for verification",
         paymentId,
         status: "pending",
+        demo: false,
         method,
         amount,
         currency: "ETB",
