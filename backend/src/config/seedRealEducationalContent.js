@@ -87,6 +87,30 @@ async function findAnyAccount(type) {
   return rows[0];
 }
 
+async function ensureResearcherProfile(user) {
+  const [rows] = await pool.execute(
+    "SELECT id FROM researchers WHERE user_id=? LIMIT 1",
+    [user.id]
+  );
+
+  if (rows[0]) {
+    return rows[0].id;
+  }
+
+  const [result] = await pool.execute(
+    `INSERT INTO researchers(user_id,field,bio,affiliation)
+     VALUES(?,?,?,?)`,
+    [
+      user.id,
+      "Educational Technology",
+      "Interested in educational technology and accessible digital learning.",
+      "OSTA Learning & Innovation Platform",
+    ]
+  );
+
+  return result.insertId;
+}
+
 async function category(name, description) {
   const [rows] = await pool.execute("SELECT id FROM categories WHERE name=? LIMIT 1", [name]);
   if (rows[0]) return rows[0].id;
@@ -291,13 +315,15 @@ async function books(instructorId) {
     } else {
       await pool.execute(
         "INSERT INTO books(title,description,author,file_name,file_path,mime_type,file_size,uploaded_by,status) VALUES(?,?,?,?,?,?,?,?,'published')",
-        [book.title, book.description + ` Source: ${book.source}`, book.author, book.file, filePath, "application/pdf", size, instructorId]
+        [book.title, book.description + ` Source: ${book.source}`, book.author, book.file, book.file, "application/pdf", size, instructorId]
       );
     }
   }
 }
 
 async function innovationAndResearch(entrepreneur, researcher) {
+  const researcherProfileId = await ensureResearcherProfile(researcher);
+
   const idea = "Offline-First Learning Access for Rural Communities";
   const [ideaRows] = await pool.execute("SELECT id FROM innovation_ideas WHERE title=? LIMIT 1", [idea]);
   if (!ideaRows[0]) {
@@ -321,7 +347,7 @@ async function innovationAndResearch(entrepreneur, researcher) {
   if (!publicationRows[0]) {
     await pool.execute(
       "INSERT INTO publications(researcher_id,title,abstract,publication_url,status,field,publication_year) VALUES(?,?,?,?, 'published',?,?)",
-      [researcher.id, publication, "A test publication record about practical design principles for learning platforms in low-connectivity environments.", "https://openstax.org/books/introduction-computer-science/pages/1-introduction", "Educational Technology", 2026]
+      [researcherProfileId, publication, "A test publication record about practical design principles for learning platforms in low-connectivity environments.", "https://openstax.org/books/introduction-computer-science/pages/1-introduction", "Educational Technology", 2026]
     );
   }
 }
