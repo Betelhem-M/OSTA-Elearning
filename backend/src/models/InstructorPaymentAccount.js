@@ -20,17 +20,22 @@ const InstructorPaymentAccount = {
 
   async upsert(userId, input) {
     const account = normalize(input);
+    // Local development/demo accounts are immediately visible so the complete
+    // instructor -> student payment flow can be demonstrated without an admin.
+    // Production keeps the existing verification requirement.
+    const verified = process.env.NODE_ENV !== "production";
+
     await pool.execute(
       `INSERT INTO instructor_payment_accounts
         (user_id, method, account_name, account_number_encrypted, status, is_verified)
-       VALUES (?, ?, ?, ?, 'active', FALSE)
+       VALUES (?, ?, ?, ?, 'active', ?)
        ON DUPLICATE KEY UPDATE
          account_name = VALUES(account_name),
          account_number_encrypted = VALUES(account_number_encrypted),
          status = 'active',
-         is_verified = FALSE,
+         is_verified = VALUES(is_verified),
          updated_at = CURRENT_TIMESTAMP`,
-      [userId, account.method, account.accountName, encrypt(account.accountNumber)]
+      [userId, account.method, account.accountName, encrypt(account.accountNumber), verified]
     );
     return account.method;
   },
