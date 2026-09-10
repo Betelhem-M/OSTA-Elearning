@@ -6,17 +6,12 @@ const roleMiddleware = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
-// Safety checks to prevent server crashes if middleware or controllers are missing
 if (typeof authMiddleware !== "function") {
   console.error("WARNING: authMiddleware is not a valid function");
 }
 if (typeof roleMiddleware !== "function") {
   console.error("WARNING: roleMiddleware is not a valid function");
 }
-
-// =====================================================
-// ADMIN DASHBOARD
-// =====================================================
 
 router.get(
   "/dashboard",
@@ -25,20 +20,12 @@ router.get(
   adminController.getDashboard
 );
 
-// =====================================================
-// ADMIN USERS
-// =====================================================
-
 router.get(
   "/users",
   authMiddleware,
   roleMiddleware("admin"),
   adminController.getUsers
 );
-
-// =====================================================
-// UPDATE USER ROLE
-// =====================================================
 
 router.put(
   "/users/:id/role",
@@ -47,20 +34,12 @@ router.put(
   adminController.updateUserRole
 );
 
-// =====================================================
-// UPDATE USER STATUS
-// =====================================================
-
 router.put(
   "/users/:id/status",
   authMiddleware,
   roleMiddleware("admin"),
   adminController.updateUserStatus
 );
-
-// =====================================================
-// DELETE USER
-// =====================================================
 
 router.delete(
   "/users/:id",
@@ -69,20 +48,12 @@ router.delete(
   adminController.deleteUser
 );
 
-// =====================================================
-// ADMIN REPORTS
-// =====================================================
-
 router.get(
   "/reports",
   authMiddleware,
   roleMiddleware("admin"),
   adminController.getReports
 );
-
-// =====================================================
-// SYSTEM HEALTH
-// =====================================================
 
 router.get(
   "/system-health",
