@@ -47,9 +47,6 @@ function generateCode() {
   return String(crypto.randomInt(100000, 1000000));
 }
 
-// Local-development verification code.
-// Set DEV_EMAIL_VERIFICATION_BYPASS=true in the local backend .env
-// to allow the demo verification flow without requiring SMTP.
 function isLocalVerificationBypassEnabled() {
   return (
     process.env.NODE_ENV !== "production" &&
@@ -81,16 +78,10 @@ const authService = {
           ? "123456"
           : generateCode();
 
-        await AuthToken.createVerification(
-          existingUser.id,
-          verificationCode
-        );
+        await AuthToken.createVerification(existingUser.id, verificationCode);
 
         if (!isLocalVerificationBypassEnabled()) {
-          await sendVerificationCode(
-            existingUser.email,
-            verificationCode
-          );
+          await sendVerificationCode(existingUser.email, verificationCode);
         }
 
         throw new Error(
@@ -105,7 +96,9 @@ const authService = {
 
     const hashed = await bcrypt.hash(password, 12);
 
-    const role = normalized === "instructor" ? "instructor" : "student";
+    // IMPORTANT: choosing Instructor does NOT grant instructor privileges.
+    // The account remains a student until an admin approves an instructor application.
+    const role = "student";
 
     const id = await User.create({
       firstName: firstName.trim(),
@@ -120,33 +113,19 @@ const authService = {
 
     const user = await User.findById(id);
 
-    /*
-     * Email verification
-     */
     const verificationCode = isLocalVerificationBypassEnabled()
       ? "123456"
       : generateCode();
 
-    await AuthToken.createVerification(
-      id,
-      verificationCode
-    );
+    await AuthToken.createVerification(id, verificationCode);
 
     if (!isLocalVerificationBypassEnabled()) {
-      await sendVerificationCode(
-        normalizedEmail,
-        verificationCode
-      );
+      await sendVerificationCode(normalizedEmail, verificationCode);
     }
 
     user.account_type = normalizeAccountType(user.account_type);
-
     delete user.password;
 
-    /*
-     * IMPORTANT:
-     * Do not create or return a JWT before email verification.
-     */
     return {
       user,
       message: isLocalVerificationBypassEnabled()
@@ -156,9 +135,7 @@ const authService = {
   },
 
   async login(email, password) {
-    const user = await User.findByEmail(
-      email.trim().toLowerCase()
-    );
+    const user = await User.findByEmail(email.trim().toLowerCase());
 
     if (!user) {
       throw new Error("Invalid email or password");
@@ -168,30 +145,19 @@ const authService = {
       throw new Error("Your account is not active.");
     }
 
-    const passwordMatches = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const passwordMatches = await bcrypt.compare(password, user.password);
 
     if (!passwordMatches) {
       throw new Error("Invalid email or password");
     }
 
-    /*
-     * Require email verification before login.
-     */
     const verified = await AuthToken.isVerified(user.id);
 
     if (!verified) {
-      throw new Error(
-        "Please verify your email before signing in."
-      );
+      throw new Error("Please verify your email before signing in.");
     }
 
-    user.account_type = normalizeAccountType(
-      user.account_type
-    );
-
+    user.account_type = normalizeAccountType(user.account_type);
     delete user.password;
 
     return {
@@ -201,10 +167,7 @@ const authService = {
   },
 
   async verifyEmail(email, codeValue) {
-    const normalizedEmail = String(email || "")
-      .trim()
-      .toLowerCase();
-
+    const normalizedEmail = String(email || "").trim().toLowerCase();
     const verificationCode = String(codeValue || "").trim();
 
     if (!normalizedEmail || !verificationCode) {
@@ -222,15 +185,10 @@ const authService = {
         ? "123456"
         : verificationCode;
 
-    const verified = await AuthToken.verifyEmail(
-      user.id,
-      codeToVerify
-    );
+    const verified = await AuthToken.verifyEmail(user.id, codeToVerify);
 
     if (!verified) {
-      throw new Error(
-        "Invalid or expired verification code"
-      );
+      throw new Error("Invalid or expired verification code");
     }
 
     return {
@@ -239,9 +197,7 @@ const authService = {
   },
 
   async resendVerification(email) {
-    const normalizedEmail = String(email || "")
-      .trim()
-      .toLowerCase();
+    const normalizedEmail = String(email || "").trim().toLowerCase();
 
     if (!normalizedEmail) {
       throw new Error("Email is required");
@@ -263,16 +219,10 @@ const authService = {
       ? "123456"
       : generateCode();
 
-    await AuthToken.createVerification(
-      user.id,
-      verificationCode
-    );
+    await AuthToken.createVerification(user.id, verificationCode);
 
     if (!isLocalVerificationBypassEnabled()) {
-      await sendVerificationCode(
-        user.email,
-        verificationCode
-      );
+      await sendVerificationCode(user.email, verificationCode);
     }
 
     return {
@@ -283,30 +233,17 @@ const authService = {
   },
 
   async requestReset(email) {
-    const normalizedEmail = String(email || "")
-      .trim()
-      .toLowerCase();
-
+    const normalizedEmail = String(email || "").trim().toLowerCase();
     const user = await User.findByEmail(normalizedEmail);
 
     if (user) {
       const resetCode = generateCode();
       const token = crypto.randomBytes(32).toString("hex");
 
-      await AuthToken.createReset(
-        user.id,
-        resetCode,
-        token
-      );
+      await AuthToken.createReset(user.id, resetCode, token);
+      await sendPasswordResetCode(user.email, resetCode);
 
-      await sendPasswordResetCode(
-        user.email,
-        resetCode
-      );
-
-      return {
-        resetToken: token,
-      };
+      return { resetToken: token };
     }
 
     return {};
@@ -314,11 +251,7 @@ const authService = {
 
   async verifyResetCode(email, codeValue) {
     const normalizedEmail = email.trim().toLowerCase();
-
-    const row = await AuthToken.verifyResetCode(
-      normalizedEmail,
-      codeValue
-    );
+    const row = await AuthToken.verifyResetCode(normalizedEmail, codeValue);
 
     if (!row) {
       throw new Error("Invalid or expired reset code");
@@ -326,10 +259,7 @@ const authService = {
 
     const token = crypto.randomBytes(32).toString("hex");
 
-    const current = await AuthToken.verifyResetCode(
-      normalizedEmail,
-      codeValue
-    );
+    const current = await AuthToken.verifyResetCode(normalizedEmail, codeValue);
 
     if (!current) {
       throw new Error("Invalid or expired reset code");
@@ -338,23 +268,11 @@ const authService = {
     const pool = require("../config/database");
 
     await pool.execute(
-      `
-      UPDATE password_reset_tokens
-      SET token_hash = ?
-      WHERE id = ?
-      `,
-      [
-        crypto
-          .createHash("sha256")
-          .update(token)
-          .digest("hex"),
-        current.id,
-      ]
+      `UPDATE password_reset_tokens SET token_hash = ? WHERE id = ?`,
+      [crypto.createHash("sha256").update(token).digest("hex"), current.id]
     );
 
-    return {
-      resetToken: token,
-    };
+    return { resetToken: token };
   },
 
   async resetPassword(token, newPassword) {
@@ -364,19 +282,10 @@ const authService = {
       throw new Error("Invalid or expired reset token");
     }
 
-    const hashed = await bcrypt.hash(
-      newPassword,
-      12
-    );
+    const hashed = await bcrypt.hash(newPassword, 12);
+    await User.updatePassword(row.user_id, hashed);
 
-    await User.updatePassword(
-      row.user_id,
-      hashed
-    );
-
-    return {
-      message: "Password reset successfully",
-    };
+    return { message: "Password reset successfully" };
   },
 };
 
