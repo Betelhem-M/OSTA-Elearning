@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext(null);
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://osta-elearning-backend-production.up.railway.app/api";
 
 function loadSavedUser() {
   const savedUser = localStorage.getItem("osta_user");
@@ -42,10 +42,10 @@ export function AuthProvider({ children }) {
       });
     } catch (error) {
       console.error("Login connection error:", error);
-      throw new Error("Unable to connect to the OSTA server. Make sure the backend is running.");
+      throw new Error("Unable to connect to the OSTA server. Please try again.");
     }
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.message || "Login failed");
+    if (!response.ok) throw new Error(data.message || "Invalid email or password");
     if (!data.token || !data.user) throw new Error("Login response is missing user or token.");
     setUser(data.user); setToken(data.token);
     localStorage.setItem("osta_user", JSON.stringify(data.user));
@@ -65,7 +65,7 @@ export function AuthProvider({ children }) {
       });
     } catch (error) {
       console.error("Registration connection error:", error);
-      throw new Error("Unable to connect to the OSTA server. Make sure the backend is running.");
+      throw new Error("Unable to connect to the OSTA server. Please try again.");
     }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.message || "Registration failed");
