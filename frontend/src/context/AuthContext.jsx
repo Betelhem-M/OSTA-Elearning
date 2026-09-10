@@ -1,239 +1,94 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext(null);
-
-// Use the Vite environment variable for both local and production.
-// Local: VITE_API_URL=http://localhost:5000/api
-// Production: set VITE_API_URL to the deployed backend API URL.
-const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
-// =====================================================
-// LOAD SAVED USER
-// =====================================================
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 function loadSavedUser() {
   const savedUser = localStorage.getItem("osta_user");
-
-  if (!savedUser) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(savedUser);
-  } catch (error) {
-    console.error("Failed to read saved OSTA user:", error);
-    localStorage.removeItem("osta_user");
-    return null;
-  }
+  if (!savedUser) return null;
+  try { return JSON.parse(savedUser); }
+  catch (error) { console.error("Failed to read saved OSTA user:", error); localStorage.removeItem("osta_user"); return null; }
 }
-
-// =====================================================
-// LOAD SAVED TOKEN
-// =====================================================
-
-function loadSavedToken() {
-  return localStorage.getItem("osta_token") || null;
-}
-
-// =====================================================
-// AUTH PROVIDER
-// =====================================================
+function loadSavedToken() { return localStorage.getItem("osta_token") || null; }
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(loadSavedUser);
   const [token, setToken] = useState(loadSavedToken);
-
   const isAuthenticated = Boolean(user && token);
 
-  // =====================================================
-  // SAVE USER
-  // =====================================================
-
   useEffect(() => {
-    if (user) {
-      localStorage.setItem("osta_user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("osta_user");
-    }
+    if (user) localStorage.setItem("osta_user", JSON.stringify(user));
+    else localStorage.removeItem("osta_user");
   }, [user]);
-
-  // =====================================================
-  // SAVE TOKEN
-  // =====================================================
-
   useEffect(() => {
-    if (token) {
-      localStorage.setItem("osta_token", token);
-    } else {
-      localStorage.removeItem("osta_token");
-    }
+    if (token) localStorage.setItem("osta_token", token);
+    else localStorage.removeItem("osta_token");
   }, [token]);
 
-  // =====================================================
-  // CLEAR AUTHENTICATION
-  // =====================================================
-
   function clearAuth() {
-    setUser(null);
-    setToken(null);
-
+    setUser(null); setToken(null);
     localStorage.removeItem("osta_user");
     localStorage.removeItem("osta_token");
     localStorage.removeItem("token");
   }
 
-  // =====================================================
-  // LOGIN
-  // =====================================================
-
   async function login(email, password) {
     let response;
-
     try {
       response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
       });
     } catch (error) {
       console.error("Login connection error:", error);
-
-      throw new Error(
-        "Unable to connect to the OSTA server. Make sure the backend is running."
-      );
+      throw new Error("Unable to connect to the OSTA server. Make sure the backend is running.");
     }
-
     const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      throw new Error(data.message || "Login failed");
-    }
-
-    if (!data.token || !data.user) {
-      console.error("Invalid login response:", data);
-      throw new Error("Login response is missing user or token.");
-    }
-
-    setUser(data.user);
-    setToken(data.token);
-
+    if (!response.ok) throw new Error(data.message || "Login failed");
+    if (!data.token || !data.user) throw new Error("Login response is missing user or token.");
+    setUser(data.user); setToken(data.token);
     localStorage.setItem("osta_user", JSON.stringify(data.user));
     localStorage.setItem("osta_token", data.token);
     localStorage.removeItem("token");
-
     return data.user;
   }
 
-  // =====================================================
-  // REGISTER
-  // =====================================================
-
   async function register(formData) {
+    const multipart = formData instanceof FormData;
     let response;
-
     try {
       response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+        headers: multipart ? {} : { "Content-Type": "application/json" },
+        body: multipart ? formData : JSON.stringify(formData),
       });
     } catch (error) {
       console.error("Registration connection error:", error);
-
-      throw new Error(
-        "Unable to connect to the OSTA server. Make sure the backend is running."
-      );
+      throw new Error("Unable to connect to the OSTA server. Make sure the backend is running.");
     }
-
     const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      throw new Error(data.message || "Registration failed");
-    }
-
-    if (!data.user) {
-      console.error("Invalid registration response:", data);
-      throw new Error("Registration response is missing user.");
-    }
-
-    if (data.token) {
-      setToken(data.token);
-      localStorage.setItem("osta_token", data.token);
-    }
-
+    if (!response.ok) throw new Error(data.message || "Registration failed");
+    if (data.instructorRequest) return data;
+    if (!data.user) throw new Error("Registration response is missing user.");
+    if (data.token) { setToken(data.token); localStorage.setItem("osta_token", data.token); }
     setUser(data.user);
     localStorage.setItem("osta_user", JSON.stringify(data.user));
-
-    return data.user;
+    return data;
   }
 
-  // =====================================================
-  // UPDATE USER
-  // =====================================================
-
   function updateUser(updatedUser) {
-    if (!updatedUser) {
-      return;
-    }
-
+    if (!updatedUser) return;
     setUser(updatedUser);
     localStorage.setItem("osta_user", JSON.stringify(updatedUser));
   }
+  function logout() { clearAuth(); }
 
-  // =====================================================
-  // LOGOUT
-  // =====================================================
-
-  function logout() {
-    clearAuth();
-  }
-
-  // =====================================================
-  // CONTEXT VALUE
-  // =====================================================
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        setUser,
-        updateUser,
-        token,
-        setToken,
-        login,
-        register,
-        logout,
-        isAuthenticated,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ user, setUser, updateUser, token, setToken, login, register, logout, isAuthenticated }}>{children}</AuthContext.Provider>;
 }
-
-// =====================================================
-// USE AUTH
-// =====================================================
 
 export function useAuth() {
   const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 }
