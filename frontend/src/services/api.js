@@ -1,15 +1,12 @@
 import axios from "axios";
 
-// One source of truth for every frontend API call. Local demo uses the local
-// Express server; production can override this with VITE_API_URL.
+// Production frontend API. VITE_API_URL can override this when intentionally configured.
 export const API_BASE_URL =
-  (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+  (import.meta.env.VITE_API_URL || "https://osta-elearning-backend-production.up.railway.app/api").replace(/\/$/, "");
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 });
 
 function getToken() {
@@ -31,21 +28,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error?.response?.status === 401) {
-      console.warn("Authentication required for API request.");
-    }
+    if (error?.response?.status === 401) console.warn("Authentication required for API request.");
     return Promise.reject(error);
   }
 );
 
 export async function apiRequest(endpoint, options = {}) {
-  const {
-    token: providedToken = null,
-    method = "GET",
-    body,
-    includeAuth = true,
-  } = options;
-
+  const { token: providedToken = null, method = "GET", body, includeAuth = true } = options;
   const token = providedToken || (includeAuth ? getToken() : null);
   const headers = {};
 
@@ -60,16 +49,12 @@ export async function apiRequest(endpoint, options = {}) {
   });
 
   const data = await response.json().catch(() => ({}));
-
   if (!response.ok) {
-    const error = new Error(
-      data.message || `Request failed with status ${response.status}`
-    );
+    const error = new Error(data.message || `Request failed with status ${response.status}`);
     error.status = response.status;
     error.response = { status: response.status, data };
     throw error;
   }
-
   return data;
 }
 
