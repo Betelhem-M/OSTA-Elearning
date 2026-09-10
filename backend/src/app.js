@@ -18,12 +18,10 @@ const discussionRoutes = require("./routes/discussionRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const aiTutorRoutes = require("./routes/aiTutorRoutes");
 const bookRoutes = require("./routes/bookRoutes");
-
 const competitionRoutes = require("./routes/competitionRoutes");
 const innovationRoutes = require("./routes/innovationRoutes");
 const assignmentRoutes = require("./routes/assignmentRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-
 const hackathonRoutes = require("./routes/hackathonRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const instructorRoutes = require("./routes/instructorRoutes");
@@ -35,20 +33,19 @@ const researchRoutes = require("./routes/researchRoutes");
 const featureRoutes = require("./routes/featureRoutes");
 const portalRoutes = require("./routes/portalRoutes");
 const instructorProgressRoutes = require("./routes/instructorProgressRoutes");
+const instructorApplicationRoutes = require("./routes/instructorApplicationRoutes");
 
 const authMiddleware = require("./middleware/authMiddleware");
 const errorMiddleware = require("./middleware/errorMiddleware");
 
 const app = express();
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      return callback(null, true);
-    },
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: function (origin, callback) {
+    return callback(null, true);
+  },
+  credentials: true,
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -93,6 +90,7 @@ app.use("/api/research", researchRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/instructor", instructorRoutes);
 app.use("/api/instructor", instructorProgressRoutes);
+app.use("/api/instructor-applications", instructorApplicationRoutes);
 app.use("/api/features", featureRoutes);
 app.use("/api/portal", portalRoutes);
 app.use("/api/notes", noteRoutes);
