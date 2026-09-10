@@ -1,9 +1,7 @@
 const fs = require("fs");
-const path = require("path");
 
 const InstructorApplication = require("../models/InstructorApplication");
 const Notification = require("../models/Notification");
-const User = require("../models/User");
 const { sendEmail } = require("./emailService");
 const pool = require("../config/database");
 
@@ -22,15 +20,13 @@ function validateFields(data) {
   };
 
   for (const [name, value] of Object.entries(fields)) {
-    if (!value) {
-      throw new Error(`${name} is required`);
-    }
+    if (!value) throw new Error(`${name} is required`);
   }
 
   return fields;
 }
 
-async function notifyAdmins({ title, message, targetPath }) {
+async function notifyAdmins({ title, message, applicationId }) {
   const [admins] = await pool.execute(
     `SELECT id FROM users WHERE role = 'admin' AND status = 'active'`
   );
@@ -42,8 +38,8 @@ async function notifyAdmins({ title, message, targetPath }) {
       message,
       category: "Instructor Application",
       entityType: "instructor_application",
-      entityId: 0,
-      targetPath,
+      entityId: applicationId,
+      targetPath: "/admin/instructor-requests",
     });
   }
 }
@@ -63,11 +59,13 @@ const instructorApplicationService = {
       throw new Error("Admin accounts cannot submit instructor applications.");
     }
 
+    if (String(user.account_type || "").toLowerCase() !== "instructor") {
+      throw new Error("Select the Instructor account type to apply for instructor access.");
+    }
+
     const fields = validateFields(body);
 
-    if (!file) {
-      throw new Error("Please upload your CV.");
-    }
+    if (!file) throw new Error("Please upload your CV.");
 
     const existing = await InstructorApplication.findByUserId(user.id);
 
@@ -84,16 +82,13 @@ const instructorApplicationService = {
     let applicationId;
 
     if (existing && existing.status === "rejected") {
-      const updated = await InstructorApplication.updateRejectedApplication(
-        existing.id,
-        {
-          ...fields,
-          cvFilePath: file.path,
-          cvOriginalName: file.originalname,
-          cvMimeType: file.mimetype,
-          cvFileSize: file.size,
-        }
-      );
+      const updated = await InstructorApplication.updateRejectedApplication(existing.id, {
+        ...fields,
+        cvFilePath: file.path,
+        cvOriginalName: file.originalname,
+        cvMimeType: file.mimetype,
+        cvFileSize: file.size,
+      });
 
       if (!updated) {
         removeFile(file.path);
@@ -116,20 +111,18 @@ const instructorApplicationService = {
     await notifyAdmins({
       title: "New instructor application",
       message: `${user.first_name || "A user"} ${user.last_name || ""} submitted an instructor application for review.`,
-      targetPath: "/admin/instructor-requests",
+      applicationId,
     });
 
     return {
       id: applicationId,
       status: "pending",
-      message:
-        "Your instructor application was submitted successfully and is waiting for admin review.",
+      message: "Your instructor application was submitted successfully and is waiting for admin review.",
     };
   },
 
   async getMyApplication(userId) {
     const application = await InstructorApplication.findByUserId(userId);
-
     if (!application) return null;
 
     return {
@@ -194,7 +187,7 @@ const instructorApplicationService = {
   },
 
   async review({ id, status, adminNote, adminId }) {
-    if (!['approved', 'rejected'].includes(status)) {
+    if (!["approved", "rejected"].includes(status)) {
       throw new Error("Review status must be approved or rejected.");
     }
 
@@ -212,17 +205,11 @@ const instructorApplicationService = {
       reviewedBy: adminId,
     });
 
-    if (!updated) {
-      throw new Error("The application could not be reviewed.");
-    }
+    if (!updated) throw new Error("The application could not be reviewed.");
 
     if (status === "approved") {
       await pool.execute(
-        `
-        UPDATE users
-        SET role = 'instructor', account_type = 'instructor'
-        WHERE id = ?
-        `,
+        `UPDATE users SET role = 'instructor', account_type = 'instructor' WHERE id = ?`,
         [application.user_id]
       );
     }
