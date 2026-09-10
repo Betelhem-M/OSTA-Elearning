@@ -1,0 +1,171 @@
+import { useEffect, useState } from "react";
+import { FileText, Upload, CheckCircle2, Clock3, XCircle } from "lucide-react";
+import { apiRequest } from "@services/api";
+import { useAuth } from "@context/AuthContext";
+
+const initialForm = {
+  professionalTitle: "",
+  specialization: "",
+  education: "",
+  experience: "",
+  skills: "",
+  teachingStatement: "",
+};
+
+export default function InstructorApplication() {
+  const { user } = useAuth();
+  const [form, setForm] = useState(initialForm);
+  const [cv, setCv] = useState(null);
+  const [application, setApplication] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  async function loadApplication() {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("osta_token");
+      const data = await apiRequest("/instructor-applications/mine", { token });
+      setApplication(data.application || null);
+    } catch (err) {
+      setError(err.message || "Failed to load your instructor application.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadApplication();
+  }, []);
+
+  function updateField(field, value) {
+    setForm((previous) => ({ ...previous, [field]: value }));
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setMessage("");
+    setError("");
+
+    if (!cv) {
+      setError("Please upload your CV in PDF, DOC, or DOCX format.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const token = localStorage.getItem("osta_token");
+      const body = new FormData();
+
+      Object.entries(form).forEach(([key, value]) => body.append(key, value));
+      body.append("cv", cv);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/instructor-applications`,
+        {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body,
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || "Application submission failed.");
+
+      setApplication(data);
+      setCv(null);
+      setMessage(data.message || "Application submitted successfully.");
+      await loadApplication();
+    } catch (err) {
+      setError(err.message || "Application submission failed.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (loading) {
+    return <div className="rounded-2xl bg-white p-8 text-center text-sm text-slate-500">Loading application...</div>;
+  }
+
+  const status = application?.status;
+
+  if (status === "approved") {
+    return (
+      <section className="mx-auto max-w-3xl rounded-2xl border border-emerald-100 bg-white p-8 shadow-sm">
+        <CheckCircle2 className="text-emerald-600" size={42} />
+        <h1 className="mt-4 text-2xl font-black text-ink">Instructor application approved</h1>
+        <p className="mt-2 text-sm text-slate-500">Congratulations. Your account now has instructor access.</p>
+      </section>
+    );
+  }
+
+  if (status === "pending") {
+    return (
+      <section className="mx-auto max-w-3xl rounded-2xl border border-amber-100 bg-white p-8 shadow-sm">
+        <Clock3 className="text-amber-600" size={42} />
+        <h1 className="mt-4 text-2xl font-black text-ink">Instructor application under review</h1>
+        <p className="mt-2 text-sm text-slate-500">Your CV and professional information have been sent to the OSTA administrators. You will receive a notification and email after review.</p>
+        <p className="mt-4 text-xs text-slate-400">Submitted: {application.createdAt ? new Date(application.createdAt).toLocaleString() : "—"}</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="mx-auto max-w-3xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-black text-ink">Apply to become an instructor</h1>
+        <p className="mt-2 text-sm text-slate-500">Your account is registered safely as a regular user. Complete this application so an OSTA administrator can evaluate your qualifications before granting instructor access.</p>
+      </div>
+
+      {error && <div className="rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+      {message && <div className="rounded-xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">{message}</div>}
+
+      <form onSubmit={submit} className="space-y-5 rounded-2xl bg-white p-6 shadow-sm">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Professional title" value={form.professionalTitle} onChange={(v) => updateField("professionalTitle", v)} placeholder="e.g. Software Engineer" />
+          <Field label="Specialization" value={form.specialization} onChange={(v) => updateField("specialization", v)} placeholder="e.g. Web Development" />
+        </div>
+        <TextArea label="Education" value={form.education} onChange={(v) => updateField("education", v)} placeholder="Degrees, certifications, institutions..." />
+        <TextArea label="Professional / teaching experience" value={form.experience} onChange={(v) => updateField("experience", v)} placeholder="Describe relevant work and teaching experience..." />
+        <TextArea label="Skills" value={form.skills} onChange={(v) => updateField("skills", v)} placeholder="List your technical and teaching skills..." />
+        <TextArea label="Why do you want to teach on OSTA?" value={form.teachingStatement} onChange={(v) => updateField("teachingStatement", v)} placeholder="Explain what you can contribute to learners..." />
+
+        <div>
+          <label className="mb-2 block text-sm font-bold text-ink">CV / Resume</label>
+          <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-slate-200 p-5 hover:border-primary">
+            <Upload size={20} className="text-primary" />
+            <div>
+              <p className="text-sm font-bold text-ink">{cv ? cv.name : "Upload your CV"}</p>
+              <p className="text-xs text-slate-400">PDF, DOC, or DOCX · maximum 10 MB</p>
+            </div>
+            <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e) => setCv(e.target.files?.[0] || null)} />
+          </label>
+        </div>
+
+        <button disabled={submitting} className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 text-sm font-bold text-white disabled:opacity-60">
+          <FileText size={17} />
+          {submitting ? "Submitting..." : "Submit instructor application"}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+function Field({ label, value, onChange, placeholder }) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-bold text-ink">{label}</label>
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-primary" />
+    </div>
+  );
+}
+
+function TextArea({ label, value, onChange, placeholder }) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-bold text-ink">{label}</label>
+      <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={4} className="w-full rounded-lg border border-slate-200 px-3 py-3 text-sm outline-none focus:border-primary" />
+    </div>
+  );
+}
