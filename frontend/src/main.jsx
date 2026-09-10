@@ -9,20 +9,17 @@ import { LanguageProvider } from "@context/LanguageContext";
 import LanguageAutoTranslator from "./components/ui/LanguageAutoTranslator.jsx";
 import "./styles/index.css";
 
-// Keep local demos independent from the old Railway URL used by legacy screens.
-const LOCAL_API =
-  (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+// Production backend used by the Vercel frontend.
+const PRODUCTION_API = "https://osta-elearning-backend-production.up.railway.app/api";
 const LEGACY_API = "https://osta-elearning-production.up.railway.app/api";
 const nativeFetch = window.fetch.bind(window);
 
+// Redirect any legacy hard-coded API requests to the current Railway backend.
 window.fetch = (input, init) => {
-  if (typeof input === "string" && input.startsWith(LEGACY_API)) {
-    input = `${LOCAL_API}${input.slice(LEGACY_API.length)}`;
+  if (typeof input === "string") {
+    if (input.startsWith(LEGACY_API)) input = `${PRODUCTION_API}${input.slice(LEGACY_API.length)}`;
   } else if (input instanceof Request && input.url.startsWith(LEGACY_API)) {
-    input = new Request(
-      `${LOCAL_API}${input.url.slice(LEGACY_API.length)}`,
-      input
-    );
+    input = new Request(`${PRODUCTION_API}${input.url.slice(LEGACY_API.length)}`, input);
   }
   return nativeFetch(input, init);
 };
