@@ -54,6 +54,27 @@ export function AuthProvider({ children }) {
     return data.user;
   }
 
+  async function loginWithToken(oauthToken) {
+    if (!oauthToken) throw new Error("OAuth login token is missing.");
+    let response;
+    try {
+      response = await fetch(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${oauthToken}` },
+      });
+    } catch (error) {
+      console.error("OAuth connection error:", error);
+      throw new Error("Unable to connect to the OSTA server. Please try again.");
+    }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.user) throw new Error(data.message || "Social sign-in could not be completed.");
+    setUser(data.user);
+    setToken(oauthToken);
+    localStorage.setItem("osta_user", JSON.stringify(data.user));
+    localStorage.setItem("osta_token", oauthToken);
+    localStorage.removeItem("token");
+    return data.user;
+  }
+
   async function register(formData) {
     const multipart = formData instanceof FormData;
     let response;
@@ -84,7 +105,7 @@ export function AuthProvider({ children }) {
   }
   function logout() { clearAuth(); }
 
-  return <AuthContext.Provider value={{ user, setUser, updateUser, token, setToken, login, register, logout, isAuthenticated }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, setUser, updateUser, token, setToken, login, loginWithToken, register, logout, isAuthenticated }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
