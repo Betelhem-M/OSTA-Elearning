@@ -27,6 +27,7 @@ import Login from '@pages/auth/Login';
 import Register from '@pages/auth/Register';
 import ForgotPassword from '@pages/auth/ForgotPassword';
 import VerifyEmail from '@pages/auth/VerifyEmail';
+import OAuthCallback from '@pages/auth/OAuthCallback';
 
 import StudentDashboard from '@pages/student/Dashboard';
 import MyLearning from '@pages/student/MyLearning';
@@ -87,6 +88,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/auth/callback" element={<OAuthCallback />} />
       </Route>
 
       <Route element={<StudentAwarePublicLayout />}>
