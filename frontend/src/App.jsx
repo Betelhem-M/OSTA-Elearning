@@ -43,6 +43,7 @@ import Progress from '@pages/student/Progress';
 import TakeQuiz from '@pages/student/TakeQuiz';
 import Bookmarks from '@pages/student/Bookmarks';
 import AITutor from '@pages/student/AITutor';
+import InstructorApplication from '@pages/student/InstructorApplication';
 
 import InstructorDashboard from '@pages/instructor/Dashboard';
 import MyCourses from '@pages/instructor/MyCourses';
@@ -67,6 +68,7 @@ import SystemHealth from '@pages/admin/SystemHealth';
 import AdminSettings from '@pages/admin/Settings';
 import EventManagement from '@pages/admin/EventManagement';
 import AdminCreateEvent from '@pages/admin/AdminCreateEvent';
+import InstructorRequests from '@pages/admin/InstructorRequests';
 
 import ResearcherDashboard from '@pages/researcher/ResearcherDashboard';
 import EntrepreneurDashboard from '@pages/entrepreneur/EntrepreneurDashboard';
@@ -114,6 +116,7 @@ export default function App() {
         <Route path="/take-quiz/:quizId" element={<TakeQuiz />} />
         <Route path="/certificates" element={<Certificates />} />
         <Route path="/certificates/:certificateId" element={<CertificateView />} />
+        <Route path="/instructor-application" element={<InstructorApplication />} />
       </Route>
 
       <Route element={<AccountTypeRoute accountType="researcher"><StudentLayout /></AccountTypeRoute>}>
@@ -159,6 +162,7 @@ export default function App() {
         <Route path="/admin/reports" element={<AdminReports />} />
         <Route path="/admin/system" element={<SystemHealth />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
+        <Route path="/admin/instructor-requests" element={<InstructorRequests />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
