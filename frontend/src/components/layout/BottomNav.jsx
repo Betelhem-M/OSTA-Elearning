@@ -6,6 +6,7 @@ import {
   STUDENT_BOTTOM_NAV,
 } from "@constants/navigation";
 import { useTheme } from "@context/ThemeContext";
+import LanguageSwitcher from "@components/ui/LanguageSwitcher";
 
 export default function BottomNav({
   items = STUDENT_BOTTOM_NAV,
@@ -14,16 +15,14 @@ export default function BottomNav({
   const { isDark, toggleTheme } = useTheme();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface-card px-4 pb-safe-bottom shadow-[0_-4px_10px_rgba(0,0,0,0.05)] lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface-card px-2 pb-safe-bottom shadow-[0_-4px_10px_rgba(0,0,0,0.05)] lg:hidden">
       <div className="mx-auto flex h-16 max-w-md items-center justify-between">
         {items.map((item) => {
-          const Icon =
-            Icons[item.icon] ||
-            Icons.Circle;
+          const Icon = Icons[item.icon] || Icons.Circle;
 
           const isActive =
-            location.pathname ===
-            item.href;
+            location.pathname === item.href ||
+            (item.href !== "/dashboard" && location.pathname.startsWith(`${item.href}/`));
 
           return (
             <Link
@@ -35,17 +34,16 @@ export default function BottomNav({
             >
               <div
                 className={`rounded-full p-1 ${
-                  isActive
-                    ? "text-primary"
-                    : "text-ink-faint"
+                  isActive ? "text-primary" : "text-ink-faint"
                 }`}
               >
                 <Icon size={22} />
               </div>
-
             </Link>
           );
         })}
+
+        <LanguageSwitcher compact />
 
         <button
           type="button"
