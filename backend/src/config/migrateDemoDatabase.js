@@ -2,9 +2,6 @@ require("dotenv").config();
 
 const pool = require("./database");
 
-// The checked-in schema was created before several portal APIs were added.
-// This additive migration brings an existing local demo DB up to the schema
-// expected by the current backend without deleting any content.
 const migrations = [
   ["assignments", "lesson_id", "BIGINT(20) UNSIGNED NULL"],
   ["assignments", "instructions", "TEXT NULL"],
@@ -13,29 +10,26 @@ const migrations = [
   ["assignments", "attachment_path", "VARCHAR(1000) NULL"],
   ["assignments", "attachment_name", "VARCHAR(255) NULL"],
   ["assignments", "attachment_size", "BIGINT UNSIGNED NULL"],
-
   ["competitions", "category", "VARCHAR(120) NULL"],
   ["competitions", "deadline", "DATETIME NULL"],
   ["competitions", "prize", "VARCHAR(255) NULL"],
   ["competitions", "created_by", "BIGINT(20) UNSIGNED NULL"],
-
   ["competition_participants", "team_name", "VARCHAR(200) NULL"],
   ["competition_participants", "rank_position", "INT UNSIGNED NULL"],
   ["competition_participants", "joined_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"],
-
   ["innovation_ideas", "category", "VARCHAR(120) NULL"],
   ["innovation_ideas", "votes", "INT UNSIGNED NOT NULL DEFAULT 0"],
-
   ["startups", "category", "VARCHAR(120) NULL"],
-
   ["researchers", "field", "VARCHAR(150) NULL"],
   ["researchers", "affiliation", "VARCHAR(250) NULL"],
   ["researchers", "updated_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
-
   ["publications", "field", "VARCHAR(150) NULL"],
   ["publications", "publication_year", "YEAR NULL"],
-
-  // Lessons use resource_url in the current seed script and lesson viewer.
+  ["publications", "content", "LONGTEXT NULL"],
+  ["publications", "file_name", "VARCHAR(255) NULL"],
+  ["publications", "file_mime_type", "VARCHAR(120) NULL"],
+  ["publications", "file_size", "BIGINT UNSIGNED NULL"],
+  ["publications", "file_data", "LONGBLOB NULL"],
   ["lessons", "resource_url", "VARCHAR(1000) NULL"],
 ];
 
@@ -54,7 +48,7 @@ async function run() {
   const databaseName = dbRows[0]?.database_name;
   if (!databaseName) throw new Error("No database selected. Check DB_NAME in backend/.env");
 
-  console.log(`Migrating local database: ${databaseName}`);
+  console.log(`Migrating database: ${databaseName}`);
 
   for (const [table, column, definition] of migrations) {
     if (!(await exists("table", table))) {
@@ -89,14 +83,13 @@ async function run() {
       CONSTRAINT fk_books_uploaded_by FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
-  console.log("Books table is ready.");
 
-  console.log("Demo database migration completed successfully.");
+  console.log("Database migration completed successfully.");
 }
 
 run()
   .catch((error) => {
-    console.error("Demo database migration failed:", error);
+    console.error("Database migration failed:", error);
     process.exitCode = 1;
   })
   .finally(() => pool.end());
