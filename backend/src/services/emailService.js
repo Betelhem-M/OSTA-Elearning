@@ -1,14 +1,25 @@
-let resendConfigured = false;
+let brevoConfigured = false;
 
-function getResendConfig() {
-  const apiKey = process.env.RESEND_API_KEY;
+function getBrevoConfig() {
+  const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) {
-    throw new Error("RESEND_API_KEY must be configured");
+    throw new Error("BREVO_API_KEY must be configured");
   }
 
-  const from = process.env.RESEND_FROM || process.env.EMAIL_FROM || "OSTA E-Learning <onboarding@resend.dev>";
+  const fromEmail = process.env.BREVO_FROM_EMAIL || process.env.EMAIL_FROM;
+  const fromName = process.env.BREVO_FROM_NAME || "OSTA E-Learning";
 
-  return { apiKey, from };
+  if (!fromEmail) {
+    throw new Error("BREVO_FROM_EMAIL must be configured");
+  }
+
+  return {
+    apiKey,
+    sender: {
+      name: fromName,
+      email: fromEmail,
+    },
+  };
 }
 
 async function sendEmail({ to, subject, html, text }) {
@@ -18,42 +29,47 @@ async function sendEmail({ to, subject, html, text }) {
     return { demoMode: true };
   }
 
-  const { apiKey, from } = getResendConfig();
+  const { apiKey, sender } = getBrevoConfig();
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        accept: "application/json",
+        "api-key": apiKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from,
-        to: [to],
+        sender,
+        to: [{ email: to }],
         subject,
-        text,
-        html,
+        textContent: text,
+        htmlContent: html,
       }),
     });
 
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const message = data?.message || data?.error || `Resend request failed with status ${response.status}`;
+      const message =
+        data?.message ||
+        data?.code ||
+        `Brevo request failed with status ${response.status}`;
       throw new Error(message);
     }
 
-    resendConfigured = true;
+    brevoConfigured = true;
 
-    console.log("Email sent successfully through Resend:", {
-      id: data.id,
+    console.log("Email sent successfully through Brevo:", {
+      messageId: data.messageId,
       to,
     });
 
     return data;
   } catch (error) {
-    console.error("Email sending failed through Resend:", {
+    console.error("Email sending failed through Brevo:", {
       message: error.message,
+      to,
     });
     throw error;
   }
