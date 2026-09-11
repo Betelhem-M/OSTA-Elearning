@@ -4,20 +4,18 @@ import { useLanguage } from "@context/LanguageContext";
 /*
  * Automatic translation fallback for legacy/literal UI text.
  *
- * i18next/LanguageContext remains the preferred source for important UI copy.
- * This layer covers visible text that has not yet been migrated. It first uses
- * the local dictionary, then falls back to Google Translate's public translation
- * endpoint. Results are cached in localStorage so repeated renders do not keep
- * requesting the same text.
- *
- * We intentionally skip URLs, email addresses, code-like text, scripts/styles,
- * and very long text blocks. When the remote service is unavailable, the original
- * English text stays visible instead of breaking the page.
+ * Important UI copy should still use LanguageContext/i18next. This fallback
+ * automatically translates visible English text that has not been migrated yet.
+ * It watches React's DOM changes, retries failed requests, caches successful
+ * translations, and always leaves the original text visible when translation
+ * is unavailable.
  */
 
-const CACHE_KEY = "osta_auto_translation_cache_v1";
+const CACHE_KEY = "osta_auto_translation_cache_v2";
 const MAX_TEXT_LENGTH = 300;
-const REQUEST_DELAY_MS = 80;
+const MAX_REQUESTS_PER_PASS = 40;
+const REQUEST_CONCURRENCY = 4;
+const RETRY_COUNT = 2;
 
 const originalText = new WeakMap();
 const originalAttributes = new WeakMap();
@@ -36,7 +34,7 @@ function writeCache(cache) {
   try {
     window.localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
   } catch {
-    // Ignore storage quota/private-mode failures. Translation still works.
+    // Storage is only an optimization; translation continues without it.
   }
 }
 
@@ -51,9 +49,37 @@ function looksTranslatable(value) {
   return /[A-Za-z]/.test(value);
 }
 
-function dictionaryTranslation(value, language, t) {
+function localTranslation(value, language, t) {
+  if (language === "en") return value;
   const translated = t(value);
   return translated && translated !== value ? translated : value;
+}
+
+function parseGoogleResponse(data) {
+  return Array.isArray(data?.[0])
+    ? data[0]
+        .map((part) => part?.[0])
+        .filter(Boolean)
+        .join("")
+        .trim()
+    : "";
+}
+
+function parseMyMemoryResponse(data) {
+  return data?.responseData?.translatedText
+    ? String(data.responseData.translatedText).trim()
+    : "";
+}
+
+async function requestJson(url, signal) {
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    signal,
+  });
+
+  if (!response.ok) throw new Error(`translation request failed: ${response.status}`);
+  return response.json();
 }
 
 async function remoteTranslate(text, targetLanguage) {
@@ -62,39 +88,83 @@ async function remoteTranslate(text, targetLanguage) {
   const key = `${targetLanguage}::${text}`;
   if (cache[key]) return cache[key];
 
-  const url = new URL("https://translate.googleapis.com/translate_a/single");
-  url.searchParams.set("client", "gtx");
-  url.searchParams.set("sl", "auto");
-  url.searchParams.set("tl", targetLanguage);
-  url.searchParams.set("dt", "t");
-  url.searchParams.set("q", text);
+  for (let attempt = 0; attempt <= RETRY_COUNT; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 8000);
 
-  try {
-    const response = await fetch(url.toString(), {
-      method: "GET",
-      headers: { Accept: "application/json" },
-    });
+    try {
+      const googleUrl = new URL("https://translate.googleapis.com/translate_a/single");
+      googleUrl.searchParams.set("client", "gtx");
+      googleUrl.searchParams.set("sl", "auto");
+      googleUrl.searchParams.set("tl", targetLanguage);
+      googleUrl.searchParams.set("dt", "t");
+      googleUrl.searchParams.set("q", text);
 
-    if (!response.ok) throw new Error(`translation request failed: ${response.status}`);
+      try {
+        const googleData = await requestJson(googleUrl.toString(), controller.signal);
+        const googleTranslation = parseGoogleResponse(googleData);
+        if (googleTranslation && googleTranslation !== text) {
+          cache[key] = googleTranslation;
+          writeCache(cache);
+          return googleTranslation;
+        }
+      } catch {
+        // Try the second translation provider below.
+      }
 
-    const data = await response.json();
-    const translated = Array.isArray(data?.[0])
-      ? data[0]
-          .map((part) => part?.[0])
-          .filter(Boolean)
-          .join("")
-          .trim()
-      : "";
+      const memoryUrl = new URL("https://api.mymemory.translated.net/get");
+      memoryUrl.searchParams.set("q", text);
+      memoryUrl.searchParams.set("langpair", `en|${targetLanguage}`);
 
-    if (!translated || translated === text) return text;
+      const memoryData = await requestJson(memoryUrl.toString(), controller.signal);
+      const memoryTranslation = parseMyMemoryResponse(memoryData);
+      if (memoryTranslation && memoryTranslation !== text) {
+        cache[key] = memoryTranslation;
+        writeCache(cache);
+        return memoryTranslation;
+      }
+    } catch (error) {
+      if (attempt === RETRY_COUNT) {
+        console.warn("OSTA automatic translation unavailable.", error);
+      }
+    } finally {
+      window.clearTimeout(timeout);
+    }
 
-    cache[key] = translated;
-    writeCache(cache);
-    return translated;
-  } catch (error) {
-    console.warn("OSTA automatic translation unavailable for a text node.", error);
-    return text;
+    if (attempt < RETRY_COUNT) {
+      await new Promise((resolve) => window.setTimeout(resolve, 350 * (attempt + 1)));
+    }
   }
+
+  return text;
+}
+
+async function translateInBatches(items, language, cancelled) {
+  let cursor = 0;
+
+  const worker = async () => {
+    while (!cancelled() && cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      const item = items[index];
+
+      const translated = await remoteTranslate(item.source, language);
+      if (cancelled() || !item.node.isConnected) continue;
+
+      const current = item.node.nodeValue || "";
+      const trimmed = current.trim();
+      if (trimmed === item.source && translated !== item.source) {
+        item.node.nodeValue = current.replace(trimmed, translated);
+      }
+    }
+  };
+
+  await Promise.all(
+    Array.from(
+      { length: Math.min(REQUEST_CONCURRENCY, items.length) },
+      () => worker()
+    )
+  );
 }
 
 export default function LanguageAutoTranslator() {
@@ -106,28 +176,29 @@ export default function LanguageAutoTranslator() {
     let cancelled = false;
     let timer = null;
     let running = false;
+    let dirty = false;
 
     const collectTextNodes = () => {
-      const walker = document.createTreeWalker(
-        document.body,
-        NodeFilter.SHOW_TEXT
-      );
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       const nodes = [];
       let node;
-
       while ((node = walker.nextNode())) nodes.push(node);
       return nodes;
     };
 
     const translate = async () => {
-      if (running || cancelled) return;
+      if (running || cancelled) {
+        dirty = true;
+        return;
+      }
+
       running = true;
+      dirty = false;
 
       try {
-        const nodes = collectTextNodes();
         const pending = [];
 
-        for (const textNode of nodes) {
+        for (const textNode of collectTextNodes()) {
           const parent = textNode.parentElement;
           if (!parent || parent.closest("script,style,noscript,svg")) continue;
 
@@ -139,13 +210,11 @@ export default function LanguageAutoTranslator() {
           const source = originalText.get(textNode);
 
           if (language === "en") {
-            if (trimmed !== source) {
-              textNode.nodeValue = current.replace(trimmed, source);
-            }
+            if (trimmed !== source) textNode.nodeValue = current.replace(trimmed, source);
             continue;
           }
 
-          const local = dictionaryTranslation(source, language, t);
+          const local = localTranslation(source, language, t);
           if (local !== source) {
             textNode.nodeValue = current.replace(trimmed, local);
             continue;
@@ -157,68 +226,63 @@ export default function LanguageAutoTranslator() {
             continue;
           }
 
-          pending.push({ textNode, source });
-        }
-
-        for (const item of pending) {
-          if (cancelled) break;
-          const translated = await remoteTranslate(item.source, language);
-          if (cancelled || !item.textNode.isConnected) continue;
-
-          const current = item.textNode.nodeValue || "";
-          const trimmed = current.trim();
-          if (trimmed === item.source) {
-            item.textNode.nodeValue = current.replace(trimmed, translated);
+          if (pending.length < MAX_REQUESTS_PER_PASS) {
+            pending.push({ node: textNode, source });
           }
-
-          await new Promise((resolve) => setTimeout(resolve, REQUEST_DELAY_MS));
         }
 
-        document
-          .querySelectorAll("input[placeholder], textarea[placeholder], [aria-label], [title]")
-          .forEach((element) => {
-            if (!originalAttributes.has(element)) originalAttributes.set(element, {});
-            const originals = originalAttributes.get(element);
+        await translateInBatches(pending, language, () => cancelled);
 
-            for (const attr of ["placeholder", "aria-label", "title"]) {
-              const current = element.getAttribute(attr);
-              if (!current || !looksTranslatable(current)) continue;
-              if (!originals[attr]) originals[attr] = current;
+        const elements = document.querySelectorAll(
+          "input[placeholder], textarea[placeholder], [aria-label], [title]"
+        );
 
-              const source = originals[attr];
-              if (language === "en") {
-                element.setAttribute(attr, source);
-                continue;
-              }
+        for (const element of elements) {
+          if (!originalAttributes.has(element)) originalAttributes.set(element, {});
+          const originals = originalAttributes.get(element);
 
-              const local = dictionaryTranslation(source, language, t);
-              if (local !== source) {
-                element.setAttribute(attr, local);
-                continue;
-              }
+          for (const attr of ["placeholder", "aria-label", "title"]) {
+            const current = element.getAttribute(attr);
+            if (!current || !looksTranslatable(current)) continue;
+            if (!originals[attr]) originals[attr] = current;
 
-              const key = `${language}::${source}`;
-              if (cache[key]) {
-                element.setAttribute(attr, cache[key]);
-              }
+            const source = originals[attr];
+            if (language === "en") {
+              element.setAttribute(attr, source);
+              continue;
             }
-          });
+
+            const local = localTranslation(source, language, t);
+            const key = `${language}::${source}`;
+            const translated = local !== source ? local : cache[key];
+            if (translated && translated !== source) {
+              element.setAttribute(attr, translated);
+              continue;
+            }
+
+            const remote = await remoteTranslate(source, language);
+            if (remote !== source) element.setAttribute(attr, remote);
+          }
+        }
       } finally {
         running = false;
+        if (dirty && !cancelled) schedule();
       }
     };
 
     const schedule = () => {
+      dirty = true;
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
+        dirty = false;
         void translate();
-      }, 50);
+      }, 75);
     };
 
     schedule();
 
     const observer = new MutationObserver(schedule);
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
     return () => {
       cancelled = true;
