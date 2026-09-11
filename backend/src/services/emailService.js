@@ -76,15 +76,35 @@ async function sendEmail({ to, subject, html, text }) {
 }
 
 async function sendVerificationCode(to, code) {
+  const frontendUrl = (
+    process.env.FRONTEND_URL || "https://osta-elearning-platform.vercel.app"
+  ).replace(/\/$/, "");
+  const verificationUrl = `${frontendUrl}/verify-email?email=${encodeURIComponent(to)}`;
+
   return sendEmail({
     to,
     subject: "Verify your OSTA E-Learning account",
-    text: `Your OSTA verification code is ${code}. It expires in 15 minutes.`,
+    text: [
+      `Your OSTA verification code is ${code}. It expires in 15 minutes.`,
+      "",
+      `Open the OSTA verification page: ${verificationUrl}`,
+      "",
+      "Enter the 6-digit code from this email to verify your account.",
+    ].join("\n"),
     html: `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <h2>Verify your OSTA E-Learning account</h2>
-        <p>Your OSTA verification code is <strong>${code}</strong>.</p>
-        <p>This code expires in 15 minutes.</p>
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto; color: #172033;">
+        <h2 style="margin-bottom: 8px;">Verify your OSTA E-Learning account</h2>
+        <p>Thank you for registering with OSTA E-Learning.</p>
+        <p>Your verification code is:</p>
+        <p style="font-size: 30px; font-weight: 700; letter-spacing: 8px; margin: 18px 0;">${code}</p>
+        <p>This code expires in <strong>15 minutes</strong>.</p>
+        <p style="margin: 28px 0;">
+          <a href="${verificationUrl}" style="display: inline-block; padding: 12px 22px; background: #0a2540; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700;">
+            Verify your email
+          </a>
+        </p>
+        <p style="font-size: 13px; color: #64748b;">The button opens the OSTA verification page. Enter the 6-digit code shown above.</p>
+        <p style="font-size: 12px; color: #94a3b8; margin-top: 28px;">If you did not create an OSTA account, you can ignore this email.</p>
       </div>
     `,
   });
