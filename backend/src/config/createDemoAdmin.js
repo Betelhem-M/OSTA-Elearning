@@ -4,7 +4,11 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const pool = require("./database");
 
-const ADMIN_EMAIL = "osta@local.com";
+// The demo/admin account uses a real inbox so admin notifications and
+// password recovery can be received. The password itself comes from the
+// backend environment and is stored only as a bcrypt hash in MySQL.
+const ADMIN_EMAIL = "betelhemmolaw@gmail.com";
+const LEGACY_ADMIN_EMAILS = ["osta@gmail.com", "osta@local.com"];
 const ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD;
 
 async function run() {
@@ -18,9 +22,15 @@ async function run() {
   try {
     await connection.beginTransaction();
 
+    // Prefer the new real admin email. If the old demo account exists,
+    // migrate that existing account instead of creating a second admin.
+    const placeholders = LEGACY_ADMIN_EMAILS.map(() => "?").join(", ");
     const [existing] = await connection.execute(
-      "SELECT id FROM users WHERE email = ? LIMIT 1",
-      [ADMIN_EMAIL]
+      `SELECT id FROM users
+       WHERE email = ? OR email IN (${placeholders})
+       ORDER BY CASE WHEN email = ? THEN 0 ELSE 1 END
+       LIMIT 1`,
+      [ADMIN_EMAIL, ...LEGACY_ADMIN_EMAILS, ADMIN_EMAIL]
     );
 
     let userId;
@@ -29,10 +39,18 @@ async function run() {
       userId = existing[0].id;
       await connection.execute(
         `UPDATE users
-         SET first_name = ?, last_name = ?, phone = ?, region = ?,
+         SET first_name = ?, last_name = ?, email = ?, phone = ?, region = ?,
              password = ?, role = 'admin', account_type = 'student', status = 'active'
          WHERE id = ?`,
-        ["OSTA", "Administrator", "", "Oromia", passwordHash, userId]
+        [
+          "OSTA",
+          "Administrator",
+          ADMIN_EMAIL,
+          "",
+          "Oromia",
+          passwordHash,
+          userId,
+        ]
       );
     } else {
       const [result] = await connection.execute(
@@ -44,6 +62,8 @@ async function run() {
       userId = result.insertId;
     }
 
+    // Mark the seeded admin as verified so the normal user email-verification
+    // flow never blocks the pre-created administrator account.
     const codeHash = crypto
       .createHash("sha256")
       .update("demo-admin-verified")
