@@ -72,6 +72,7 @@ import AdminCreateEvent from '@pages/admin/AdminCreateEvent';
 import InstructorRequests from '@pages/admin/InstructorRequests';
 
 import ResearcherDashboard from '@pages/researcher/ResearcherDashboard';
+import ResearchWorkspace from '@pages/researcher/ResearchWorkspace';
 import EntrepreneurDashboard from '@pages/entrepreneur/EntrepreneurDashboard';
 import PrivateQuestions from '@pages/PrivateQuestions';
 
@@ -123,6 +124,7 @@ export default function App() {
 
       <Route element={<AccountTypeRoute accountType="researcher"><StudentLayout /></AccountTypeRoute>}>
         <Route path="/researcher/dashboard" element={<ResearcherDashboard />} />
+        <Route path="/researcher/workspace" element={<ResearchWorkspace />} />
       </Route>
 
       <Route element={<AccountTypeRoute accountType="entrepreneur"><StudentLayout /></AccountTypeRoute>}>
