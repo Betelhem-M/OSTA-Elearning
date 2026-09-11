@@ -122,11 +122,17 @@ const authService = {
         const verificationCode = isLocalVerificationBypassEnabled() ? "123456" : generateCode();
         await AuthToken.createVerification(existingUser.id, verificationCode);
         if (!isLocalVerificationBypassEnabled()) await sendVerificationCode(existingUser.email, verificationCode);
-        throw new Error(
-          isLocalVerificationBypassEnabled()
+
+        // Treat an unverified existing account as a valid continuation of the
+        // registration flow. The frontend uses this flag to open the same
+        // verification page used by brand-new registrations.
+        return {
+          requiresVerification: true,
+          email: existingUser.email,
+          message: isLocalVerificationBypassEnabled()
             ? "This email is already registered but not verified. Please complete email verification to continue."
-            : "This email is already registered but not verified. A new verification code has been sent."
-        );
+            : "This email is already registered but not verified. A new verification code has been sent.",
+        };
       }
       throw new Error("Email is already registered");
     }
