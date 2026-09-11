@@ -90,7 +90,7 @@ export function AuthProvider({ children }) {
     }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.message || "Registration failed");
-    if (data.instructorRequest) return data;
+    if (data.instructorRequest || data.requiresVerification) return data;
     if (!data.user) throw new Error("Registration response is missing user.");
     if (data.token) { setToken(data.token); localStorage.setItem("osta_token", data.token); }
     setUser(data.user);
