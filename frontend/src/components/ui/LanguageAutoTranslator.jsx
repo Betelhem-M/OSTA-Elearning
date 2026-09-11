@@ -97,13 +97,6 @@ async function remoteTranslate(text, targetLanguage) {
   }
 }
 
-function restoreElement(element, source, translated) {
-  if (!element || !source) return;
-  if (translated && translated !== source) {
-    element.textContent = translated;
-  }
-}
-
 export default function LanguageAutoTranslator() {
   const { language, t } = useLanguage();
 
@@ -164,7 +157,7 @@ export default function LanguageAutoTranslator() {
             continue;
           }
 
-          pending.push({ textNode, source, current, key });
+          pending.push({ textNode, source });
         }
 
         for (const item of pending) {
