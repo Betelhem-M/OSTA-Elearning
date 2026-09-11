@@ -1,6 +1,6 @@
 import { Globe2 } from 'lucide-react';
 import { useLanguage } from '@context/LanguageContext';
-import i18n from '@i18n';
+import i18n from '@/i18n';
 
 export default function LanguageSwitcher({ compact = false }) {
   const { language, setLanguage } = useLanguage();
