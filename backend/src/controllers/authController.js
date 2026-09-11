@@ -35,6 +35,14 @@ const authController = {
         return res.status(201).json(result);
       }
 
+      // An existing account that has not verified its email is still part of
+      // the registration/verification flow. Return a successful response so
+      // the frontend sends the user to the verification page instead of
+      // displaying the API error on the registration form.
+      if (result.requiresVerification) {
+        return res.status(200).json(result);
+      }
+
       return res.status(201).json({
         message: 'Registration successful. Check your email to verify your account.',
         ...result,
