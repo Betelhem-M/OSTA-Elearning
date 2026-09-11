@@ -1,24 +1,24 @@
-const express = require('express');
-const c = require('../controllers/researchController');
-const auth = require('../middleware/authMiddleware');
-const roles = require('../middleware/roleMiddleware');
+const express = require("express");
+const c = require("../controllers/researchController");
+const auth = require("../middleware/authMiddleware");
+const roles = require("../middleware/roleMiddleware");
+const upload = require("../middleware/researchUploadMiddleware");
 
 const router = express.Router();
 
-// PUBLIC READ-ONLY ACCESS
-router.get('/researchers', c.getResearchers);
-router.get('/researchers/:id', c.getResearcher);
-router.get('/publications', c.getPublications);
-router.get('/publications/:id', c.getPublication);
+router.get("/researchers", c.getResearchers);
+router.get("/researchers/:id", c.getResearcher);
+router.get("/publications", c.getPublications);
+router.get("/publications/:id", c.getPublication);
+router.get("/publications/:id/file", auth, c.downloadFile);
 
-// AUTHENTICATED RESEARCHER ACTIONS
-router.post('/researchers', auth, c.createResearcher);
-router.post('/publications', auth, c.createPublication);
-router.put('/publications/:id', auth, c.updatePublication);
-router.delete('/publications/:id', auth, c.deletePublication);
+router.post("/researchers", auth, c.createResearcher);
+router.get("/my-publications", auth, c.myPublications);
+router.post("/publications", auth, upload.single("researchFile"), c.createPublication);
+router.put("/publications/:id", auth, upload.single("researchFile"), c.updatePublication);
+router.delete("/publications/:id", auth, c.deletePublication);
 
-// ADMIN
-router.get('/admin/publications', auth, roles('admin'), c.getAllForAdmin);
-router.put('/admin/publications/:id/status', auth, roles('admin'), c.updatePublicationStatus);
+router.get("/admin/publications", auth, roles("admin"), c.getAllForAdmin);
+router.put("/admin/publications/:id/status", auth, roles("admin"), c.updatePublicationStatus);
 
 module.exports = router;
