@@ -18,10 +18,7 @@ export default function CreateCourse() {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  const [categoryForm, setCategoryForm] = useState({
-    name: "",
-    description: "",
-  });
+  const [categoryForm, setCategoryForm] = useState({ name: "", description: "" });
 
   const [form, setForm] = useState({
     title: "",
@@ -29,6 +26,8 @@ export default function CreateCourse() {
     longDescription: "",
     categoryId: "",
     level: "Beginner",
+    duration: "",
+    estimatedHours: "",
     pricingType: "free",
     price: "",
     telebirrPhone: "",
@@ -69,12 +68,7 @@ export default function CreateCourse() {
       ...prev,
       pricingType: value,
       ...(value === "free"
-        ? {
-            price: "",
-            telebirrPhone: "",
-            cbeAccount: "",
-            paymentAccountName: "",
-          }
+        ? { price: "", telebirrPhone: "", cbeAccount: "", paymentAccountName: "" }
         : {}),
     }));
   }
@@ -112,10 +106,7 @@ export default function CreateCourse() {
 
       const response = await fetch(`${API_URL}/categories`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           name: categoryForm.name.trim(),
           description: categoryForm.description.trim(),
@@ -143,21 +134,12 @@ export default function CreateCourse() {
 
     const response = await fetch(`${API_URL}/instructor/payment-accounts`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        method,
-        accountNumber: accountNumber.trim(),
-        accountName: accountName.trim(),
-      }),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ method, accountNumber: accountNumber.trim(), accountName: accountName.trim() }),
     });
 
     const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || `Failed to save ${method} payment account`);
-    }
+    if (!response.ok) throw new Error(data.message || `Failed to save ${method} payment account`);
   }
 
   async function handleSubmit(e) {
@@ -168,17 +150,16 @@ export default function CreateCourse() {
     if (!form.description.trim()) return setError("Course description is required.");
     if (!form.categoryId) return setError("Please select a category.");
 
+    const estimatedHours = Number(form.estimatedHours);
+    if (form.estimatedHours !== "" && (!Number.isFinite(estimatedHours) || estimatedHours < 0)) {
+      return setError("Estimated hours must be a valid non-negative number.");
+    }
+
     if (isPaid) {
       const price = Number(form.price);
-      if (!Number.isFinite(price) || price <= 0) {
-        return setError("Enter a paid course price greater than 0 ETB.");
-      }
-      if (!form.paymentAccountName.trim()) {
-        return setError("Payment account holder name is required for paid courses.");
-      }
-      if (!form.telebirrPhone.trim() && !form.cbeAccount.trim()) {
-        return setError("Enter at least a Telebirr phone number or a CBE account number.");
-      }
+      if (!Number.isFinite(price) || price <= 0) return setError("Enter a paid course price greater than 0 ETB.");
+      if (!form.paymentAccountName.trim()) return setError("Payment account holder name is required for paid courses.");
+      if (!form.telebirrPhone.trim() && !form.cbeAccount.trim()) return setError("Enter at least a Telebirr phone number or a CBE account number.");
     }
 
     try {
@@ -188,16 +169,15 @@ export default function CreateCourse() {
 
       const response = await fetch(`${API_URL}/courses`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           title: form.title.trim(),
           description: form.description.trim(),
           longDescription: form.longDescription.trim(),
           categoryId: Number(form.categoryId),
           level: form.level,
+          duration: form.duration.trim(),
+          estimatedHours: form.estimatedHours === "" ? 0 : estimatedHours,
           pricingType: form.pricingType,
           price: isPaid ? Number(form.price) : 0,
           thumbnailColor: form.thumbnailColor,
@@ -208,25 +188,9 @@ export default function CreateCourse() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to create course");
 
-      // Payment accounts are instructor-level accounts. Saving them here makes
-      // them available to learners for this instructor's paid courses.
       if (isPaid) {
-        if (form.telebirrPhone.trim()) {
-          await savePaymentAccount(
-            token,
-            "telebirr",
-            form.telebirrPhone,
-            form.paymentAccountName
-          );
-        }
-        if (form.cbeAccount.trim()) {
-          await savePaymentAccount(
-            token,
-            "cbe",
-            form.cbeAccount,
-            form.paymentAccountName
-          );
-        }
+        if (form.telebirrPhone.trim()) await savePaymentAccount(token, "telebirr", form.telebirrPhone, form.paymentAccountName);
+        if (form.cbeAccount.trim()) await savePaymentAccount(token, "cbe", form.cbeAccount, form.paymentAccountName);
       }
 
       setShowSuccessModal(true);
@@ -243,21 +207,12 @@ export default function CreateCourse() {
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
           <h1 className="text-xl font-extrabold text-ink">Create Course</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Create a new course for your students.
-          </p>
+          <p className="mt-1 text-sm text-slate-500">Create a new course for your students.</p>
         </div>
 
-        {error && (
-          <div className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
-            {error}
-          </div>
-        )}
+        {error && <div className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</div>}
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-6 rounded-2xl bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.07)]"
-        >
+        <form onSubmit={handleSubmit} className="space-y-6 rounded-2xl bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.07)]">
           <div>
             <label className="mb-2 block text-sm font-semibold text-ink">Course Title</label>
             <input name="title" value={form.title} onChange={handleChange} placeholder="Enter course title" className={inputClass} />
@@ -295,6 +250,19 @@ export default function CreateCourse() {
             </div>
           </div>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-ink">Duration</label>
+              <input name="duration" value={form.duration} onChange={handleChange} placeholder="e.g. 6 Weeks" className={inputClass} />
+              <p className="mt-1.5 text-xs text-slate-500">Enter a learner-friendly duration such as 4 Weeks, 2 Months, or 10 Days.</p>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-ink">Estimated Hours</label>
+              <input type="number" name="estimatedHours" min="0" step="0.5" value={form.estimatedHours} onChange={handleChange} placeholder="e.g. 24" className={inputClass} />
+              <p className="mt-1.5 text-xs text-slate-500">Total expected learning time for the complete course.</p>
+            </div>
+          </div>
+
           <div>
             <label className="mb-2 block text-sm font-semibold text-ink">Course Pricing</label>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -313,12 +281,7 @@ export default function CreateCourse() {
 
           <div className={`rounded-xl border p-4 ${isPaid ? "border-primary/20 bg-primary/5" : "border-slate-200 bg-slate-50"}`}>
             <p className="mb-4 text-sm font-extrabold text-ink">Payment Information</p>
-            <p className="mb-4 text-xs text-slate-500">
-              {isPaid
-                ? "Save the instructor payment details that students will see when they click Enroll on this paid course."
-                : "Payment fields are disabled because this course is free."}
-            </p>
-
+            <p className="mb-4 text-xs text-slate-500">{isPaid ? "Save the instructor payment details that students will see when they click Enroll on this paid course." : "Payment fields are disabled because this course is free."}</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-2 block text-sm font-semibold text-ink">Price (ETB)</label>
@@ -337,12 +300,7 @@ export default function CreateCourse() {
                 <input type="text" name="cbeAccount" value={form.cbeAccount} onChange={handleChange} disabled={!isPaid} placeholder="CBE account number" className={`${inputClass} disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`} />
               </div>
             </div>
-
-            {isPaid && (
-              <p className="mt-3 text-xs text-slate-500">
-                Enter at least one payment method. The student will be shown the saved account when enrolling.
-              </p>
-            )}
+            {isPaid && <p className="mt-3 text-xs text-slate-500">Enter at least one payment method. The student will be shown the saved account when enrolling.</p>}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -364,9 +322,7 @@ export default function CreateCourse() {
 
           <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
             <button type="button" onClick={() => navigate("/instructor/dashboard")} className="rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
-            <button type="submit" disabled={saving} className="rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60">
-              {saving ? "Creating..." : "Create Course"}
-            </button>
+            <button type="submit" disabled={saving} className="rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Creating..." : "Create Course"}</button>
           </div>
         </form>
       </div>
@@ -404,11 +360,7 @@ export default function CreateCourse() {
           <div className="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-2xl">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl">✓</div>
             <h2 className="text-xl font-extrabold text-ink">Course Created</h2>
-            <p className="mt-2 text-sm text-slate-500">
-              {isPaid
-                ? "Your paid course was created. The saved payment accounts will be available to students after verification."
-                : "Your free course was created successfully."}
-            </p>
+            <p className="mt-2 text-sm text-slate-500">{isPaid ? "Your paid course was created. The saved payment accounts will be available to students after verification." : "Your free course was created successfully."}</p>
             <button type="button" onClick={() => navigate("/instructor/dashboard")} className="mt-5 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-hover">Go to Dashboard</button>
           </div>
         </div>
