@@ -1,13 +1,8 @@
 const Course = require("../models/Course");
 
 function validateCourseMetadata({ language, duration, estimatedHours }) {
-  if (!language || !String(language).trim()) {
-    return "Course language is required";
-  }
-
-  if (!duration || !String(duration).trim()) {
-    return "Course duration is required";
-  }
+  if (!language || !String(language).trim()) return "Course language is required";
+  if (!duration || !String(duration).trim()) return "Course duration is required";
 
   const hours = Number(estimatedHours);
   if (!Number.isFinite(hours) || hours <= 0) {
@@ -18,9 +13,6 @@ function validateCourseMetadata({ language, duration, estimatedHours }) {
 }
 
 const courseController = {
-  // =====================================================
-  // GET ALL COURSES
-  // =====================================================
   async getAll(req, res) {
     try {
       const courses = await Course.findAll();
@@ -31,17 +23,10 @@ const courseController = {
     }
   },
 
-  // =====================================================
-  // GET COURSE BY ID
-  // =====================================================
   async getById(req, res) {
     try {
       const course = await Course.findById(req.params.id);
-
-      if (!course) {
-        return res.status(404).json({ message: "Course not found" });
-      }
-
+      if (!course) return res.status(404).json({ message: "Course not found" });
       return res.status(200).json(course);
     } catch (error) {
       console.error("Get course error:", error);
@@ -49,9 +34,6 @@ const courseController = {
     }
   },
 
-  // =====================================================
-  // CREATE COURSE
-  // =====================================================
   async create(req, res) {
     try {
       const {
@@ -69,25 +51,14 @@ const courseController = {
       } = req.body;
 
       if (!title || !description || !categoryId) {
-        return res.status(400).json({
-          message: "Title, description, and category are required",
-        });
+        return res.status(400).json({ message: "Title, description, and category are required" });
       }
 
-      const metadataError = validateCourseMetadata({
-        language,
-        duration,
-        estimatedHours,
-      });
-
-      if (metadataError) {
-        return res.status(400).json({ message: metadataError });
-      }
+      const metadataError = validateCourseMetadata({ language, duration, estimatedHours });
+      if (metadataError) return res.status(400).json({ message: metadataError });
 
       if (req.user.role !== "instructor" && req.user.role !== "admin") {
-        return res.status(403).json({
-          message: "Only instructors and admins can create courses",
-        });
+        return res.status(403).json({ message: "Only instructors and admins can create courses" });
       }
 
       const courseId = await Course.create({
@@ -106,7 +77,6 @@ const courseController = {
       });
 
       const course = await Course.findById(courseId);
-
       return res.status(201).json({
         message: "Course and default section created successfully",
         course,
@@ -117,24 +87,16 @@ const courseController = {
     }
   },
 
-  // =====================================================
-  // UPDATE COURSE
-  // =====================================================
   async update(req, res) {
     try {
       const course = await Course.findById(req.params.id);
-
-      if (!course) {
-        return res.status(404).json({ message: "Course not found" });
-      }
+      if (!course) return res.status(404).json({ message: "Course not found" });
 
       if (
         req.user.role !== "admin" &&
         Number(course.instructor_id) !== Number(req.user.id)
       ) {
-        return res.status(403).json({
-          message: "You are not allowed to update this course",
-        });
+        return res.status(403).json({ message: "You are not allowed to update this course" });
       }
 
       const {
@@ -152,20 +114,23 @@ const courseController = {
       } = req.body;
 
       if (!title || !description || !categoryId) {
-        return res.status(400).json({
-          message: "Title, description, and category are required",
-        });
+        return res.status(400).json({ message: "Title, description, and category are required" });
       }
+
+      // Keep metadata when an older admin/instructor client does not send the new fields.
+      const nextLanguage = language ?? course.language ?? "English";
+      const nextDuration = duration ?? course.duration ?? "Self-paced";
+      const nextEstimatedHours =
+        estimatedHours === undefined || estimatedHours === null || estimatedHours === ""
+          ? Number(course.estimated_hours)
+          : Number(estimatedHours);
 
       const metadataError = validateCourseMetadata({
-        language,
-        duration,
-        estimatedHours,
+        language: nextLanguage,
+        duration: nextDuration,
+        estimatedHours: nextEstimatedHours,
       });
-
-      if (metadataError) {
-        return res.status(400).json({ message: metadataError });
-      }
+      if (metadataError) return res.status(400).json({ message: metadataError });
 
       await Course.update(req.params.id, {
         title,
@@ -173,44 +138,32 @@ const courseController = {
         longDescription,
         categoryId,
         level,
-        language: String(language).trim(),
-        duration: String(duration).trim(),
-        estimatedHours: Number(estimatedHours),
+        language: String(nextLanguage).trim(),
+        duration: String(nextDuration).trim(),
+        estimatedHours: nextEstimatedHours,
         price,
         thumbnailColor,
         status,
       });
 
       const updatedCourse = await Course.findById(req.params.id);
-
-      return res.status(200).json({
-        message: "Course updated successfully",
-        course: updatedCourse,
-      });
+      return res.status(200).json({ message: "Course updated successfully", course: updatedCourse });
     } catch (error) {
       console.error("Update course error:", error);
       return res.status(500).json({ message: "Failed to update course" });
     }
   },
 
-  // =====================================================
-  // DELETE COURSE
-  // =====================================================
   async delete(req, res) {
     try {
       const course = await Course.findById(req.params.id);
-
-      if (!course) {
-        return res.status(404).json({ message: "Course not found" });
-      }
+      if (!course) return res.status(404).json({ message: "Course not found" });
 
       if (
         req.user.role !== "admin" &&
         Number(course.instructor_id) !== Number(req.user.id)
       ) {
-        return res.status(403).json({
-          message: "You are not allowed to delete this course",
-        });
+        return res.status(403).json({ message: "You are not allowed to delete this course" });
       }
 
       await Course.delete(req.params.id);
@@ -221,15 +174,10 @@ const courseController = {
     }
   },
 
-  // =====================================================
-  // GET MY COURSES
-  // =====================================================
   async getMyCourses(req, res) {
     try {
       if (req.user.role !== "instructor" && req.user.role !== "admin") {
-        return res.status(403).json({
-          message: "Only instructors and admins can access this route",
-        });
+        return res.status(403).json({ message: "Only instructors and admins can access this route" });
       }
 
       const courses = await Course.findByInstructorId(req.user.id);
