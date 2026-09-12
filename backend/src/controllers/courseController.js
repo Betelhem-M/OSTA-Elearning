@@ -1,5 +1,22 @@
 const Course = require("../models/Course");
 
+function validateCourseMetadata({ language, duration, estimatedHours }) {
+  if (!language || !String(language).trim()) {
+    return "Course language is required";
+  }
+
+  if (!duration || !String(duration).trim()) {
+    return "Course duration is required";
+  }
+
+  const hours = Number(estimatedHours);
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return "Estimated learning hours must be greater than 0";
+  }
+
+  return null;
+}
+
 const courseController = {
   // =====================================================
   // GET ALL COURSES
@@ -7,14 +24,10 @@ const courseController = {
   async getAll(req, res) {
     try {
       const courses = await Course.findAll();
-
       return res.status(200).json(courses);
     } catch (error) {
       console.error("Get courses error:", error);
-
-      return res.status(500).json({
-        message: "Failed to fetch courses",
-      });
+      return res.status(500).json({ message: "Failed to fetch courses" });
     }
   },
 
@@ -23,23 +36,16 @@ const courseController = {
   // =====================================================
   async getById(req, res) {
     try {
-      const course = await Course.findById(
-        req.params.id
-      );
+      const course = await Course.findById(req.params.id);
 
       if (!course) {
-        return res.status(404).json({
-          message: "Course not found",
-        });
+        return res.status(404).json({ message: "Course not found" });
       }
 
       return res.status(200).json(course);
     } catch (error) {
       console.error("Get course error:", error);
-
-      return res.status(500).json({
-        message: "Failed to fetch course",
-      });
+      return res.status(500).json({ message: "Failed to fetch course" });
     }
   },
 
@@ -54,6 +60,9 @@ const courseController = {
         longDescription,
         categoryId,
         level,
+        language,
+        duration,
+        estimatedHours,
         price,
         thumbnailColor,
         status,
@@ -65,10 +74,17 @@ const courseController = {
         });
       }
 
-      if (
-        req.user.role !== "instructor" &&
-        req.user.role !== "admin"
-      ) {
+      const metadataError = validateCourseMetadata({
+        language,
+        duration,
+        estimatedHours,
+      });
+
+      if (metadataError) {
+        return res.status(400).json({ message: metadataError });
+      }
+
+      if (req.user.role !== "instructor" && req.user.role !== "admin") {
         return res.status(403).json({
           message: "Only instructors and admins can create courses",
         });
@@ -81,6 +97,9 @@ const courseController = {
         instructorId: req.user.id,
         categoryId,
         level,
+        language: String(language).trim(),
+        duration: String(duration).trim(),
+        estimatedHours: Number(estimatedHours),
         price,
         thumbnailColor,
         status,
@@ -94,10 +113,7 @@ const courseController = {
       });
     } catch (error) {
       console.error("Create course error:", error);
-
-      return res.status(500).json({
-        message: "Failed to create course",
-      });
+      return res.status(500).json({ message: "Failed to create course" });
     }
   },
 
@@ -109,9 +125,7 @@ const courseController = {
       const course = await Course.findById(req.params.id);
 
       if (!course) {
-        return res.status(404).json({
-          message: "Course not found",
-        });
+        return res.status(404).json({ message: "Course not found" });
       }
 
       if (
@@ -129,6 +143,9 @@ const courseController = {
         longDescription,
         categoryId,
         level,
+        language,
+        duration,
+        estimatedHours,
         price,
         thumbnailColor,
         status,
@@ -140,12 +157,25 @@ const courseController = {
         });
       }
 
+      const metadataError = validateCourseMetadata({
+        language,
+        duration,
+        estimatedHours,
+      });
+
+      if (metadataError) {
+        return res.status(400).json({ message: metadataError });
+      }
+
       await Course.update(req.params.id, {
         title,
         description,
         longDescription,
         categoryId,
         level,
+        language: String(language).trim(),
+        duration: String(duration).trim(),
+        estimatedHours: Number(estimatedHours),
         price,
         thumbnailColor,
         status,
@@ -159,10 +189,7 @@ const courseController = {
       });
     } catch (error) {
       console.error("Update course error:", error);
-
-      return res.status(500).json({
-        message: "Failed to update course",
-      });
+      return res.status(500).json({ message: "Failed to update course" });
     }
   },
 
@@ -174,9 +201,7 @@ const courseController = {
       const course = await Course.findById(req.params.id);
 
       if (!course) {
-        return res.status(404).json({
-          message: "Course not found",
-        });
+        return res.status(404).json({ message: "Course not found" });
       }
 
       if (
@@ -189,16 +214,10 @@ const courseController = {
       }
 
       await Course.delete(req.params.id);
-
-      return res.status(200).json({
-        message: "Course deleted successfully",
-      });
+      return res.status(200).json({ message: "Course deleted successfully" });
     } catch (error) {
       console.error("Delete course error:", error);
-
-      return res.status(500).json({
-        message: "Failed to delete course",
-      });
+      return res.status(500).json({ message: "Failed to delete course" });
     }
   },
 
@@ -207,26 +226,17 @@ const courseController = {
   // =====================================================
   async getMyCourses(req, res) {
     try {
-      if (
-        req.user.role !== "instructor" &&
-        req.user.role !== "admin"
-      ) {
+      if (req.user.role !== "instructor" && req.user.role !== "admin") {
         return res.status(403).json({
           message: "Only instructors and admins can access this route",
         });
       }
 
       const courses = await Course.findByInstructorId(req.user.id);
-
-      return res.status(200).json(
-        Array.isArray(courses) ? courses : []
-      );
+      return res.status(200).json(Array.isArray(courses) ? courses : []);
     } catch (error) {
       console.error("Get my courses error:", error);
-
-      return res.status(500).json({
-        message: "Failed to fetch your courses",
-      });
+      return res.status(500).json({ message: "Failed to fetch your courses" });
     }
   },
 };
