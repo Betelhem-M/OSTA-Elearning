@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Clock3, Star, Users } from 'lucide-react'
+import { Star, Users } from 'lucide-react'
 import BookmarkButton from '@components/bookmark/BookmarkButton'
 
 export default function CourseCard({ course }) {
@@ -16,28 +16,39 @@ export default function CourseCard({ course }) {
       <BookmarkButton contentType="course" contentId={course.id} className="absolute right-3 top-3 z-10" />
 
       <Link to={`/courses/${course.id}`}>
+        {/* Thumbnail */}
         <div
           className="h-32 w-full"
-          style={{ backgroundColor: course.thumbnail_color || '#2E7D32' }}
+          style={{
+            backgroundColor:
+              course.thumbnail_color || '#2E7D32',
+          }}
         />
 
         <div className="p-4">
+          {/* Category */}
           <span className="rounded-full bg-primary-light px-2.5 py-1 text-[10px] font-bold text-primary">
             {course.category_name}
           </span>
 
+          {/* Title */}
           <h3 className="mt-2.5 line-clamp-2 text-sm font-bold text-ink">
             {course.title}
           </h3>
 
+          {/* Instructor */}
           <p className="mt-1 text-xs text-slate-500">
             {course.instructor_name}
           </p>
 
+          {/* Rating + Students */}
           <div className="mt-3 flex items-center gap-3 text-xs text-slate-500">
             {course.rating != null && (
               <span className="flex items-center gap-1">
-                <Star size={13} className="fill-gold text-gold" />
+                <Star
+                  size={13}
+                  className="fill-gold text-gold"
+                />
                 {course.rating}
               </span>
             )}
@@ -50,20 +61,7 @@ export default function CourseCard({ course }) {
             )}
           </div>
 
-          {(course.duration || Number(course.estimated_hours) > 0) && (
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
-              {course.duration && (
-                <span className="flex items-center gap-1">
-                  <Clock3 size={13} />
-                  {course.duration}
-                </span>
-              )}
-              {Number(course.estimated_hours) > 0 && (
-                <span>{Number(course.estimated_hours)} hours</span>
-              )}
-            </div>
-          )}
-
+          {/* Level + Price */}
           <div className="mt-3 flex items-center justify-between">
             <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">
               {course.level}
