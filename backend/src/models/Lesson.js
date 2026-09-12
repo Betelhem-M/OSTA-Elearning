@@ -15,8 +15,8 @@ const Lesson = {
         lessons.description,
         lessons.video_url,
         lessons.duration_minutes,
-        lessons.lesson_order,
-        lessons.is_published,
+        lessons.position AS lesson_order,
+        0 AS is_published,
         lessons.created_at,
         lessons.updated_at,
         course_sections.course_id AS course_id
@@ -45,13 +45,13 @@ const Lesson = {
         description,
         video_url,
         duration_minutes,
-        lesson_order,
-        is_published,
+        position AS lesson_order,
+        0 AS is_published,
         created_at,
         updated_at
       FROM lessons
       WHERE section_id = ?
-      ORDER BY lesson_order ASC, id ASC
+      ORDER BY position ASC, id ASC
       `,
       [sectionId]
     );
@@ -72,16 +72,17 @@ const Lesson = {
     lessonOrder,
     isPublished,
   }) {
-    // The deployed Railway lessons table requires course_id.
-    // Derive it from the selected course section so the frontend
-    // only needs to provide sectionId.
+    // Railway's current lessons table uses course_id and position.
+    // course_id is derived from the selected section, while lessonOrder
+    // maps to the existing position column. Publishing is not stored in
+    // the current deployed schema, so the API exposes it as false.
     const [result] = await pool.execute(
       `
       INSERT INTO lessons
         (course_id, section_id, title, description, video_url,
-         duration_minutes, position, lesson_order, is_published)
+         duration_minutes, position)
       SELECT
-        course_id, ?, ?, ?, ?, ?, 0, ?, ?
+        course_id, ?, ?, ?, ?, ?, ?
       FROM course_sections
       WHERE id = ?
       LIMIT 1
@@ -93,7 +94,6 @@ const Lesson = {
         videoUrl ?? null,
         durationMinutes ?? 0,
         lessonOrder ?? 0,
-        isPublished ?? false,
         sectionId,
       ]
     );
@@ -117,7 +117,6 @@ const Lesson = {
       videoUrl,
       durationMinutes,
       lessonOrder,
-      isPublished,
     }
   ) {
     const existing = await Lesson.findById(id);
@@ -134,8 +133,7 @@ const Lesson = {
         description = ?,
         video_url = ?,
         duration_minutes = ?,
-        lesson_order = ?,
-        is_published = ?
+        position = ?
       WHERE id = ?
       `,
       [
@@ -146,7 +144,6 @@ const Lesson = {
           ? durationMinutes
           : existing.duration_minutes,
         lessonOrder !== undefined ? lessonOrder : existing.lesson_order,
-        isPublished !== undefined ? isPublished : existing.is_published,
         id,
       ]
     );
