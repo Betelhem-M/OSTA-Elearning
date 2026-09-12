@@ -5,9 +5,6 @@ const Lesson = {
   // FIND BY ID
   // ============================================================
 
-  /**
-   * Returns a single lesson by ID, or null if not found.
-   */
   async findById(id) {
     const [rows] = await pool.execute(
       `
@@ -38,9 +35,6 @@ const Lesson = {
   // FIND BY SECTION
   // ============================================================
 
-  /**
-   * Returns all lessons belonging to a section, in lesson_order.
-   */
   async findBySection(sectionId) {
     const [rows] = await pool.execute(
       `
@@ -69,11 +63,6 @@ const Lesson = {
   // CREATE
   // ============================================================
 
-  /**
-   * Creates a new lesson and returns its inserted ID.
-   * Optional fields that arrive as undefined are converted to
-   * null/defaults, since mysql2 rejects undefined bind params.
-   */
   async create({
     sectionId,
     title,
@@ -83,11 +72,19 @@ const Lesson = {
     lessonOrder,
     isPublished,
   }) {
+    // The deployed Railway lessons table requires course_id.
+    // Derive it from the selected course section so the frontend
+    // only needs to provide sectionId.
     const [result] = await pool.execute(
       `
       INSERT INTO lessons
-        (section_id, title, description, video_url, duration_minutes, lesson_order, is_published)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+        (course_id, section_id, title, description, video_url,
+         duration_minutes, position, lesson_order, is_published)
+      SELECT
+        course_id, ?, ?, ?, ?, ?, 0, ?, ?
+      FROM course_sections
+      WHERE id = ?
+      LIMIT 1
       `,
       [
         sectionId,
@@ -97,8 +94,13 @@ const Lesson = {
         durationMinutes ?? 0,
         lessonOrder ?? 0,
         isPublished ?? false,
+        sectionId,
       ]
     );
+
+    if (result.affectedRows === 0) {
+      throw new Error("The selected course section does not exist");
+    }
 
     return result.insertId;
   },
@@ -107,11 +109,6 @@ const Lesson = {
   // UPDATE
   // ============================================================
 
-  /**
-   * Updates a lesson's editable fields. Existing values are kept
-   * for any field left undefined in the update payload.
-   * Returns true if a row was affected.
-   */
   async update(
     id,
     {
@@ -161,10 +158,6 @@ const Lesson = {
   // DELETE
   // ============================================================
 
-  /**
-   * Deletes a lesson by ID.
-   * Returns true if a row was affected.
-   */
   async delete(id) {
     const [result] = await pool.execute(
       `
