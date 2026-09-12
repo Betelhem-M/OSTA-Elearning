@@ -31,6 +31,9 @@ const migrations = [
   ["publications", "file_size", "BIGINT UNSIGNED NULL"],
   ["publications", "file_data", "LONGBLOB NULL"],
   ["lessons", "resource_url", "VARCHAR(1000) NULL"],
+  ["courses", "language", "VARCHAR(50) NOT NULL DEFAULT 'English'"],
+  ["courses", "duration", "VARCHAR(50) NOT NULL DEFAULT 'Self-paced'"],
+  ["courses", "estimated_hours", "DECIMAL(6,2) NOT NULL DEFAULT 0.00"],
 ];
 
 async function exists(type, name) {
@@ -55,10 +58,12 @@ async function run() {
       console.warn(`Skipping ${table}.${column}: table does not exist`);
       continue;
     }
+
     if (await exists("column", [table, column])) {
       console.log(`Already present: ${table}.${column}`);
       continue;
     }
+
     await pool.execute(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`);
     console.log(`Added: ${table}.${column}`);
   }
