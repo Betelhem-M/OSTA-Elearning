@@ -26,6 +26,7 @@ export default function CreateCourse() {
     longDescription: "",
     categoryId: "",
     level: "Beginner",
+    language: "",
     duration: "",
     estimatedHours: "",
     pricingType: "free",
@@ -250,17 +251,26 @@ export default function CreateCourse() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-ink">Language</label>
+              <input name="language" value={form.language} onChange={handleChange} placeholder="e.g. English" className={inputClass} />
+              <p className="mt-1.5 text-xs text-slate-500">Course teaching language.</p>
+            </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-ink">Duration</label>
               <input name="duration" value={form.duration} onChange={handleChange} placeholder="e.g. 6 Weeks" className={inputClass} />
-              <p className="mt-1.5 text-xs text-slate-500">Enter a learner-friendly duration such as 4 Weeks, 2 Months, or 10 Days.</p>
+              <p className="mt-1.5 text-xs text-slate-500">Example: 6 Weeks or 2 Months.</p>
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-ink">Estimated Hours</label>
               <input type="number" name="estimatedHours" min="0" step="0.5" value={form.estimatedHours} onChange={handleChange} placeholder="e.g. 24" className={inputClass} />
-              <p className="mt-1.5 text-xs text-slate-500">Total expected learning time for the complete course.</p>
+              <p className="mt-1.5 text-xs text-slate-500">Total expected learning time.</p>
             </div>
+          </div>
+
+          <div className="rounded-lg bg-amber-50 px-4 py-3 text-xs text-amber-700">
+            Language is currently a frontend-only field. It will be connected to the database when the language column is added.
           </div>
 
           <div>
