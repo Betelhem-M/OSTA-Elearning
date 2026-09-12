@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Clock3 } from 'lucide-react'
 import CourseCurriculum from '@components/course/CourseCurriculum'
 import EnrollCard from '@components/course/EnrollCard'
 import InstructorBio from '@components/course/InstructorBio'
@@ -49,30 +48,5 @@ export default function CourseDetails() {
   const firstParagraph = descriptionParagraphs[0] || course.description || ''
   const restParagraphs = descriptionParagraphs.slice(1)
 
-  return <main className="mx-auto max-w-[1100px] px-5 py-8 lg:px-10">
-    <div className="h-56 w-full rounded-2xl" style={{ backgroundColor: course.thumbnail_color || '#2E7D32' }} />
-    <div className="mt-6 grid gap-8 lg:grid-cols-[1.6fr_1fr]">
-      <div className="space-y-8">
-        <div>
-          <span className="rounded-full bg-primary-light px-2.5 py-1 text-[11px] font-bold text-primary">{course.category_name}</span>
-          <h1 className="mt-3 text-2xl font-extrabold text-ink">{course.title}</h1>
-          <p className="mt-1 text-sm text-slate-500">by {course.instructor_name}</p>
-
-          {(course.duration || Number(course.estimated_hours) > 0) && (
-            <div className="mt-4 flex flex-wrap gap-3">
-              {course.duration && <span className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600"><Clock3 size={14} /> {course.duration}</span>}
-              {Number(course.estimated_hours) > 0 && <span className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">{Number(course.estimated_hours)} estimated learning hours</span>}
-              {course.level && <span className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">{course.level}</span>}
-            </div>
-          )}
-
-          <div className="mt-4 space-y-3 text-sm leading-6 text-slate-600"><p>{firstParagraph}</p>{showMore && restParagraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
-          {restParagraphs.length > 0 && <button type="button" onClick={() => setShowMore((value) => !value)} className="mt-3 text-sm font-bold text-primary hover:underline">{showMore ? 'Show Less' : 'Show More'}</button>}
-        </div>
-        {curriculumLoading ? <section><div className="mb-3"><h2 className="text-lg font-bold text-ink">Course Curriculum</h2></div><div className="rounded-xl border border-slate-100 bg-slate-50 px-5 py-6 text-center text-sm text-slate-400">Loading curriculum...</div></section> : <CourseCurriculum sections={curriculum} />}
-      </div>
-      <div className="space-y-6"><EnrollCard course={course} /><InstructorBio name={course.instructor_name} /></div>
-    </div>
-    <section className="mt-12"><h2 className="mb-4 text-lg font-bold text-ink">You might also like</h2><div className="grid gap-5 sm:grid-cols-3">{courses.filter((item) => Number(item.id) !== Number(course.id) && Number(item.category_id) === Number(course.category_id)).slice(0, 3).map((item) => <Link key={item.id} to={`/courses/${item.id}`} className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><div className="h-20 w-full rounded-lg" style={{ backgroundColor: item.thumbnail_color || '#2E7D32' }} /><h3 className="mt-3 line-clamp-2 text-sm font-bold text-ink">{item.title}</h3><p className="mt-1 text-xs text-slate-400">{item.instructor_name}</p></Link>)}</div></section>
-  </main>
+  return <main className="mx-auto max-w-[1100px] px-5 py-8 lg:px-10"><div className="h-56 w-full rounded-2xl" style={{ backgroundColor: course.thumbnail_color || '#2E7D32' }} /><div className="mt-6 grid gap-8 lg:grid-cols-[1.6fr_1fr]"><div className="space-y-8"><div><span className="rounded-full bg-primary-light px-2.5 py-1 text-[11px] font-bold text-primary">{course.category_name}</span><h1 className="mt-3 text-2xl font-extrabold text-ink">{course.title}</h1><p className="mt-1 text-sm text-slate-500">by {course.instructor_name}</p><div className="mt-4 space-y-3 text-sm leading-6 text-slate-600"><p>{firstParagraph}</p>{showMore && restParagraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>{restParagraphs.length > 0 && <button type="button" onClick={() => setShowMore((value) => !value)} className="mt-3 text-sm font-bold text-primary hover:underline">{showMore ? 'Show Less' : 'Show More'}</button>}</div>{curriculumLoading ? <section><div className="mb-3"><h2 className="text-lg font-bold text-ink">Course Curriculum</h2></div><div className="rounded-xl border border-slate-100 bg-slate-50 px-5 py-6 text-center text-sm text-slate-400">Loading curriculum...</div></section> : <CourseCurriculum sections={curriculum} />}</div><div className="space-y-6"><EnrollCard course={course} /><InstructorBio name={course.instructor_name} /></div></div><section className="mt-12"><h2 className="mb-4 text-lg font-bold text-ink">You might also like</h2><div className="grid gap-5 sm:grid-cols-3">{courses.filter((item) => Number(item.id) !== Number(course.id) && Number(item.category_id) === Number(course.category_id)).slice(0, 3).map((item) => <Link key={item.id} to={`/courses/${item.id}`} className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><div className="h-20 w-full rounded-lg" style={{ backgroundColor: item.thumbnail_color || '#2E7D32' }} /><h3 className="mt-3 line-clamp-2 text-sm font-bold text-ink">{item.title}</h3><p className="mt-1 text-xs text-slate-400">{item.instructor_name}</p></Link>)}</div></section></main>
 }
