@@ -12,37 +12,26 @@ const Course = {
         c.description,
         c.long_description,
         c.instructor_id,
-
-        CONCAT(
-          u.first_name,
-          ' ',
-          u.last_name
-        ) AS instructor_name,
-
+        CONCAT(u.first_name, ' ', u.last_name) AS instructor_name,
         c.category_id,
         cat.name AS category_name,
-
         c.level,
+        c.language,
+        c.duration,
+        c.estimated_hours,
         c.price,
         c.thumbnail_color,
         c.status,
         c.created_at,
         c.updated_at,
-
         (
           SELECT COUNT(*)
           FROM enrollments e
           WHERE e.course_id = c.id
         ) AS students
-
       FROM courses c
-
-      JOIN users u
-        ON c.instructor_id = u.id
-
-      JOIN categories cat
-        ON c.category_id = cat.id
-
+      JOIN users u ON c.instructor_id = u.id
+      JOIN categories cat ON c.category_id = cat.id
       ORDER BY c.created_at DESC
     `);
 
@@ -61,39 +50,27 @@ const Course = {
         c.description,
         c.long_description,
         c.instructor_id,
-
-        CONCAT(
-          u.first_name,
-          ' ',
-          u.last_name
-        ) AS instructor_name,
-
+        CONCAT(u.first_name, ' ', u.last_name) AS instructor_name,
         c.category_id,
         cat.name AS category_name,
-
         c.level,
+        c.language,
+        c.duration,
+        c.estimated_hours,
         c.price,
         c.thumbnail_color,
         c.status,
         c.created_at,
         c.updated_at,
-
         (
           SELECT COUNT(*)
           FROM enrollments e
           WHERE e.course_id = c.id
         ) AS students
-
       FROM courses c
-
-      JOIN users u
-        ON c.instructor_id = u.id
-
-      JOIN categories cat
-        ON c.category_id = cat.id
-
+      JOIN users u ON c.instructor_id = u.id
+      JOIN categories cat ON c.category_id = cat.id
       WHERE c.id = ?
-
       LIMIT 1
       `,
       [id]
@@ -112,6 +89,9 @@ const Course = {
     instructorId,
     categoryId,
     level,
+    language,
+    duration,
+    estimatedHours,
     price,
     thumbnailColor,
     status = "draft",
@@ -126,11 +106,14 @@ const Course = {
         instructor_id,
         category_id,
         level,
+        language,
+        duration,
+        estimated_hours,
         price,
         thumbnail_color,
         status
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         title,
@@ -139,6 +122,9 @@ const Course = {
         instructorId,
         categoryId,
         level || "Beginner",
+        language || "English",
+        duration || "Self-paced",
+        Number(estimatedHours) || 0,
         price || 0,
         thumbnailColor || null,
         status,
@@ -159,6 +145,9 @@ const Course = {
       longDescription,
       categoryId,
       level,
+      language,
+      duration,
+      estimatedHours,
       price,
       thumbnailColor,
       status,
@@ -173,6 +162,9 @@ const Course = {
         long_description = ?,
         category_id = ?,
         level = ?,
+        language = ?,
+        duration = ?,
+        estimated_hours = ?,
         price = ?,
         thumbnail_color = ?,
         status = ?
@@ -184,6 +176,9 @@ const Course = {
         longDescription || null,
         categoryId,
         level || "Beginner",
+        language || "English",
+        duration || "Self-paced",
+        Number(estimatedHours) || 0,
         price || 0,
         thumbnailColor || null,
         status || "draft",
@@ -221,39 +216,27 @@ const Course = {
         c.description,
         c.long_description,
         c.instructor_id,
-
-        CONCAT(
-          u.first_name,
-          ' ',
-          u.last_name
-        ) AS instructor_name,
-
+        CONCAT(u.first_name, ' ', u.last_name) AS instructor_name,
         c.category_id,
         cat.name AS category_name,
-
         c.level,
+        c.language,
+        c.duration,
+        c.estimated_hours,
         c.price,
         c.thumbnail_color,
         c.status,
         c.created_at,
         c.updated_at,
-
         (
           SELECT COUNT(*)
           FROM enrollments e
           WHERE e.course_id = c.id
         ) AS students
-
       FROM courses c
-
-      JOIN users u
-        ON c.instructor_id = u.id
-
-      JOIN categories cat
-        ON c.category_id = cat.id
-
+      JOIN users u ON c.instructor_id = u.id
+      JOIN categories cat ON c.category_id = cat.id
       WHERE c.instructor_id = ?
-
       ORDER BY c.created_at DESC
       `,
       [instructorId]
