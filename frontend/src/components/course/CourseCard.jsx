@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Star, Users } from 'lucide-react'
+import { Clock3, Languages, Star, Users } from 'lucide-react'
 import BookmarkButton from '@components/bookmark/BookmarkButton'
 
 export default function CourseCard({ course }) {
@@ -11,44 +11,33 @@ export default function CourseCard({ course }) {
       ? 'FREE'
       : `ETB ${Number(course.price).toLocaleString()}`
 
+  const estimatedHours = Number(course.estimated_hours)
+  const hasHours = Number.isFinite(estimatedHours) && estimatedHours > 0
+
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_4px_14px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_12px_26px_rgba(15,23,42,0.1)]">
       <BookmarkButton contentType="course" contentId={course.id} className="absolute right-3 top-3 z-10" />
 
       <Link to={`/courses/${course.id}`}>
-        {/* Thumbnail */}
-        <div
-          className="h-32 w-full"
-          style={{
-            backgroundColor:
-              course.thumbnail_color || '#2E7D32',
-          }}
-        />
+        <div className="h-32 w-full" style={{ backgroundColor: course.thumbnail_color || '#2E7D32' }} />
 
         <div className="p-4">
-          {/* Category */}
           <span className="rounded-full bg-primary-light px-2.5 py-1 text-[10px] font-bold text-primary">
             {course.category_name}
           </span>
 
-          {/* Title */}
           <h3 className="mt-2.5 line-clamp-2 text-sm font-bold text-ink">
             {course.title}
           </h3>
 
-          {/* Instructor */}
           <p className="mt-1 text-xs text-slate-500">
             {course.instructor_name}
           </p>
 
-          {/* Rating + Students */}
-          <div className="mt-3 flex items-center gap-3 text-xs text-slate-500">
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
             {course.rating != null && (
               <span className="flex items-center gap-1">
-                <Star
-                  size={13}
-                  className="fill-gold text-gold"
-                />
+                <Star size={13} className="fill-gold text-gold" />
                 {course.rating}
               </span>
             )}
@@ -61,12 +50,30 @@ export default function CourseCard({ course }) {
             )}
           </div>
 
-          {/* Level + Price */}
-          <div className="mt-3 flex items-center justify-between">
-            <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">
+          <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-500">
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-1 font-semibold">
               {course.level}
             </span>
+            {course.language && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-1 font-semibold">
+                <Languages size={12} />
+                {course.language}
+              </span>
+            )}
+            {course.duration && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-1 font-semibold">
+                <Clock3 size={12} />
+                {course.duration}
+              </span>
+            )}
+            {hasHours && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-1 font-semibold">
+                {estimatedHours} {estimatedHours === 1 ? 'hour' : 'hours'}
+              </span>
+            )}
+          </div>
 
+          <div className="mt-3 flex items-center justify-end border-t border-slate-100 pt-3">
             <span className="text-sm font-extrabold text-primary">
               {price}
             </span>
