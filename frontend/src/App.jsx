@@ -70,6 +70,7 @@ import AdminSettings from '@pages/admin/Settings';
 import EventManagement from '@pages/admin/EventManagement';
 import AdminCreateEvent from '@pages/admin/AdminCreateEvent';
 import InstructorRequests from '@pages/admin/InstructorRequests';
+import InstructorManagement from '@pages/admin/InstructorManagement';
 
 import ResearcherDashboard from '@pages/researcher/ResearcherDashboard';
 import ResearchWorkspace from '@pages/researcher/ResearchWorkspace';
@@ -158,6 +159,7 @@ export default function App() {
       <Route element={<RoleRoute role="admin"><AdminLayout /></RoleRoute>}>
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/instructor-management" element={<InstructorManagement />} />
         <Route path="/admin/courses" element={<AdminCourses />} />
         <Route path="/admin/competitions" element={<AdminCompetitions />} />
         <Route path="/admin/events" element={<EventManagement />} />
