@@ -95,6 +95,34 @@ async function run() {
     console.log(`Added: ${table}.${column}`);
   }
 
+  // Repair legacy quizzes whose lesson was deleted or belongs to another course.
+  // The first remaining lesson in the same course is used as a deterministic fallback.
+  if (await exists("table", "quizzes") && await exists("table", "lessons")) {
+    const [result] = await pool.execute(`
+      UPDATE quizzes q
+      SET q.lesson_id = (
+        SELECT MIN(l.id)
+        FROM lessons l
+        WHERE l.course_id = q.course_id
+      )
+      WHERE q.lesson_id IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM lessons valid_lesson
+          WHERE valid_lesson.id = q.lesson_id
+            AND valid_lesson.course_id = q.course_id
+        )
+        AND EXISTS (
+          SELECT 1
+          FROM lessons fallback_lesson
+          WHERE fallback_lesson.course_id = q.course_id
+        )
+    `);
+    if (result.affectedRows > 0) {
+      console.log(`Repaired ${result.affectedRows} quiz record(s) with missing lesson references.`);
+    }
+  }
+
   await pool.execute(`
     CREATE TABLE IF NOT EXISTS books (
       id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
