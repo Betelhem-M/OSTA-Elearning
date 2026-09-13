@@ -42,6 +42,9 @@ const migrations = [
   ["quizzes", "shuffle_questions", "TINYINT(1) NOT NULL DEFAULT 0"],
   ["quizzes", "status", "VARCHAR(30) NOT NULL DEFAULT 'draft'"],
 
+  // Quiz attempt result metadata used by the student quiz flow.
+  ["quiz_attempts", "percentage", "DECIMAL(5,2) NULL"],
+
   // Question metadata used by the current quiz builder and API.
   ["questions", "question_number", "INT UNSIGNED NOT NULL DEFAULT 1"],
   ["questions", "code", "TEXT NULL"],
