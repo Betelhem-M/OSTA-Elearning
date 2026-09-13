@@ -50,6 +50,10 @@ const migrations = [
 
   // Option key is required by the current quiz API (A/B/C/D).
   ["question_options", "option_key", "VARCHAR(10) NULL"],
+
+  // Lesson notes fields used by the Notes tab.
+  ["lesson_notes", "timestamp_seconds", "INT UNSIGNED NOT NULL DEFAULT 0"],
+  ["lesson_notes", "updated_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
 ];
 
 async function exists(type, name) {
