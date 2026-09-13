@@ -115,6 +115,10 @@ const lessonController = {
       }
 
       const {
+        courseId,
+        course_id,
+        sectionId,
+        section_id,
         title,
         description,
         summary,
@@ -128,13 +132,32 @@ const lessonController = {
         is_published,
       } = req.body;
 
+      const resolvedCourseId = courseId ?? course_id ?? lesson.course_id;
+      const resolvedSectionId = sectionId ?? section_id ?? lesson.section_id;
+      const resolvedTitle = title !== undefined ? String(title).trim() : undefined;
+
+      if (!resolvedSectionId) {
+        return res.status(400).json({
+          message: "Section ID is required when updating a lesson",
+        });
+      }
+
+      if (resolvedTitle !== undefined && !resolvedTitle) {
+        return res.status(400).json({
+          message: "Lesson title cannot be empty",
+        });
+      }
+
       await Lesson.update(req.params.id, {
-        title: title !== undefined ? String(title).trim() : undefined,
-        description: description ?? summary,
-        videoUrl: videoUrl ?? video_url,
-        durationMinutes: durationMinutes ?? duration_minutes,
-        lessonOrder: lessonOrder ?? lesson_order,
-        isPublished: isPublished ?? is_published,
+        courseId: resolvedCourseId,
+        sectionId: resolvedSectionId,
+        title: resolvedTitle,
+        description: description !== undefined ? description : summary,
+        videoUrl: videoUrl !== undefined ? videoUrl : video_url,
+        durationMinutes:
+          durationMinutes !== undefined ? durationMinutes : duration_minutes,
+        lessonOrder: lessonOrder !== undefined ? lessonOrder : lesson_order,
+        isPublished: isPublished !== undefined ? isPublished : is_published,
       });
 
       const updatedLesson = await Lesson.findById(req.params.id);
@@ -145,7 +168,14 @@ const lessonController = {
       });
     } catch (error) {
       console.error("Update lesson error:", error);
-      return res.status(500).json({
+
+      const statusCode =
+        error?.code === "LESSON_SECTION_NOT_FOUND" ||
+        error?.code === "LESSON_SECTION_COURSE_MISMATCH"
+          ? 400
+          : 500;
+
+      return res.status(statusCode).json({
         message: error?.message || "Failed to update lesson",
       });
     }
