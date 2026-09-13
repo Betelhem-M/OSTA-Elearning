@@ -16,9 +16,10 @@ const Lesson = {
         lessons.is_published,
         lessons.created_at,
         lessons.updated_at,
-        course_sections.course_id AS section_course_id
+        course_sections.course_id AS section_course_id,
+        course_sections.title AS section_title
       FROM lessons
-      JOIN course_sections ON course_sections.id = lessons.section_id
+      LEFT JOIN course_sections ON course_sections.id = lessons.section_id
       WHERE lessons.id = ?
       LIMIT 1
       `,
@@ -119,9 +120,7 @@ const Lesson = {
   ) {
     const existing = await Lesson.findById(id);
 
-    if (!existing) {
-      return false;
-    }
+    if (!existing) return false;
 
     const [result] = await pool.execute(
       `
@@ -139,9 +138,7 @@ const Lesson = {
         title ?? existing.title,
         description !== undefined ? description : existing.description,
         videoUrl !== undefined ? videoUrl : existing.video_url,
-        durationMinutes !== undefined
-          ? durationMinutes
-          : existing.duration_minutes,
+        durationMinutes !== undefined ? durationMinutes : existing.duration_minutes,
         lessonOrder !== undefined ? lessonOrder : existing.lesson_order,
         isPublished !== undefined ? isPublished : existing.is_published,
         id,
