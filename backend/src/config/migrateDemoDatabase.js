@@ -46,6 +46,9 @@ const migrations = [
   ["quiz_attempts", "percentage", "DECIMAL(5,2) NULL"],
   ["quiz_attempts", "passed", "TINYINT(1) NULL"],
 
+  // Quiz answer scoring metadata used by the student quiz flow.
+  ["quiz_answers", "points_earned", "DECIMAL(8,2) NOT NULL DEFAULT 0"],
+
   // Question metadata used by the current quiz builder and API.
   ["questions", "question_number", "INT UNSIGNED NOT NULL DEFAULT 1"],
   ["questions", "code", "TEXT NULL"],
