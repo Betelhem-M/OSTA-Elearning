@@ -33,7 +33,7 @@ const CourseSection = {
         created_at
       FROM course_sections
       WHERE course_id = ?
-      ORDER BY section_order ASC
+      ORDER BY section_order ASC, id ASC
       `,
       [courseId]
     );
@@ -43,14 +43,19 @@ const CourseSection = {
         `
         SELECT
           id,
+          course_id,
           section_id,
           title,
+          description,
+          video_url,
           duration_minutes,
           lesson_order,
-          is_published
+          is_published,
+          created_at,
+          updated_at
         FROM lessons
         WHERE section_id = ?
-        ORDER BY lesson_order ASC
+        ORDER BY lesson_order ASC, id ASC
         `,
         [section.id]
       );
