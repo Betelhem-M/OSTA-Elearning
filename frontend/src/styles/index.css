@@ -214,6 +214,17 @@ html.dark {
     border-color: rgb(var(--color-border)) !important;
   }
 
+  /* Remove the light gradient from instructor course section headers in dark mode. */
+  html.dark [class*="from-slate-50"][class*="to-blue-50/30"] {
+    background-image: none !important;
+    background-color: rgb(var(--color-surface)) !important;
+    box-shadow: none !important;
+  }
+
+  html.dark [class*="from-slate-50"][class*="to-blue-50/30"] h3 {
+    color: rgb(var(--color-text)) !important;
+  }
+
   /* Admin portal visual cleanup.
      Keep these rules scoped to .admin-shell so public/student/instructor pages
      keep their own visual language. */
