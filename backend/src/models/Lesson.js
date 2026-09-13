@@ -110,6 +110,8 @@ const Lesson = {
   async update(
     id,
     {
+      courseId,
+      sectionId,
       title,
       description,
       videoUrl,
@@ -122,10 +124,41 @@ const Lesson = {
 
     if (!existing) return false;
 
+    let resolvedCourseId = courseId ?? existing.course_id;
+    let resolvedSectionId = sectionId ?? existing.section_id;
+
+    if (resolvedSectionId) {
+      const [sectionRows] = await pool.execute(
+        `SELECT course_id FROM course_sections WHERE id = ? LIMIT 1`,
+        [resolvedSectionId]
+      );
+
+      const section = sectionRows[0];
+
+      if (!section) {
+        const error = new Error("The selected section does not exist");
+        error.code = "LESSON_SECTION_NOT_FOUND";
+        throw error;
+      }
+
+      if (
+        resolvedCourseId !== undefined &&
+        Number(section.course_id) !== Number(resolvedCourseId)
+      ) {
+        const error = new Error("The selected section does not belong to this course");
+        error.code = "LESSON_SECTION_COURSE_MISMATCH";
+        throw error;
+      }
+
+      resolvedCourseId = section.course_id;
+    }
+
     const [result] = await pool.execute(
       `
       UPDATE lessons
       SET
+        course_id = ?,
+        section_id = ?,
         title = ?,
         description = ?,
         video_url = ?,
@@ -135,7 +168,9 @@ const Lesson = {
       WHERE id = ?
       `,
       [
-        title ?? existing.title,
+        resolvedCourseId,
+        resolvedSectionId,
+        title !== undefined ? title : existing.title,
         description !== undefined ? description : existing.description,
         videoUrl !== undefined ? videoUrl : existing.video_url,
         durationMinutes !== undefined ? durationMinutes : existing.duration_minutes,
