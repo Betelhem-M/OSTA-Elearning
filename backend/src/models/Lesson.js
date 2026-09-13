@@ -1,18 +1,12 @@
 const pool = require("../config/database");
 
 const Lesson = {
-  // ============================================================
-  // FIND BY ID
-  // ============================================================
-
-  /**
-   * Returns a single lesson by ID, or null if not found.
-   */
   async findById(id) {
     const [rows] = await pool.execute(
       `
       SELECT
         lessons.id,
+        lessons.course_id,
         lessons.section_id,
         lessons.title,
         lessons.description,
@@ -22,7 +16,7 @@ const Lesson = {
         lessons.is_published,
         lessons.created_at,
         lessons.updated_at,
-        course_sections.course_id AS course_id
+        course_sections.course_id AS section_course_id
       FROM lessons
       JOIN course_sections ON course_sections.id = lessons.section_id
       WHERE lessons.id = ?
@@ -31,21 +25,20 @@ const Lesson = {
       [id]
     );
 
-    return rows[0] || null;
+    if (!rows[0]) return null;
+
+    return {
+      ...rows[0],
+      course_id: rows[0].course_id ?? rows[0].section_course_id,
+    };
   },
 
-  // ============================================================
-  // FIND BY SECTION
-  // ============================================================
-
-  /**
-   * Returns all lessons belonging to a section, in lesson_order.
-   */
   async findBySection(sectionId) {
     const [rows] = await pool.execute(
       `
       SELECT
         id,
+        course_id,
         section_id,
         title,
         description,
@@ -65,16 +58,8 @@ const Lesson = {
     return rows;
   },
 
-  // ============================================================
-  // CREATE
-  // ============================================================
-
-  /**
-   * Creates a new lesson and returns its inserted ID.
-   * Optional fields that arrive as undefined are converted to
-   * null/defaults, since mysql2 rejects undefined bind params.
-   */
   async create({
+    courseId,
     sectionId,
     title,
     description,
@@ -83,14 +68,32 @@ const Lesson = {
     lessonOrder,
     isPublished,
   }) {
+    let resolvedCourseId = courseId;
+
+    if (!resolvedCourseId && sectionId) {
+      const [sectionRows] = await pool.execute(
+        `SELECT course_id FROM course_sections WHERE id = ? LIMIT 1`,
+        [sectionId]
+      );
+
+      resolvedCourseId = sectionRows[0]?.course_id;
+    }
+
+    if (!resolvedCourseId) {
+      const error = new Error("A valid course could not be determined for this lesson");
+      error.code = "LESSON_COURSE_REQUIRED";
+      throw error;
+    }
+
     const [result] = await pool.execute(
       `
       INSERT INTO lessons
-        (section_id, title, description, video_url, duration_minutes, lesson_order, is_published)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+        (course_id, section_id, title, description, video_url, duration_minutes, lesson_order, is_published)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
-        sectionId,
+        resolvedCourseId,
+        sectionId ?? null,
         title,
         description ?? null,
         videoUrl ?? null,
@@ -103,15 +106,6 @@ const Lesson = {
     return result.insertId;
   },
 
-  // ============================================================
-  // UPDATE
-  // ============================================================
-
-  /**
-   * Updates a lesson's editable fields. Existing values are kept
-   * for any field left undefined in the update payload.
-   * Returns true if a row was affected.
-   */
   async update(
     id,
     {
@@ -157,14 +151,6 @@ const Lesson = {
     return result.affectedRows > 0;
   },
 
-  // ============================================================
-  // DELETE
-  // ============================================================
-
-  /**
-   * Deletes a lesson by ID.
-   * Returns true if a row was affected.
-   */
   async delete(id) {
     const [result] = await pool.execute(
       `
