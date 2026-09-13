@@ -35,6 +35,7 @@ export default function CourseContentEditor() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [editorMode, setEditorMode] = useState(null);
   const [sectionForm, setSectionForm] = useState(emptySection);
   const [lessonForm, setLessonForm] = useState(emptyLesson);
 
@@ -63,6 +64,7 @@ export default function CourseContentEditor() {
   if (!isWorkspace) return null;
 
   const startEditSection = (section) => {
+    setEditorMode("section");
     setLessonForm(emptyLesson);
     setSectionForm({
       id: section.id,
@@ -75,6 +77,7 @@ export default function CourseContentEditor() {
   };
 
   const startEditLesson = (lesson, sectionId) => {
+    setEditorMode("lesson");
     setSectionForm(emptySection);
     setLessonForm({
       id: lesson.id,
@@ -92,6 +95,7 @@ export default function CourseContentEditor() {
   };
 
   const startCreateLesson = (sectionId = "") => {
+    setEditorMode("lesson");
     setSectionForm(emptySection);
     setLessonForm({
       ...emptyLesson,
@@ -103,6 +107,7 @@ export default function CourseContentEditor() {
   };
 
   const startCreateSection = () => {
+    setEditorMode("section");
     setLessonForm(emptyLesson);
     setSectionForm({
       ...emptySection,
@@ -191,10 +196,23 @@ export default function CourseContentEditor() {
   const close = () => {
     if (saving) return;
     setOpen(false);
+    setEditorMode(null);
     setError("");
     setSuccess("");
     setSectionForm(emptySection);
     setLessonForm(emptyLesson);
+  };
+
+  const cancelSectionEdit = () => {
+    setEditorMode(null);
+    setSectionForm(emptySection);
+    setError("");
+  };
+
+  const cancelLessonEdit = () => {
+    setEditorMode(null);
+    setLessonForm(emptyLesson);
+    setError("");
   };
 
   return (
@@ -267,18 +285,18 @@ export default function CourseContentEditor() {
             </div>
           )}
 
-          {sectionForm.id !== null || (sectionForm.title && lessonForm.id === null) ? (
+          {editorMode === "section" && (
             <form onSubmit={saveSection} className="mt-5 rounded-xl border border-border bg-surface-muted p-4">
               <div className="mb-3 flex items-center gap-2"><Layers3 size={16} className="text-primary" /><h4 className="text-sm font-extrabold text-ink">{sectionForm.id ? "Edit Section" : "Create Section"}</h4></div>
               <div className="grid gap-3 sm:grid-cols-[1fr_120px]">
                 <input value={sectionForm.title} onChange={(e) => setSectionForm((v) => ({ ...v, title: e.target.value }))} placeholder="Section title" className="rounded-xl border border-border bg-surface-card px-3 py-2 text-sm text-ink outline-none focus:border-primary" />
                 <input type="number" min="1" value={sectionForm.sectionOrder} onChange={(e) => setSectionForm((v) => ({ ...v, sectionOrder: e.target.value }))} placeholder="Order" className="rounded-xl border border-border bg-surface-card px-3 py-2 text-sm text-ink outline-none focus:border-primary" />
               </div>
-              <div className="mt-3 flex gap-2"><button disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50"><Save size={14} /> Save Section</button><button type="button" onClick={() => setSectionForm(emptySection)} className="rounded-xl border border-border px-3 py-2 text-xs font-bold text-ink">Cancel</button></div>
+              <div className="mt-3 flex gap-2"><button disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50"><Save size={14} /> Save Section</button><button type="button" onClick={cancelSectionEdit} className="rounded-xl border border-border px-3 py-2 text-xs font-bold text-ink">Cancel</button></div>
             </form>
-          ) : null}
+          )}
 
-          {(lessonForm.sectionId || lessonForm.id) && (
+          {editorMode === "lesson" && (
             <form onSubmit={saveLesson} className="mt-5 rounded-xl border border-border bg-surface-muted p-4">
               <div className="mb-3 flex items-center gap-2"><BookOpen size={16} className="text-primary" /><h4 className="text-sm font-extrabold text-ink">{lessonForm.id ? "Edit Lesson" : "Create Lesson"}</h4></div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -292,7 +310,7 @@ export default function CourseContentEditor() {
                 <input type="number" min="0" value={lessonForm.durationMinutes} onChange={(e) => setLessonForm((v) => ({ ...v, durationMinutes: e.target.value }))} placeholder="Duration (minutes)" className="rounded-xl border border-border bg-surface-card px-3 py-2 text-sm text-ink outline-none focus:border-primary" />
               </div>
               <label className="mt-3 flex items-center gap-2 text-xs font-semibold text-ink"><input type="checkbox" checked={lessonForm.isPublished} onChange={(e) => setLessonForm((v) => ({ ...v, isPublished: e.target.checked }))} /> Published</label>
-              <div className="mt-3 flex gap-2"><button disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50"><Save size={14} /> Save Lesson</button><button type="button" onClick={() => setLessonForm(emptyLesson)} className="rounded-xl border border-border px-3 py-2 text-xs font-bold text-ink">Cancel</button></div>
+              <div className="mt-3 flex gap-2"><button disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50"><Save size={14} /> Save Lesson</button><button type="button" onClick={cancelLessonEdit} className="rounded-xl border border-border px-3 py-2 text-xs font-bold text-ink">Cancel</button></div>
             </form>
           )}
 
