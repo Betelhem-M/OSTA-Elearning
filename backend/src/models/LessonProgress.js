@@ -2,6 +2,26 @@ const pool = require("../config/database");
 
 const LessonProgress = {
   // ============================================================
+  // RESOLVE COURSE FOR A LESSON
+  // ============================================================
+
+  async getCourseIdForLesson(lessonId) {
+    const [rows] = await pool.execute(
+      `
+      SELECT cs.course_id
+      FROM lessons l
+      INNER JOIN course_sections cs
+        ON l.section_id = cs.id
+      WHERE l.id = ?
+      LIMIT 1
+      `,
+      [lessonId]
+    );
+
+    return rows[0]?.course_id || null;
+  },
+
+  // ============================================================
   // GET ALL PROGRESS FOR A STUDENT
   // ============================================================
 
@@ -110,6 +130,12 @@ const LessonProgress = {
     lastPositionSeconds,
     completed
   ) {
+    const courseId = await this.getCourseIdForLesson(lessonId);
+
+    if (!courseId) {
+      throw new Error("Lesson does not belong to a valid course.");
+    }
+
     // ----------------------------------------------------------
     // NORMALIZE PROGRESS
     // ----------------------------------------------------------
@@ -148,13 +174,14 @@ const LessonProgress = {
       INSERT INTO lesson_progress (
         user_id,
         lesson_id,
+        course_id,
         completed,
         progress_percent,
         last_position_seconds,
         completed_at
       )
 
-      VALUES (?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
 
       ON DUPLICATE KEY UPDATE
 
@@ -192,6 +219,7 @@ const LessonProgress = {
       [
         userId,
         lessonId,
+        courseId,
         isCompleted,
         percent,
         position,
@@ -209,11 +237,18 @@ const LessonProgress = {
   // ============================================================
 
   async markCompleted(userId, lessonId) {
+    const courseId = await this.getCourseIdForLesson(lessonId);
+
+    if (!courseId) {
+      throw new Error("Lesson does not belong to a valid course.");
+    }
+
     const [result] = await pool.execute(
       `
       INSERT INTO lesson_progress (
         user_id,
         lesson_id,
+        course_id,
         completed,
         progress_percent,
         last_position_seconds,
@@ -221,6 +256,7 @@ const LessonProgress = {
       )
 
       VALUES (
+        ?,
         ?,
         ?,
         TRUE,
@@ -247,6 +283,7 @@ const LessonProgress = {
       [
         userId,
         lessonId,
+        courseId,
       ]
     );
 
