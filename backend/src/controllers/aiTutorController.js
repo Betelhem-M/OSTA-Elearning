@@ -12,6 +12,14 @@ function getLanguageName(value) {
   return SUPPORTED_LANGUAGES[String(value || "").toLowerCase()] || "English";
 }
 
+function getUserRole(user) {
+  return String(user?.role || user?.account_type || "").toLowerCase();
+}
+
+function isStudentAccount(user) {
+  return ["student", "learner"].includes(getUserRole(user));
+}
+
 function buildSystemPrompt({ language, course, lesson }) {
   const languageName = getLanguageName(language);
 
@@ -57,20 +65,22 @@ function buildDemoAnswer({ language, course, lesson, message }) {
   const question = String(message || "").trim();
 
   if (language === "am") {
-    return `የሙከራ OSTA AI Tutor ሁነታ።\n\nኮርስ: ${courseTitle}\nትምህርት: ${lessonTitle}\n\nጥያቄዎ: ${question}\n\nይህ የአካባቢ ዴሞ ሁነታ ነው። እውነተኛ AI መልስ ለማግኘት backend .env ውስጥ OPENAI_API_KEY ያክሉ።`;
+    return `የሙከራ OSTA AI Tutor ሁነታ።\n\nኮርስ: ${courseTitle}\nትምህርት: ${lessonTitle}\n\nጥያቄዎ: ${question}\n\nይህ የአካባቢ ዴሞ ሁነታ ነው። እውነተኛ AI መልስ ለማግኘት backend ላይ OPENAI_API_KEY ያስፈልጋል።`;
   }
 
   if (language === "om") {
-    return `Haala demo OSTA AI Tutor.\n\nKoorsii: ${courseTitle}\nBarnoota: ${lessonTitle}\n\nGaaffii kee: ${question}\n\nKun haala demo naannoo ti. Deebii AI dhugaa argachuuf OPENAI_API_KEY backend .env keessatti dabali.`;
+    return `Haala demo OSTA AI Tutor.\n\nKoorsii: ${courseTitle}\nBarnoota: ${lessonTitle}\n\nGaaffii kee: ${question}\n\nKun haala demo naannoo ti. Deebii AI dhugaa argachuuf OPENAI_API_KEY backend irratti barbaachisa.`;
   }
 
-  return `OSTA AI Tutor demo mode.\n\nCourse: ${courseTitle}\nLesson: ${lessonTitle}\n\nYour question: ${question}\n\nThis local demo mode keeps the tutor usable without exposing a secret key. Add OPENAI_API_KEY to the backend environment to enable real AI-generated answers.`;
+  return `OSTA AI Tutor demo mode.\n\nCourse: ${courseTitle}\nLesson: ${lessonTitle}\n\nYour question: ${question}\n\nThe tutor is connected, but real AI generation requires OPENAI_API_KEY on the backend.`;
 }
 
 const aiTutorController = {
   async chat(req, res) {
     try {
-      if (req.user.role !== "student") {
+      // Different parts of OSTA use either role=student or account_type=student/learner.
+      // Accept both so a valid learner is not rejected by the AI Tutor.
+      if (!isStudentAccount(req.user)) {
         return res.status(403).json({ message: "AI Tutor is available to student accounts" });
       }
 
@@ -103,8 +113,6 @@ const aiTutorController = {
       const apiUrl = process.env.OPENAI_API_URL || process.env.AI_API_URL || "https://api.openai.com/v1/responses";
       const model = process.env.OPENAI_MODEL || process.env.AI_MODEL || "gpt-5";
 
-      // Local demo remains usable when an OpenAI key has not been configured.
-      // A real provider key is never sent to the browser or committed to Git.
       if (!apiKey) {
         if (demoMode) {
           return res.json({
