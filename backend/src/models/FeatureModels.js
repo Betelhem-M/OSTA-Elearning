@@ -10,27 +10,38 @@ const Bookmark = {
       type ? [userId, type] : [userId]
     );
     if (!rows.length) return [];
+
     const byType = new Map();
     for (const row of rows) {
       if (!byType.has(row.content_type)) byType.set(row.content_type, []);
       byType.get(row.content_type).push(row.content_id);
     }
+
     const result=[];
     for (const [contentType, ids] of byType) {
-      if (!['course','event','book','resource'].includes(contentType)) continue;
+      if (!['course','event','book','resource','lesson'].includes(contentType)) continue;
       const placeholders=ids.map(()=>'?').join(',');
       let sql;
-      if (contentType==='course') sql=`SELECT id,title,description,category_id,price FROM courses WHERE id IN (${placeholders})`;
-      else if (contentType==='event') sql=`SELECT id,title,description,category,event_date,start_time,location_or_link AS location FROM events WHERE id IN (${placeholders})`;
-      else sql=`SELECT id,title,description,category,file_url,download_allowed FROM learning_resources WHERE id IN (${placeholders})`;
+      if (contentType==='course') {
+        sql=`SELECT id,title,description,category_id,price FROM courses WHERE id IN (${placeholders})`;
+      } else if (contentType==='event') {
+        sql=`SELECT id,title,description,category,event_date,start_time,location_or_link AS location FROM events WHERE id IN (${placeholders})`;
+      } else if (contentType==='lesson') {
+        sql=`SELECT l.id,l.title,l.description,l.course_id,c.title AS course_title FROM lessons l JOIN course_sections cs ON l.section_id=cs.id JOIN courses c ON cs.course_id=c.id WHERE l.id IN (${placeholders})`;
+      } else {
+        sql=`SELECT id,title,description,category,file_url,download_allowed FROM learning_resources WHERE id IN (${placeholders})`;
+      }
       try {
         const [items]=await pool.execute(sql, ids);
         for (const item of items) {
           const mark=rows.find(x=>x.content_type===contentType && Number(x.content_id)===Number(item.id));
           result.push({...item, bookmark_id:mark?.id, content_type:contentType, bookmarked_at:mark?.created_at});
         }
-      } catch (e) { if (!/learning_resources/.test(e.message)) throw e; }
+      } catch (e) {
+        if (!/learning_resources/.test(e.message)) throw e;
+      }
     }
+
     if (q) {
       const needle=String(q).toLowerCase();
       return result.filter(x=>`${x.title||''} ${x.description||''}`.toLowerCase().includes(needle));
