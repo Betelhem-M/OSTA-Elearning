@@ -49,14 +49,32 @@ function extractAssistantText(data) {
   if (typeof content === "string" && content.trim()) return content.trim();
 
   if (Array.isArray(content)) {
-    return content.map((part) => part?.text || "").join("\n").trim();
+    const text = content
+      .map((part) => (typeof part?.text === "string" ? part.text : ""))
+      .filter(Boolean)
+      .join("\n")
+      .trim();
+    if (text) return text;
   }
 
-  return (
-    data?.choices?.[0]?.text ||
-    data?.output?.[0]?.content?.[0]?.text ||
-    ""
-  ).trim();
+  // Responses API output can contain multiple items, including reasoning items
+  // before the actual message. Do not assume output[0].content[0] is the answer.
+  if (Array.isArray(data?.output)) {
+    const text = data.output
+      .flatMap((item) => (Array.isArray(item?.content) ? item.content : []))
+      .map((part) => (typeof part?.text === "string" ? part.text : ""))
+      .filter(Boolean)
+      .join("\n")
+      .trim();
+
+    if (text) return text;
+  }
+
+  if (typeof data?.choices?.[0]?.text === "string" && data.choices[0].text.trim()) {
+    return data.choices[0].text.trim();
+  }
+
+  return "";
 }
 
 function buildDemoAnswer({ language, course, lesson, message }) {
@@ -152,7 +170,20 @@ const aiTutorController = {
       }
 
       const answer = extractAssistantText(providerData);
-      if (!answer) return res.status(502).json({ message: "The AI Tutor returned an empty response. Please try again." });
+      if (!answer) {
+        // Log only safe response metadata, never the API key or request credentials.
+        console.error("AI Tutor empty response:", {
+          providerStatus: providerResponse.status,
+          model,
+          responseId: providerData?.id || null,
+          responseStatus: providerData?.status || null,
+          outputItems: Array.isArray(providerData?.output) ? providerData.output.length : 0,
+          outputTypes: Array.isArray(providerData?.output)
+            ? providerData.output.map((item) => item?.type || "unknown")
+            : [],
+        });
+        return res.status(502).json({ message: "The AI Tutor returned an empty response. Please try again." });
+      }
 
       return res.json({
         answer,
