@@ -34,6 +34,22 @@ const migrations = [
   ["courses", "language", "VARCHAR(50) NOT NULL DEFAULT 'English'"],
   ["courses", "duration", "VARCHAR(50) NOT NULL DEFAULT 'Self-paced'"],
   ["courses", "estimated_hours", "DECIMAL(6,2) NOT NULL DEFAULT 0.00"],
+
+  // Quiz metadata used by the current quiz builder and API.
+  ["quizzes", "total_questions", "INT UNSIGNED NOT NULL DEFAULT 0"],
+  ["quizzes", "time_limit_minutes", "INT UNSIGNED NULL"],
+  ["quizzes", "pass_percent", "DECIMAL(5,2) NOT NULL DEFAULT 0"],
+  ["quizzes", "shuffle_questions", "TINYINT(1) NOT NULL DEFAULT 0"],
+  ["quizzes", "status", "VARCHAR(30) NOT NULL DEFAULT 'draft'"],
+
+  // Question metadata used by the current quiz builder and API.
+  ["questions", "question_number", "INT UNSIGNED NOT NULL DEFAULT 1"],
+  ["questions", "code", "TEXT NULL"],
+  ["questions", "difficulty", "VARCHAR(20) NULL"],
+  ["questions", "explanation", "TEXT NULL"],
+
+  // Option key is required by the current quiz API (A/B/C/D).
+  ["question_options", "option_key", "VARCHAR(10) NULL"],
 ];
 
 async function exists(type, name) {
