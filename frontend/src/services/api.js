@@ -13,6 +13,24 @@ function getToken() {
   return localStorage.getItem("osta_token") || localStorage.getItem("token");
 }
 
+export function handleUnauthorized() {
+  const token = localStorage.getItem("osta_token") || localStorage.getItem("token");
+  if (!token) return;
+
+  localStorage.removeItem("osta_token");
+  localStorage.removeItem("osta_user");
+  localStorage.removeItem("token");
+
+  sessionStorage.setItem(
+    "osta_session_message",
+    "Your session has ended. Please log in again."
+  );
+
+  if (window.location.pathname !== "/login") {
+    window.location.assign("/login");
+  }
+}
+
 api.interceptors.request.use(
   (config) => {
     const token = getToken();
@@ -28,7 +46,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error?.response?.status === 401) console.warn("Authentication required for API request.");
+    if (error?.response?.status === 401) {
+      handleUnauthorized();
+    }
     return Promise.reject(error);
   }
 );
