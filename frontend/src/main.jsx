@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
+import { handleUnauthorized } from "./services/api";
 import "./i18n";
 import { AuthProvider } from "@context/AuthContext";
 import { NotificationProvider } from "@context/NotificationContext";
@@ -16,13 +17,27 @@ const LEGACY_API = "https://osta-elearning-production.up.railway.app/api";
 const nativeFetch = window.fetch.bind(window);
 
 // Redirect any legacy hard-coded API requests to the current Railway backend.
-window.fetch = (input, init) => {
+window.fetch = async (input, init) => {
   if (typeof input === "string") {
     if (input.startsWith(LEGACY_API)) input = `${PRODUCTION_API}${input.slice(LEGACY_API.length)}`;
   } else if (input instanceof Request && input.url.startsWith(LEGACY_API)) {
     input = new Request(`${PRODUCTION_API}${input.url.slice(LEGACY_API.length)}`, input);
   }
-  return nativeFetch(input, init);
+  const hasAuthorization =
+    Boolean(init?.headers?.Authorization || init?.headers?.authorization) ||
+    (input instanceof Request && Boolean(input.headers.get("Authorization")));
+
+  const response = await nativeFetch(input, init);
+
+  if (
+    response.status === 401 &&
+    hasAuthorization &&
+    (localStorage.getItem("osta_token") || localStorage.getItem("token"))
+  ) {
+    handleUnauthorized();
+  }
+
+  return response;
 };
 
 ReactDOM.createRoot(document.getElementById("root")).render(
