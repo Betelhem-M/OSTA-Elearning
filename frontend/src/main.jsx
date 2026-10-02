@@ -11,18 +11,10 @@ import { LanguageProvider } from "@context/LanguageContext";
 import LanguageAutoTranslator from "./components/ui/LanguageAutoTranslator.jsx";
 import "./styles/index.css";
 
-// Production backend used by the Vercel frontend.
-const PRODUCTION_API = "https://osta-elearning-backend-production.up.railway.app/api";
-const LEGACY_API = "https://osta-elearning-production.up.railway.app/api";
 const nativeFetch = window.fetch.bind(window);
 
-// Redirect any legacy hard-coded API requests to the current Railway backend.
+// Handle expired authenticated sessions for native fetch requests.
 window.fetch = async (input, init) => {
-  if (typeof input === "string") {
-    if (input.startsWith(LEGACY_API)) input = `${PRODUCTION_API}${input.slice(LEGACY_API.length)}`;
-  } else if (input instanceof Request && input.url.startsWith(LEGACY_API)) {
-    input = new Request(`${PRODUCTION_API}${input.url.slice(LEGACY_API.length)}`, input);
-  }
   const hasAuthorization =
     Boolean(init?.headers?.Authorization || init?.headers?.authorization) ||
     (input instanceof Request && Boolean(input.headers.get("Authorization")));
