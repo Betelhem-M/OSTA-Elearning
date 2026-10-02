@@ -16,9 +16,8 @@ import {
 } from "lucide-react";
 
 import { Link } from "react-router-dom";
+import { API_BASE_URL } from "@services/api";
 import ConfirmModal from "../ConfirmModal";
-
-const API_URL = "https://osta-elearning-production.up.railway.app/api";
 
 export default function CourseManagementTable() {
   const [courses, setCourses] = useState([]);
@@ -55,7 +54,7 @@ export default function CourseManagementTable() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/courses/my-courses`, {
+      const response = await fetch(`${API_BASE_URL}/courses/my-courses`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -130,7 +129,7 @@ export default function CourseManagementTable() {
 
       setError("");
 
-      const response = await fetch(`${API_URL}/courses/${courseToDelete.id}`, {
+      const response = await fetch(`${API_BASE_URL}/courses/${courseToDelete.id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -204,7 +203,7 @@ export default function CourseManagementTable() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/courses/${editingCourse.id}`, {
+      const response = await fetch(`${API_BASE_URL}/courses/${editingCourse.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
