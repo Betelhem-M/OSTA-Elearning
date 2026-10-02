@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "@services/api";
 import { useNavigate } from "react-router-dom";
-
-const API_URL = "https://osta-elearning-production.up.railway.app/api";
 
 const inputClass =
   "h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10";
@@ -45,7 +44,7 @@ export default function CreateCourse() {
   async function loadCategories() {
     try {
       setError("");
-      const response = await fetch(`${API_URL}/categories`);
+      const response = await fetch(`${API_BASE_URL}/categories`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to load categories");
       setCategories(Array.isArray(data) ? data : []);
@@ -102,7 +101,7 @@ export default function CreateCourse() {
       const token = localStorage.getItem("osta_token");
       if (!token) throw new Error("You are not logged in.");
 
-      const response = await fetch(`${API_URL}/categories`, {
+      const response = await fetch(`${API_BASE_URL}/categories`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -130,7 +129,7 @@ export default function CreateCourse() {
   async function savePaymentAccount(token, method, accountNumber, accountName) {
     if (!accountNumber.trim()) return;
 
-    const response = await fetch(`${API_URL}/instructor/payment-accounts`, {
+    const response = await fetch(`${API_BASE_URL}/instructor/payment-accounts`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ method, accountNumber: accountNumber.trim(), accountName: accountName.trim() }),
@@ -167,7 +166,7 @@ export default function CreateCourse() {
       const token = localStorage.getItem("osta_token");
       if (!token) throw new Error("You are not logged in.");
 
-      const response = await fetch(`${API_URL}/courses`, {
+      const response = await fetch(`${API_BASE_URL}/courses`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
