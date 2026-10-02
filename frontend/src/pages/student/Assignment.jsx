@@ -21,11 +21,8 @@ import AssignmentCard from "@components/assignment/AssignmentCard";
 import SubmissionForm from "@components/assignment/SubmissionForm";
 import FeedbackPanel from "@components/assignment/FeedbackPanel";
 
-import { apiRequest } from "@services/api";
+import { apiRequest, API_BASE_URL } from "@services/api";
 import { downloadAuthenticatedFile } from "@utils/download";
-
-const API_URL =
-  "https://osta-elearning-production.up.railway.app/api";
 
 // =====================================================
 // HELPERS
@@ -236,7 +233,7 @@ export default function Assignment() {
 
       const response =
         await fetch(
-          `${API_URL}/assignments/${assignmentId}/submit`,
+          `${API_BASE_URL}/assignments/${assignmentId}/submit`,
           {
             method: "POST",
             headers: {
