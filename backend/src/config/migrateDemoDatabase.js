@@ -112,7 +112,7 @@ async function run() {
 
   // Repair legacy quizzes whose lesson was deleted or belongs to another course.
   // The first remaining lesson in the same course is used as a deterministic fallback.
-  if (await exists("table", "quizzes") && await exists("table", "lessons")) {
+  if (tables.has("quizzes") && tables.has("lessons")) {
     const [result] = await pool.execute(`
       UPDATE quizzes q
       SET q.lesson_id = (
