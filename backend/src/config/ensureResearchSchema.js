@@ -69,6 +69,7 @@ async function ensureResearchSchema() {
   await ensureColumn(columns, "researchers", "field", "VARCHAR(150) NULL");
   await ensureColumn(columns, "researchers", "affiliation", "VARCHAR(250) NULL");
   await ensureColumn(
+    columns,
     "researchers",
     "updated_at",
     "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
@@ -112,11 +113,13 @@ async function ensureResearchSchema() {
   await ensureColumn(columns, "publications", "file_size", "BIGINT UNSIGNED NULL");
   await ensureColumn(columns, "publications", "file_data", "LONGBLOB NULL");
   await ensureColumn(
+    columns,
     "publications",
     "status",
     "VARCHAR(30) NOT NULL DEFAULT 'published'"
   );
   await ensureColumn(
+    columns,
     "publications",
     "updated_at",
     "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
