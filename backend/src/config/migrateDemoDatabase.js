@@ -63,14 +63,22 @@ const migrations = [
   ["lesson_notes", "updated_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
 ];
 
-async function exists(type, name) {
-  const [rows] = await pool.execute(
-    type === "table"
-      ? `SELECT COUNT(*) AS count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?`
-      : `SELECT COUNT(*) AS count FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?`,
-    type === "table" ? [name] : name
-  );
-  return Number(rows[0].count) > 0;
+async function loadSchema() {
+  const [rows] = await pool.execute(`
+    SELECT table_name, column_name
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+  `);
+
+  const tables = new Set();
+  const columns = new Set();
+
+  for (const row of rows) {
+    tables.add(row.table_name);
+    columns.add(`${row.table_name}.${row.column_name}`);
+  }
+
+  return { tables, columns };
 }
 
 async function run() {
@@ -80,18 +88,25 @@ async function run() {
 
   console.log(`Migrating database: ${databaseName}`);
 
+  // Read the schema once instead of querying information_schema for every
+  // migration entry. This keeps the same migration behavior with fewer
+  // sequential database round-trips during every backend startup.
+  const { tables, columns } = await loadSchema();
+
   for (const [table, column, definition] of migrations) {
-    if (!(await exists("table", table))) {
+    if (!tables.has(table)) {
       console.warn(`Skipping ${table}.${column}: table does not exist`);
       continue;
     }
 
-    if (await exists("column", [table, column])) {
+    const columnKey = `${table}.${column}`;
+    if (columns.has(columnKey)) {
       console.log(`Already present: ${table}.${column}`);
       continue;
     }
 
     await pool.execute(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`);
+    columns.add(columnKey);
     console.log(`Added: ${table}.${column}`);
   }
 
