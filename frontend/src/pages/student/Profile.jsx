@@ -70,9 +70,6 @@ import {
   apiRequest,
 } from "@services/api";
 
-const API_URL =
-  "https://osta-elearning-production.up.railway.app/api";
-
 function getRoleInfo(user) {
   if (
     user?.role ===
