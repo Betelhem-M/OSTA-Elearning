@@ -11,7 +11,7 @@ import { useAuth } from '@context/AuthContext'
 import { useNotifications } from '@context/NotificationContext'
 import { UserAvatar } from '@components/ui/UserAvatar'
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://osta-elearning-backend-production.up.railway.app/api'
+const API_URL = import.meta.env.VITE_API_URL || 'https://osta-elearning-platform-backend-production.up.railway.app/api'
 const BACKEND_URL = API_URL.replace(/\/api\/?$/, '')
 
 export default function Navbar({ onMenuOpen }) {
