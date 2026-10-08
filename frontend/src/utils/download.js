@@ -1,6 +1,6 @@
 // Shared helper for downloading files behind the API auth middleware.
 const RAW_API_BASE =
-  import.meta.env.VITE_API_URL || "https://osta-elearning-backend-production.up.railway.app/api";
+  import.meta.env.VITE_API_URL || "https://osta-elearning-platform-backend-production.up.railway.app/api";
 const API_ORIGIN = RAW_API_BASE.replace(/\/api\/?$/, "");
 
 function getToken() {
