@@ -5,7 +5,7 @@ import CourseCurriculum from '@components/course/CourseCurriculum'
 import EnrollCard from '@components/course/EnrollCard'
 import InstructorBio from '@components/course/InstructorBio'
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://osta-elearning-backend-production.up.railway.app/api'
+const API_URL = import.meta.env.VITE_API_URL || 'https://osta-elearning-platform-backend-production.up.railway.app/api'
 
 export default function CourseDetails() {
   const { courseId } = useParams()
