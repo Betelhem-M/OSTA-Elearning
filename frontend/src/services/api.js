@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Production frontend API. VITE_API_URL can override this when intentionally configured.
 export const API_BASE_URL =
-  (import.meta.env.VITE_API_URL || "https://osta-elearning-backend-production.up.railway.app/api").replace(/\/$/, "");
+  (import.meta.env.VITE_API_URL || "https://osta-elearning-platform-backend-production.up.railway.app/api").replace(/\/$/, "");
 
 const api = axios.create({
   baseURL: API_BASE_URL,
