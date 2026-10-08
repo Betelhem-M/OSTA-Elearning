@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import CourseFilters from '@components/course/CourseFilters'
 import CourseGrid from '@components/course/CourseGrid'
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://osta-elearning-backend-production.up.railway.app/api'
+const API_URL = import.meta.env.VITE_API_URL || 'https://osta-elearning-platform-backend-production.up.railway.app/api'
 
 export default function Marketplace() {
   const [searchParams] = useSearchParams()
