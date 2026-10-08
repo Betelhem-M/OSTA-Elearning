@@ -1,5 +1,5 @@
 const API_URL =
-  import.meta.env.VITE_API_URL || "https://osta-elearning-backend-production.up.railway.app/api";
+  import.meta.env.VITE_API_URL || "https://osta-elearning-platform-backend-production.up.railway.app/api";
 
 export async function getCourses() {
   const response = await fetch(`${API_URL}/courses`);
