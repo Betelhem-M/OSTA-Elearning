@@ -13,7 +13,7 @@ import {
   getPasswordStrength,
 } from "@utils/validators";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://osta-elearning-backend-production.up.railway.app/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://osta-elearning-platform-backend-production.up.railway.app/api";
 const ACCOUNT_TYPES = ["Student", "Instructor", "Researcher", "Entrepreneur"];
 const REGIONS = ["Addis Ababa", "Adama", "Bishoftu", "Jimma", "Nekemte", "Shashamane", "Other"];
 
