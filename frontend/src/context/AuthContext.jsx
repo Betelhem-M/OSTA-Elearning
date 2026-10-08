@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext(null);
-const API_URL = import.meta.env.VITE_API_URL || "https://osta-elearning-backend-production.up.railway.app/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://osta-elearning-platform-backend-production.up.railway.app/api";
 
 function loadSavedUser() {
   const savedUser = localStorage.getItem("osta_user");
