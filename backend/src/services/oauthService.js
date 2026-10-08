@@ -53,7 +53,7 @@ function verifyState(state, provider) {
 
 function getRedirectUri(provider) {
   const envName = provider === "google" ? "GOOGLE_REDIRECT_URI" : "GITHUB_REDIRECT_URI";
-  return process.env[envName] || `${process.env.BACKEND_URL || "https://osta-elearning-backend-production.up.railway.app"}/api/auth/${provider}/callback`;
+  return process.env[envName] || `${process.env.BACKEND_URL || "https://osta-elearning-platform-backend-production.up.railway.app"}/api/auth/${provider}/callback`;
 }
 
 function getAuthorizationUrl(provider) {
