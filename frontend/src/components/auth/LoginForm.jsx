@@ -7,7 +7,7 @@ import { useLanguage } from '@context/LanguageContext';
 import { validateEmail, validateRequired } from '@utils/validators';
 import { getDashboardPath } from '@constants/roles';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://osta-elearning-backend-production.up.railway.app/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://osta-elearning-platform-backend-production.up.railway.app/api';
 
 function GoogleLogo() {
   return (
