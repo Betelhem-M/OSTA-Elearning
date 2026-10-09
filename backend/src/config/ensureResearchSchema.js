@@ -2,17 +2,22 @@ const pool = require("./database");
 
 async function loadSchema() {
   const [rows] = await pool.execute(`
-    SELECT table_name, column_name
+    SELECT TABLE_NAME AS table_name, COLUMN_NAME AS column_name
     FROM information_schema.columns
-    WHERE table_schema = DATABASE()
+    WHERE TABLE_SCHEMA = DATABASE()
   `);
 
   const tables = new Set();
   const columns = new Set();
 
   for (const row of rows) {
-    tables.add(row.table_name);
-    columns.add(`${row.table_name}.${row.column_name}`);
+    // Normalize metadata names across MySQL/MariaDB drivers and server versions.
+    const tableName = String(row.table_name ?? row.TABLE_NAME ?? "").toLowerCase();
+    const columnName = String(row.column_name ?? row.COLUMN_NAME ?? "").toLowerCase();
+    if (!tableName || !columnName) continue;
+
+    tables.add(tableName);
+    columns.add(`${tableName}.${columnName}`);
   }
 
   return { tables, columns };
@@ -37,14 +42,14 @@ async function ensureColumn(columns, tableName, columnName, definition) {
 async function ensureResearchSchema() {
   // Read the schema once so the startup check does not issue a separate
   // information_schema query for every table and column.
-  const { tables, columns } = await loadSchema();
+  let { tables, columns } = await loadSchema();
 
   // The production database may have been initialized from an older/incomplete
   // schema. The research portal is public, so its core tables must exist before
   // the API starts serving requests.
   if (!(tableExists(tables, "researchers"))) {
     await pool.execute(`
-      CREATE TABLE researchers (
+      CREATE TABLE IF NOT EXISTS researchers (
         id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         user_id BIGINT(20) UNSIGNED NOT NULL,
         organization VARCHAR(200) DEFAULT NULL,
@@ -59,7 +64,7 @@ async function ensureResearchSchema() {
         CONSTRAINT fk_researchers_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    tables.add("researchers");
+    ({ tables, columns } = await loadSchema());
     console.log("Research schema: created researchers table");
   }
 
@@ -77,7 +82,7 @@ async function ensureResearchSchema() {
 
   if (!(tableExists(tables, "publications"))) {
     await pool.execute(`
-      CREATE TABLE publications (
+      CREATE TABLE IF NOT EXISTS publications (
         id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         researcher_id BIGINT(20) UNSIGNED NOT NULL,
         title VARCHAR(250) NOT NULL,
@@ -99,7 +104,7 @@ async function ensureResearchSchema() {
         CONSTRAINT fk_publications_researcher FOREIGN KEY (researcher_id) REFERENCES researchers(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    tables.add("publications");
+    ({ tables, columns } = await loadSchema());
     console.log("Research schema: created publications table");
   }
 

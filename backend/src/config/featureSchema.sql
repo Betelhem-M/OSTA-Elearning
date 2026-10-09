@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS notification_links (
 
 -- Add event status only when the existing table does not already have it.
 SET @osta_event_status_exists := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='events' AND COLUMN_NAME='status');
-SET @osta_event_status_sql := IF(@osta_event_status_exists=0,'ALTER TABLE events ADD COLUMN status VARCHAR(30) NOT NULL DEFAULT 'draft'','SELECT 1');
+SET @osta_event_status_sql := IF(@osta_event_status_exists=0, 'ALTER TABLE events ADD COLUMN status VARCHAR(30) NOT NULL DEFAULT ''draft''', 'SELECT 1');
 PREPARE osta_event_status_stmt FROM @osta_event_status_sql;
 EXECUTE osta_event_status_stmt;
 DEALLOCATE PREPARE osta_event_status_stmt;

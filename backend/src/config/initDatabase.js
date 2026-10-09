@@ -28,8 +28,8 @@ function getConnectionConfig() {
 /**
  * Clean a MariaDB/MySQL dump before executing it through mysql2.
  *
- * The application should NOT delete existing production data.
- * If the database already contains tables, initialization is skipped.
+ * Initialization is additive: DROP TABLE statements are removed and CREATE
+ * TABLE statements become CREATE TABLE IF NOT EXISTS, preserving existing rows.
  */
 function cleanSchema(schema) {
   let cleaned = schema;
@@ -77,6 +77,12 @@ function cleanSchema(schema) {
     ""
   );
 
+  // Make table creation safe to rerun. cleanSchema has already removed DROP TABLE statements.
+  cleaned = cleaned.replace(
+    /\bCREATE\s+TABLE\s+(?!IF\s+NOT\s+EXISTS\b)/gi,
+    "CREATE TABLE IF NOT EXISTS "
+  );
+
   return cleaned.trim();
 }
 
@@ -111,47 +117,71 @@ async function initializeDatabase() {
       );
     }
 
-    const [tables] = await connection.query("SHOW TABLES");
+    const [existingTables] = await connection.query("SHOW TABLES");
+    console.log(
+      `Found ${existingTables.length} existing table(s); applying additive schema initialization.`
+    );
 
-    if (tables.length > 0) {
-      console.log(
-        `Database already contains ${tables.length} table(s).`
-      );
+    // The core schema defines the main platform tables. Feature and instructor
+    // schemas add tables not present in the core dump. All are safe to rerun.
+    const schemaFiles = [
+      "schema.sql",
+      "featureSchema.sql",
+      "instructorApplicationSchema.sql",
+    ];
+    const expectedTables = new Set();
 
-      console.log(
-        "Skipping automatic schema initialization to protect existing data."
-      );
+    for (const fileName of schemaFiles) {
+      const schemaPath = path.join(__dirname, fileName);
+      if (!fs.existsSync(schemaPath)) {
+        throw new Error(`Required schema file not found: ${schemaPath}`);
+      }
 
-      return;
+      const originalSchema = fs.readFileSync(schemaPath, "utf8");
+      if (!originalSchema.trim()) {
+        throw new Error(`Schema file is empty: ${fileName}`);
+      }
+
+      const schema = cleanSchema(originalSchema);
+      if (!schema) {
+        throw new Error(`No executable SQL statements remained in ${fileName}.`);
+      }
+
+      for (const match of schema.matchAll(
+        /\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?\x60?([a-zA-Z0-9_]+)\x60?/gi
+      )) {
+        expectedTables.add(match[1].toLowerCase());
+      }
+
+      console.log(`Applying schema file: ${fileName}`);
+      await connection.query(schema);
     }
 
-    const schemaPath = path.join(__dirname, "schema.sql");
+    const [tableRows] = await connection.query(`
+      SELECT TABLE_NAME AS table_name
+      FROM information_schema.tables
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_TYPE = 'BASE TABLE'
+    `);
 
-    if (!fs.existsSync(schemaPath)) {
-      throw new Error(`Schema file not found: ${schemaPath}`);
-    }
+    const actualTables = new Set(
+      tableRows
+        .map((row) => String(row.table_name ?? row.TABLE_NAME ?? "").toLowerCase())
+        .filter(Boolean)
+    );
+    const missingTables = [...expectedTables].filter(
+      (tableName) => !actualTables.has(tableName)
+    );
 
-    const originalSchema = fs.readFileSync(schemaPath, "utf8");
-
-    if (!originalSchema.trim()) {
-      throw new Error("schema.sql is empty.");
-    }
-
-    console.log("Reading database schema...");
-
-    const schema = cleanSchema(originalSchema);
-
-    if (!schema.trim()) {
+    if (missingTables.length > 0) {
       throw new Error(
-        "No executable SQL statements remained after cleaning schema.sql."
+        `Schema initialization incomplete. Missing table(s): ${missingTables.join(", ")}`
       );
     }
 
-    console.log("Executing database schema...");
-
-    await connection.query(schema);
-
-    console.log("Database schema initialized successfully.");
+    console.log(
+      `Database schema initialized successfully. Verified ${expectedTables.size} required schema tables; ${actualTables.size} table(s) exist in the database.`
+    );
   } catch (error) {
     console.error(
       "Database initialization failed:",

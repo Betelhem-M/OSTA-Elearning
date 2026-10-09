@@ -65,17 +65,22 @@ const migrations = [
 
 async function loadSchema() {
   const [rows] = await pool.execute(`
-    SELECT table_name, column_name
+    SELECT TABLE_NAME AS table_name, COLUMN_NAME AS column_name
     FROM information_schema.columns
-    WHERE table_schema = DATABASE()
+    WHERE TABLE_SCHEMA = DATABASE()
   `);
 
   const tables = new Set();
   const columns = new Set();
 
   for (const row of rows) {
-    tables.add(row.table_name);
-    columns.add(`${row.table_name}.${row.column_name}`);
+    // Normalize metadata names across MySQL/MariaDB drivers and server versions.
+    const tableName = String(row.table_name ?? row.TABLE_NAME ?? "").toLowerCase();
+    const columnName = String(row.column_name ?? row.COLUMN_NAME ?? "").toLowerCase();
+    if (!tableName || !columnName) continue;
+
+    tables.add(tableName);
+    columns.add(`${tableName}.${columnName}`);
   }
 
   return { tables, columns };
